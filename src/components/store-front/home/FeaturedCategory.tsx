@@ -49,13 +49,13 @@ export default function FeaturedCategory() {
               className="flex items-center gap-[12px] lg:gap-[16px] p-3 lg:p-4 bg-[#F2F2F2] rounded-[16px] cursor-pointer hover:shadow-sm transition-shadow group"
             >
               {/* Icon container */}
-              <div className="w-[60px] h-[50px] md:w-[70px] md:h-[58px] xl:w-[80px] xl:h-[65px] 2xl:w-[100px] 2xl:h-[80px] bg-white rounded-[12px] flex items-center justify-center shrink-0">
-                <div className="text-xl grayscale group-hover:grayscale-0 transition-all">
+              <div className="w-[60px] h-[50px] md:w-[70px] md:h-[58px] xl:w-[80px] xl:h-[65px] 2xl:w-[100px] 2xl:h-[80px] bg-white rounded-[12px] flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="relative w-[36px] h-[36px] md:w-[40px] md:h-[40px] xl:w-[48px] xl:h-[48px] 2xl:w-[56px] 2xl:h-[56px] grayscale group-hover:grayscale-0 transition-all">
                   <Image
                     src={category.icon}
                     alt={category.name}
-                    width={64}
-                    height={64}
+                    fill
+                    className="object-contain"
                   />
                 </div>
               </div>
