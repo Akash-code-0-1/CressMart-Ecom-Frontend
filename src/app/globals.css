@@ -1,3 +1,4 @@
+
 @import "tailwindcss";
 
 @theme {
@@ -70,3 +71,4 @@ input[type=range].price-slider::-webkit-slider-thumb {
 .productgallery .swiper-slide-thumb-active{
   border: 2px solid #FF7050;
 }
+

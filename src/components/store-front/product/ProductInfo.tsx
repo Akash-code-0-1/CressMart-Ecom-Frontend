@@ -25,7 +25,7 @@ export const ProductInfo: React.FC = () => {
       </div>
 
       {/* Title */}
-      <h1 className="text-black text-2xl sm:text-[32px] font-semibold leading-snug sm:leading-normal">
+      <h1 className="text-black text-2xl sm:text-[28px] font-semibold leading-snug sm:leading-normal">
         Apache Luminous Batman Edition Radium Watch
       </h1>
 

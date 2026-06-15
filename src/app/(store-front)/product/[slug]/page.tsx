@@ -1,11 +1,12 @@
 import { Breadcrumbs } from "@/components/store-front/product/Breadcrumbs";
+import ProductDetailsTabs from "@/components/store-front/product/Productdetailstabs";
 import { ProductGallery } from "@/components/store-front/product/ProductGallery";
 import { ProductInfo } from "@/components/store-front/product/ProductInfo";
 
 export default function ProductDetailsPage() {
   return (
     <div className="w-full bg-white pb-20">
-      <div className="max-w-[1720px] mx-auto px-4 py-8">
+      <div className="max-w-[1720px] mx-auto px-4">
         <Breadcrumbs
           paths={["Home", "Gadget & Tools", "Watch", "Child Category"]}
           activePath="Apache Luminous Batman Edition Radium Watch"
@@ -65,6 +66,7 @@ export default function ProductDetailsPage() {
             <ProductInfo />
           </div>
         </div>
+        <ProductDetailsTabs />
       </div>
     </div>
   );
