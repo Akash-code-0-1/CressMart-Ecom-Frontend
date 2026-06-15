@@ -11,16 +11,17 @@ export const Breadcrumbs: React.FC<BreadcrumbProps> = ({
   activePath,
 }) => {
   return (
-    <nav className="flex items-center gap-2 mb-8 flex-wrap font-poppins">
+    <nav className="flex items-center gap-1 sm:gap-2 mb-6 sm:mb-8 flex-wrap font-poppins">
       {paths.map((path, index) => (
         <React.Fragment key={index}>
-          <span className="text-[#727272] text-[24px] font-medium whitespace-nowrap">
+          <span className="text-[#727272] text-lg sm:text-[24px] font-medium whitespace-nowrap">
             {path}
           </span>
-          <MdChevronRight className="text-[#727272] text-2xl" />
+          {/* Shrink the icon slightly on mobile to match the text */}
+          <MdChevronRight className="text-[#727272] text-xl sm:text-2xl flex-shrink-0" />
         </React.Fragment>
       ))}
-      <span className="text-[#FF7050] text-[24px] font-medium">
+      <span className="text-[#FF7050] text-lg sm:text-[24px] font-medium break-words min-w-0">
         {activePath}
       </span>
     </nav>

@@ -11,7 +11,7 @@ export default function ProductDetailsPage() {
           activePath="Apache Luminous Batman Edition Radium Watch"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[72px] mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-[40px] xl:gap-[72px] mt-4">
           <div className="">
             <ProductGallery
               items={[
