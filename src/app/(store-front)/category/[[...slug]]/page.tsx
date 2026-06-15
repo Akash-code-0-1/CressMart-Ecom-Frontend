@@ -12,7 +12,7 @@ import { FaChevronRight, FaFilter, FaTimes } from "react-icons/fa";
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  const products = Array(12).fill({
+  const products = Array(20).fill({
     id: 1,
     title: "H20 Mini USB Portable Air Humidifier",
     price: 598,
@@ -38,7 +38,7 @@ const CategoryPage = () => {
         <CategoryBanner />
       </div>
 
-      {/* 2. Sub-category Horizontal Bar */}
+      {/* 2. Sub-category */}
       <div className="max-w-[1720px] mx-auto mb-6 md:mb-8">
         <SubCategoryBar />
       </div>
@@ -63,10 +63,7 @@ const CategoryPage = () => {
           <aside className="hidden lg:block w-[390px] shrink-0">
             <FilterSidebar />
           </aside>
-
-          {/* Main Grid Area */}
           <main className="flex-1">
-            {/* The Grid - Optimized responsive columns */}
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
               {products.map((product, idx) => (
                 <ProductCard key={idx} {...product} />
