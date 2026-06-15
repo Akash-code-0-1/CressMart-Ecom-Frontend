@@ -20,7 +20,7 @@ const relatedProducts: RelatedProduct[] = [
     salePrice: "BDT 999",
     rating: 4,
     reviewCount: 10,
-    image: "/product-placeholder.png",
+    image: "/images/store-front/products/w.png",
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ const relatedProducts: RelatedProduct[] = [
     salePrice: "BDT 999",
     rating: 4,
     reviewCount: 10,
-    image: "/product-placeholder.png",
+    image: "/images/store-front/products/w.png",
   },
   {
     id: 3,
@@ -38,7 +38,7 @@ const relatedProducts: RelatedProduct[] = [
     salePrice: "BDT 999",
     rating: 4,
     reviewCount: 10,
-    image: "/product-placeholder.png",
+    image: "/images/store-front/products/w.png",
   },
   {
     id: 4,
@@ -47,14 +47,14 @@ const relatedProducts: RelatedProduct[] = [
     salePrice: "BDT 999",
     rating: 4,
     reviewCount: 10,
-    image: "/product-placeholder.png",
+    image: "/images/store-front/products/w.png",
   },
 ];
 
 const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
-  <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group">
+  <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer group bg-[#F2F2F2] mb-4 last:mb-0">
     {/* Product Image */}
-    <div className="w-[70px] h-[70px] rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+    <div className="w-[94px] h-[116px] rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
       <Image
         src={product.image}
         alt={product.name}
@@ -66,15 +66,16 @@ const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
 
     {/* Product Info */}
     <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-semibold text-black leading-snug line-clamp-2 mb-1 group-hover:text-[#FF7050] transition-colors">
+      <h4 className="text-base font-semibold text-black leading-snug line-clamp-2 mb-1 max-w-[155px]">
         {product.name}
       </h4>
-      <div className="flex items-center gap-1 mb-1">
-        <span className="text-xs text-gray-400 line-through">
-          {product.originalPrice}
-        </span>
+      <div className="flex items-center gap-2 mb-1">
         <span className="text-sm font-bold text-[#FF7050]">
           {product.salePrice}
+        </span>
+
+        <span className="text-xs text-gray-400 line-through">
+          {product.originalPrice}
         </span>
       </div>
       <div className="flex items-center gap-1">
@@ -97,10 +98,10 @@ const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
 const RelatedProducts = () => {
   return (
     <div className="w-full">
-      <h3 className="text-xl font-bold text-black mb-4 px-1">
+      <h3 className="text-xl font-semibold font-poppins text-black mb-4 px-1">
         Related Product
       </h3>
-      <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100 shadow-sm">
+      <div className="bg-white rounded-2xl">
         {relatedProducts.map((product) => (
           <RelatedProductCard key={product.id} product={product} />
         ))}

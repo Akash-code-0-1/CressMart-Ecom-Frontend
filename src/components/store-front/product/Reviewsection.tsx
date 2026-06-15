@@ -252,8 +252,8 @@ const ReviewSection = () => {
           </div>
         </div>
 
-        <div className="flex items-center flex-wrap gap-5">
-          <div className="flex flex-col mt-3 w-1/2">
+        <div className="flex items-center gap-5 md:flex-row flex-col">
+          <div className="flex flex-col mt-3 md:w-1/2 w-full">
             <label className="text-black font-poppins text-base font-semibold mb-3">
               Email
             </label>
@@ -264,7 +264,7 @@ const ReviewSection = () => {
             />
           </div>
 
-          <div className="flex w-1/2 gap-3 mt-auto">
+          <div className="flex md:w-1/2 w-full gap-3 mt-auto">
             <button className="cursor-pointer p-2.5 border-[#FF7050] border w-fit rounded-[12px]">
               <ViewIcon />
             </button>
