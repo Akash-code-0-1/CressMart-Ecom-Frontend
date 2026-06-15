@@ -11,3 +11,55 @@
     100% { transform: translateX(-50%); }
   }
 }
+
+
+/* price range css  */
+
+/* Slider wrapper */
+.slider-wrapper {
+  position: relative;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+/* Background track */
+.slider-track-bg {
+  position: absolute;
+  left: 0; right: 0;
+  height: 5px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  border: 1px solid #FF7050;
+}
+
+/* Filled portion */
+.slider-track-fill {
+  position: absolute;
+  left: 0;
+  height: 5px;
+  background: #FF7050;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* Range input */
+input[type=range].price-slider {
+  position: absolute;
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  z-index: 2;
+  cursor: pointer;
+}
+
+input[type=range].price-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FF7050;
+  border: 4px solid white;
+  box-shadow: 0 0 0 2px #FF7050;
+}

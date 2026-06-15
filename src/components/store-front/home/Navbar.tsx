@@ -16,6 +16,7 @@ import ChevronDownIcon from "../svg/ChevronDownIcon";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
+import { FaFireAlt } from "react-icons/fa";
 
 const Navbar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -51,7 +52,6 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollPos = window.scrollY;
-      // Show if scrolling up or at top. Hide if scrolling down.
       const visible = prevScrollPos > currentScrollPos || currentScrollPos < 10;
       setIsVisible(visible);
       setPrevScrollPos(currentScrollPos);
@@ -94,14 +94,14 @@ const Navbar = () => {
     <>
       <header
         className={`
-          w-full bg-white font-inter z-100 sticky top-0 left-0
+          w-full bg-white font-inter z-50 sticky top-0 left-0 px-4 md:px-6
           transition-transform duration-500 ease-in-out
           ${isVisible ? "translate-y-0" : "-translate-y-full"}
           ${prevScrollPos > 50 ? "shadow-[0_4px_20px_rgba(0,0,0,0.08)]" : ""}
         `}
       >
         {/* TOP SECTION - 1720px */}
-        <div className="max-w-[1720px] mx-auto px-4 md:px-6 flex items-center justify-between gap-4 lg:gap-10 py-4">
+        <div className="max-w-[1720px] mx-auto flex items-center justify-between py-4">
           <button
             onClick={() => setIsDrawerOpen(true)}
             className="lg:hidden p-2 text-black text-3xl shrink-0 cursor-pointer"
@@ -110,11 +110,12 @@ const Navbar = () => {
           </button>
 
           <Link href="/" className="shrink-0">
-            <div className="relative w-[120px] h-[35px] md:w-[230px] md:h-[64px]">
+            <div className="relative w-[120px] h-[35px] xl:w-[230px] lg:w-[200px] md:w-[180px] sm:w-[150px] xl:h-[64px] lg:h-[55px] md:h-[50px] sm:h-[45px]">
               <Image
                 src="/images/logo.png"
                 alt="Creass Mart"
                 fill
+                sizes="(max-width: 768px) 120px, 230px"
                 priority
                 className="object-contain"
               />
@@ -122,7 +123,7 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Search */}
-          <div className="hidden lg:flex flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center p-[8px_8px_8px_24px] gap-6">
+          <div className="hidden lg:flex flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center xl:p-[8px_8px_8px_24px] lg:p-[8px_8px_8px_16px] md:p-[8px_8px_8px_8px] gap-1 lg:gap-3 xl:gap-6">
             <div className="flex items-center gap-2 cursor-pointer px-2">
               <span className="text-black text-sm font-medium whitespace-nowrap">
                 All Categories
@@ -141,13 +142,13 @@ const Navbar = () => {
           </div>
 
           {/* Icons & Auth Buttons */}
-          <div className="flex items-center gap-3 sm:gap-5 lg:gap-8 shrink-0">
+          <div className="flex items-center gap-1 md:gap-3 lg:gap-3 xl:gap-8">
             <WishIcon className="w-8 md:w-10 cursor-pointer" />
             <div className="hidden lg:flex items-center gap-4">
-              <button className="bg-[#F0F0F0] rounded-[8px] font-semibold text-[16px] uppercase px-10 py-4 font-inter cursor-pointer">
+              <button className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
                 Login
               </button>
-              <button className="font-semibold uppercase text-white bg-[#FF7050] text-[16px] rounded-[8px] px-10 py-4 font-inter cursor-pointer">
+              <button className="font-semibold uppercase text-white bg-[#FF7050] xl:text-[16px] lg:text-[14px] text-[12px] rounded-[8px] xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
                 Signup
               </button>
             </div>
@@ -156,8 +157,8 @@ const Navbar = () => {
 
         {/* --- DESKTOP NAV --- */}
         <nav className="hidden lg:block py-4">
-          <div className="max-w-[1720px] mx-auto px-10">
-            <ul className="flex items-center flex-wrap justify-between gap-y-2 px-8">
+          <div className="max-w-[1720px] mx-auto">
+            <ul className="flex items-center flex-wrap justify-between gap-y-2 md:px-8 px-0">
               {navLinks.map((item, idx) => (
                 <li
                   key={idx}
@@ -174,7 +175,7 @@ const Navbar = () => {
                   }}
                 >
                   <span
-                    className={`text-[20px] cursor-pointer font-medium transition-all cursor-default ${activeDropdown === idx ? "text-[#FF7050]" : "text-[#5E5E5E]"}`}
+                    className={`xl:text-[20px] lg:text-[18px] md:text-[16px] text-[14px] cursor-pointer font-medium transition-all ${activeDropdown === idx ? "text-[#FF7050]" : "text-[#5E5E5E]"}`}
                   >
                     {item.name}
                   </span>
@@ -217,9 +218,6 @@ const Navbar = () => {
       </header>
 
       {/* BANNER SPACER */}
-      {/* <div className="h-[30px] lg:h-[120px] w-full" /> */}
-
-      {/* --- FLOATING CART (97x97) --- */}
       <div
         onClick={() => setIsCartOpen(true)}
         className="fixed right-0 top-1/2 -translate-y-1/2 z-[90] flex flex-col items-center justify-center cursor-pointer transition-all hover:brightness-110 active:scale-95 shadow-2xl"
@@ -249,7 +247,8 @@ const Navbar = () => {
               alt="logo"
               width={160}
               height={45}
-              className="object-contain"
+              sizes="(max-width: 768px) 120px, 160px"
+              className="w-[120px] md:w-[160px] h-auto object-contain"
             />
             <button
               onClick={() => setIsDrawerOpen(false)}
@@ -261,11 +260,11 @@ const Navbar = () => {
 
           <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
             {/* Mobile Auth Buttons */}
-            <div className="flex flex-col gap-3">
-              <button className="w-full py-4 text-xl font-bold bg-[#F2F2F2] rounded-lg uppercase tracking-wide cursor-pointer font-inter">
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <button className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#F2F2F2] rounded-lg uppercase tracking-wide cursor-pointer font-inter">
                 LOGIN
               </button>
-              <button className="w-full py-4 text-xl font-bold bg-[#FF7050] text-white rounded-lg shadow-lg uppercase tracking-wide cursor-pointer font-inter">
+              <button className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#FF7050] text-white rounded-lg uppercase tracking-wide cursor-pointer font-inter">
                 SIGNUP
               </button>
             </div>
@@ -283,7 +282,7 @@ const Navbar = () => {
                     onClick={() => toggleMobileDropdown(idx)}
                     className={`flex items-center justify-between py-4 cursor-pointer transition-colors ${openMobileDropdown === idx ? "text-[#FF7050]" : "text-[#727272]"}`}
                   >
-                    <span className="font-semibold text-lg">{link.name}</span>
+                    <span className="font-semibold text-base md:text-lg font-inter">{link.name}</span>
                     <FiChevronDown
                       className={`transition-transform duration-300 ${openMobileDropdown === idx ? "rotate-180" : ""}`}
                     />
@@ -308,8 +307,8 @@ const Navbar = () => {
                   </div>
                 </li>
               ))}
-              <li className="flex items-center gap-2 text-black font-bold uppercase py-6">
-                <FireIcon /> HOT DEALS
+              <li className="flex items-center gap-2 text-black font-bold uppercase py-6 font-inter">
+                <FaFireAlt color="#FF764A" /> HOT DEALS
               </li>
             </ul>
           </div>
@@ -346,6 +345,7 @@ const Navbar = () => {
                     width={80}
                     height={80}
                     className="object-cover h-full"
+                    style={{ width: "auto", height: "auto" }}
                   />
                 </div>
                 <div className="flex-1 flex flex-col">

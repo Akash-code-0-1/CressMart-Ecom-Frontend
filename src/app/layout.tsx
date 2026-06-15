@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/store-front/home/Navbar";
+import TopHeader from "@/components/store-front/home/TopHeader";
+import FAQ from "@/components/store-front/home/FAQ";
+import Footer from "@/components/store-front/home/Footer";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -25,8 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${poppins.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col">
+        <TopHeader />
+        <Navbar />
+        <main>{children}</main>
+        <FAQ />
+        <Footer />
+      </body>
     </html>
   );
 }

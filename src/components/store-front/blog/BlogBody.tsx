@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function BlogBody() {
   return (
-    <section className="container mx-auto px-4 py-10 font-inter">
+    <section className="container mx-auto px-4 font-inter">
       {/* Intro Text */}
       <div className="mb-10">
         <h4 className="text-black font-bold text-lg mb-4">

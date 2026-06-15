@@ -54,6 +54,7 @@ const PromotionDiscountProduct = () => {
                   width={300}
                   height={180}
                   className="object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
               </div>
 

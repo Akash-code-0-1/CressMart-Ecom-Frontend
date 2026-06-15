@@ -1,6 +1,6 @@
 export default function BlogComments() {
   return (
-    <section className="container mx-auto px-4 md:mt-20 mt-10 bg-[#FAFAFA] md:bg-transparent rounded-3xl">
+    <section className="container mx-auto px-4 md:mt-20 mt-10 bg-[#FAFAFA] md:bg-transparent rounded-3xl md:mb-20 mb-10">
       <h3 className="text-black font-poppins text-2xl font-bold mb-2">
         Comment
       </h3>
@@ -39,7 +39,7 @@ export default function BlogComments() {
           />
         </div>
         <div className="md:col-span-2 flex justify-end">
-          <button className="bg-[#FF7050] text-white px-10 py-4 rounded-xl font-bold uppercase shadow-lg shadow-orange-200 hover:opacity-90 transition-all">
+          <button className="bg-[#FF7050] text-white md:px-10 px-5 py-4 rounded-xl font-semibold shadow-orange-200 hover:opacity-90 transition-all">
             Submit Comment
           </button>
         </div>

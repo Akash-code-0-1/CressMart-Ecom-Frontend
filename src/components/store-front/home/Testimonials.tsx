@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Pagination } from "swiper/modules";
+import { Autoplay } from "swiper/modules";
 import { FaStar, FaQuoteLeft } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
-
-// Import Swiper styles
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -61,12 +59,14 @@ const Testimonials = () => {
 
             <div className="w-full">
               <Swiper
-                modules={[Autoplay, Pagination]}
+                modules={[Autoplay]}
                 spaceBetween={20}
                 slidesPerView={1}
-                // autoplay={{ delay: 3000 }}
+                autoplay={{ delay: 4000 }}
                 breakpoints={{
-                  640: { slidesPerView: 3, spaceBetween: 24 },
+                  1024: { slidesPerView: 3 },
+                  1280: { slidesPerView: 2 },
+                  1500: { slidesPerView: 3 },
                 }}
                 className="testimonial-swiper pb-12"
               >
@@ -113,10 +113,10 @@ const Testimonials = () => {
 
             <div className="w-full">
               <Swiper
-                modules={[Autoplay, Pagination]}
+                modules={[Autoplay]}
                 spaceBetween={15}
                 slidesPerView={2}
-                // autoplay={{ delay: 4000 }}
+                autoplay={{ delay: 4000 }}
                 breakpoints={{
                   1024: { slidesPerView: 3 },
                   1280: { slidesPerView: 2 },
@@ -158,7 +158,7 @@ const Testimonials = () => {
 
       {/* --- VIDEO MODAL --- */}
       {videoUrl && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 p-4">
+        <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/90 p-4">
           <button
             onClick={() => setVideoUrl(null)}
             className="absolute top-6 right-6 text-white text-4xl hover:text-[#FF7050] transition-colors"
@@ -175,14 +175,6 @@ const Testimonials = () => {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .testimonial-swiper .swiper-pagination-bullet-active {
-          background: #ff7050 !important;
-          width: 12px;
-          border-radius: 5px;
-        }
-      `}</style>
     </section>
   );
 };

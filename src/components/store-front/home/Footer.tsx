@@ -84,13 +84,17 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-16">
           {/* Column 1: Info & Contact */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-block mb-8">
+            <Link
+              href="/"
+              className="inline-block mb-6 md:mb-8 max-w-[180px] sm:max-w-[210px] md:max-w-[230px] w-full"
+            >
               <Image
                 src="/images/logo.png"
                 alt="Creass Mart"
                 width={230}
                 height={64}
-                className="object-contain"
+                className="w-full h-auto object-contain"
+                priority
               />
             </Link>
 

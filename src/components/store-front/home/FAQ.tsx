@@ -38,7 +38,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="w-full py-20 px-4 md:px-10 bg-white font-poppins">
+    <section className="w-full px-4 md:px-10 bg-white font-poppins">
       <div className="max-w-[1240px] mx-auto">
         {/* Title */}
         <h2 className="text-center text-black text-[28px] md:text-[32px] font-semibold mb-12">

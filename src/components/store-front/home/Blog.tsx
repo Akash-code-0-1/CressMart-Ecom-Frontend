@@ -51,7 +51,7 @@ const Blog: React.FC = () => {
         </div>
 
         {/* Blog Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {blogs.map((blog) => (
             <div
               key={blog.id}
@@ -76,7 +76,7 @@ const Blog: React.FC = () => {
               </h3>
 
               {/* Footer: Date & Read More */}
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center flex-wrap gap-3">
                 <span className="text-lg text-[#5E5E5E] font-normal">
                   {blog.date}
                 </span>

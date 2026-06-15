@@ -55,6 +55,7 @@ export default function FeaturedCategory() {
                     src={category.icon}
                     alt={category.name}
                     fill
+                    sizes="56px"
                     className="object-contain"
                   />
                 </div>
