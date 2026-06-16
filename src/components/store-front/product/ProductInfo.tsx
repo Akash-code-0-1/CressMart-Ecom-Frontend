@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React, { useState } from "react";
 import {
   AiFillStar,
@@ -15,7 +16,15 @@ export const ProductInfo: React.FC = () => {
     <div className="flex flex-col gap-4 font-poppins px-1 sm:px-0 md:mt-0 mt-4">
       {/* Brand & SKU */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <span className="font-bold text-xl sm:text-2xl italic">oraimo</span>
+        <div>
+          <Image
+            src="/images/store-front/brand/brandl.png"
+            alt="Logo"
+            width={83}
+            height={45}
+            className="w-full h-full object-contain"
+          />
+        </div>
         <span className="text-[#727272] text-sm sm:text-[16px] font-medium">
           Model: 13240
         </span>
@@ -61,16 +70,40 @@ export const ProductInfo: React.FC = () => {
       </div>
 
       {/* Price Section */}
-      <div className="flex items-center gap-3 sm:gap-4 border-b-2 border-[#D2D2D2] py-3 sm:py-4">
-        <span className="text-[#FF7050] text-2xl sm:text-[32px] font-bold">
-          BDT 590
-        </span>
-        <span className="text-[#727272] text-lg sm:text-[24px] font-medium line-through">
-          BDT 750
-        </span>
-        <span className="bg-[#32CD32] text-white text-[11px] sm:text-[12px] px-2 py-0.5 rounded-md font-medium">
-          21% OFF
-        </span>
+      <div className="flex justify-between md:flex-row flex-col md:items-center items-start gap-3 sm:gap-4 border-b-2 border-[#D2D2D2] py-3 sm:py-4">
+        <div className="flex items-center gap-3">
+          <span className="text-[#FF7050] text-2xl sm:text-[32px] font-bold">
+            BDT 590
+          </span>
+          <span className="text-[#727272] text-lg sm:text-[24px] font-medium line-through">
+            BDT 750
+          </span>
+          <span className="bg-[#32CD32] text-white text-[11px] sm:text-[12px] px-2 py-0.5 rounded-md font-medium">
+            21% OFF
+          </span>
+        </div>
+
+        <div className="flex gap-4">
+          <Image
+            src="/images/store-front/brand/s2.png"
+            alt="sup"
+            width={48}
+            height={48}
+          />
+
+          <Image
+            src="/images/store-front/brand/s6.png"
+            alt="sup"
+            width={48}
+            height={48}
+          />
+          <Image
+            src="/images/store-front/brand/s5.png"
+            alt="sup"
+            width={48}
+            height={48}
+          />
+        </div>
       </div>
 
       {/* Description */}

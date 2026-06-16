@@ -1,127 +1,11 @@
 "use client";
 import { useState } from "react";
-import Image from "next/image";
 import { FaStar } from "react-icons/fa";
-import { HiBadgeCheck } from "react-icons/hi";
 import ViewIcon from "../svg/ViewIcon";
+import RatingBarRow from "./RatingBarRow";
+import StarRatingInput from "./StarRatingInput";
+import ReviewItem from "./ReviewItem";
 
-const RatingBarRow = ({
-  star,
-  count,
-  total,
-}: {
-  star: number;
-  count: number;
-  total: number;
-}) => (
-  <div className="flex items-center gap-3">
-    <div className="flex text-[#FDCC0D] text-xs gap-[2px]">
-      {[...Array(5)].map((_, i) => (
-        <FaStar key={i} className={i < star ? "" : "text-gray-300"} />
-      ))}
-    </div>
-    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-[#FF7050] rounded-full transition-all duration-500"
-        style={{ width: total > 0 ? `${(count / total) * 100}%` : "0%" }}
-      />
-    </div>
-    <span className="text-xs text-gray-500 w-4 text-right">{count}</span>
-  </div>
-);
-
-const ReviewItem = ({
-  name,
-  rating,
-  comment,
-  hasImage = false,
-}: {
-  name: string;
-  rating: number;
-  comment: string;
-  hasImage?: boolean;
-}) => (
-  <div className="flex flex-col md:flex-row gap-6 items-start pb-8 last:pb-0">
-    {/* Avatar + Name */}
-    <div className="flex items-center gap-4 min-w-[200px]">
-      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-300 shrink-0">
-        <Image
-          src="/images/store-front/products/t1.png"
-          alt={name}
-          width={64}
-          height={64}
-          className="object-cover w-full h-full"
-        />
-      </div>
-      <div>
-        <h4 className="font-semibold text-base md:text-[18px] leading-tight text-black">
-          {name}
-        </h4>
-        <div className="flex items-center gap-1 text-[#8C8C8C] text-xs font-semibold mt-1">
-          <HiBadgeCheck color="#FF7050" size={16} />
-          <span>Verified Buyer</span>
-        </div>
-      </div>
-    </div>
-
-    {/* Comment */}
-    <div className="flex-1 space-y-3">
-      <p className="text-base text-[18px] max-w-[700px] text-center leading-relaxed">
-        {comment}
-      </p>
-      {hasImage && (
-        <div className="w-full max-w-sm h-[260px] bg-[#D9D9D9] rounded-3xl flex items-center justify-center text-3xl text-gray-400 font-bold">
-          Image
-        </div>
-      )}
-    </div>
-
-    {/* Rating */}
-    <div className="flex items-center gap-2 shrink-0">
-      <span className="md:text-[48px] text-[24px] font-semibold  text-[#FF7050]">
-        {rating}.0
-      </span>
-      <div className="flex text-[#FFB800] text-lg gap-[2px]">
-        {[...Array(5)].map((_, i) => (
-          <FaStar key={i} className={i < rating ? "" : "text-gray-300"} />
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-// --- Interactive Star Rating ---
-const StarRatingInput = ({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) => {
-  const [hovered, setHovered] = useState(0);
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onClick={() => onChange(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          className="text-3xl transition-colors"
-        >
-          <FaStar
-            className={
-              star <= (hovered || value) ? "text-[#FFD700]" : "text-gray-300"
-            }
-          />
-        </button>
-      ))}
-    </div>
-  );
-};
-
-// --- Main Review Section ---
 const ReviewSection = () => {
   const [rating, setRating] = useState(5);
 
@@ -130,7 +14,7 @@ const ReviewSection = () => {
 
   return (
     <div className="font-poppins">
-      {/* ── Review Header Stats ── */}
+      {/* Review Header Stats */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-12">
         {/* Title */}
         <div className="">
@@ -143,7 +27,7 @@ const ReviewSection = () => {
         </div>
 
         {/* Overall Rating */}
-        <div className="text-center flex-shrink-0">
+        <div className="text-center shrink-0">
           <div className="text-[64px] font-semibold text-[#FF7050] leading-none mb-2">
             5.0
           </div>

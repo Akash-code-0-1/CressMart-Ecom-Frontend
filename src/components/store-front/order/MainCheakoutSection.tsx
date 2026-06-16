@@ -1,11 +1,19 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import InputField from "./InputField";
 import OrderItem from "./OrderItem";
 import PricingList from "./PricingList";
 import { FaCaretDown } from "react-icons/fa";
 import { IoChevronDownOutline, IoChevronUpOutline } from "react-icons/io5";
+import OrderCompletedModal from "./OrderCompletedModal";
 
 const MainCheakoutSection: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handlePlaceOrder = () => {
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
@@ -95,7 +103,10 @@ const MainCheakoutSection: React.FC = () => {
             </span>
           </div>
 
-          <button className="bg-[#FF7050] text-white py-3.5 md:py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] active:scale-[0.99] transition-all w-full cursor-pointer">
+          <button
+            onClick={handlePlaceOrder}
+            className="bg-[#FF7050] text-white py-3.5 md:py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] active:scale-[0.99] transition-all w-full cursor-pointer"
+          >
             Place Order
           </button>
           <p className="text-center text-[#727272] text-sm md:text-base font-normal">
@@ -158,6 +169,10 @@ const MainCheakoutSection: React.FC = () => {
           <PricingList />
         </div>
       </div>
+      <OrderCompletedModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

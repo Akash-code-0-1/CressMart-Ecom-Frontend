@@ -18,6 +18,10 @@ import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { CgProfile } from "react-icons/cg";
+import { RiUserLine } from "react-icons/ri";
+import { AiOutlineUser } from "react-icons/ai";
+import { LuUserRound } from "react-icons/lu";
 
 const Navbar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -26,13 +30,11 @@ const Navbar = () => {
     null,
   );
 
-  // Sticky and Scroll Visibility Logic
   const [isVisible, setIsVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cart Example Data
   const [cartItems] = useState([
     {
       id: 1,
@@ -145,8 +147,16 @@ const Navbar = () => {
           </div>
 
           {/* Icons & Auth Buttons */}
-          <div className="flex items-center gap-1 md:gap-3 lg:gap-3 xl:gap-8">
-            <WishIcon className="w-8 md:w-10 cursor-pointer" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <button className="cursor-pointer">
+                <WishIcon className="w-8 md:w-10" />
+              </button>
+
+              <button className="cursor-pointer">
+                <LuUserRound className="w-8 md:w-10 h-8 md:h-10" strokeWidth={1.2} />
+              </button>
+            </div>
             <div className="hidden lg:flex items-center gap-4">
               <button className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
                 Login
@@ -404,8 +414,9 @@ const Navbar = () => {
               <span className="text-gray-500 font-medium">Subtotal:</span>
               <span className="text-black font-bold text-xl">BDT 69,100</span>
             </div>
-            <button className="w-full py-4 bg-[#FF7050] text-white rounded-xl font-bold uppercase shadow-lg shadow-orange-100 hover:brightness-105 transition-all cursor-pointer"
-            onClick={()=>router.push('/order')}
+            <button
+              className="w-full py-4 bg-[#FF7050] text-white rounded-xl font-bold uppercase shadow-lg shadow-orange-100 hover:brightness-105 transition-all cursor-pointer"
+              onClick={() => router.push("/order")}
             >
               Checkout
             </button>
