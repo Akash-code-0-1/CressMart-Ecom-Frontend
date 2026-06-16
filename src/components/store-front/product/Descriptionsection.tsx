@@ -1,9 +1,9 @@
-import React from "react";
+
 
 const DescriptionSection = () => {
   return (
     <div className="text-[#727272] leading-[1.8] text-base md:text-lg font-poppins">
-      <h2 className="md:text-2xl text-[22px] font-bold text-black mb-6">
+      <h2 className="md:text-2xl text-[22px] font-semibold text-black mb-6">
         Apache Luminous Batman Edition Radium Watch Details
       </h2>
       <p className="mb-4">
@@ -55,7 +55,7 @@ const DescriptionSection = () => {
 
       {/* Key Features */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-black mb-4">
+        <h3 className="text-xl font-semibold text-black mb-4">
           Key Features of Apache Batman Watch
         </h3>
         <ul className="list-disc pl-6 space-y-2">
@@ -83,7 +83,7 @@ const DescriptionSection = () => {
 
       {/* Why Choose */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-black mb-4">
+        <h3 className="text-xl font-semibold text-black mb-4">
           Why Choose This Apache Radium Watch?
         </h3>
         <ul className="list-disc pl-6 space-y-2">
@@ -116,7 +116,7 @@ const DescriptionSection = () => {
 
       {/* Care and Maintenance */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-black mb-4">
+        <h3 className="text-xl font-semibold text-black mb-4">
           Care and Maintenance
         </h3>
         <ul className="list-disc pl-6 space-y-2">

@@ -1,5 +1,7 @@
+'use client'
 import Image from "next/image";
 import { SectionHeader } from "../common/SectionHeader";
+import { useRouter } from "next/navigation";
 
 const categories = [
   {
@@ -36,10 +38,11 @@ const categories = [
 ];
 
 export default function FeaturedCategory() {
+  const router = useRouter();
   return (
     <section className="w-full pb-[40px] md:pb-[80px] px-4 md:px-10">
       <div className="max-w-[1720px] mx-auto">
-        <SectionHeader title="Featured Category" link="/categories" />
+        <SectionHeader title="Featured Category" link="/category" />
 
         {/* Categories Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-[20px] xl:gap-x-[35px] gap-y-[16px] md:gap-y-[24px]">
@@ -50,7 +53,10 @@ export default function FeaturedCategory() {
             >
               {/* Icon container */}
               <div className="w-[60px] h-[50px] md:w-[70px] md:h-[58px] xl:w-[80px] xl:h-[65px] 2xl:w-[100px] 2xl:h-[80px] bg-white rounded-[12px] flex items-center justify-center shrink-0 overflow-hidden">
-                <div className="relative w-[36px] h-[36px] md:w-[40px] md:h-[40px] xl:w-[48px] xl:h-[48px] 2xl:w-[56px] 2xl:h-[56px] grayscale group-hover:grayscale-0 transition-all">
+                <div
+                  className="relative w-[36px] h-[36px] md:w-[40px] md:h-[40px] xl:w-[48px] xl:h-[48px] 2xl:w-[56px] 2xl:h-[56px] grayscale group-hover:grayscale-0 transition-all"
+                  onClick={() => router.push("/category/demo")}
+                >
                   <Image
                     src={category.icon}
                     alt={category.name}

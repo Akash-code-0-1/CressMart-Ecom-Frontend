@@ -1,3 +1,5 @@
+'use client'
+import Link from "next/link";
 import ChevronDownIcon from "../svg/ChevronDownIcon";
 import LocationIcon from "../svg/LocationIcon";
 import TrackIcon from "../svg/TrackIcon";
@@ -19,9 +21,11 @@ const TopHeader = () => {
           </div>
           <div className="flex items-center gap-2 cursor-pointer">
             <TrackIcon />
-            <span className="text-black text-[12px] font-medium whitespace-nowrap">
-              Track Your Order
-            </span>
+            <Link href="/truck-order">
+              <span className="text-black text-[12px] font-medium whitespace-nowrap">
+                Track Your Order
+              </span>
+            </Link>
           </div>
         </div>
 
