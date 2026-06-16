@@ -17,6 +17,7 @@ import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -89,6 +90,8 @@ const Navbar = () => {
   const toggleMobileDropdown = (index: number) => {
     setOpenMobileDropdown(openMobileDropdown === index ? null : index);
   };
+
+  const router = useRouter();
 
   return (
     <>
@@ -283,7 +286,9 @@ const Navbar = () => {
                     onClick={() => toggleMobileDropdown(idx)}
                     className={`flex items-center justify-between py-4 cursor-pointer transition-colors ${openMobileDropdown === idx ? "text-[#FF7050]" : "text-[#727272]"}`}
                   >
-                    <span className="font-semibold text-base md:text-lg font-inter">{link.name}</span>
+                    <span className="font-semibold text-base md:text-lg font-inter">
+                      {link.name}
+                    </span>
                     <FiChevronDown
                       className={`transition-transform duration-300 ${openMobileDropdown === idx ? "rotate-180" : ""}`}
                     />
@@ -399,7 +404,9 @@ const Navbar = () => {
               <span className="text-gray-500 font-medium">Subtotal:</span>
               <span className="text-black font-bold text-xl">BDT 69,100</span>
             </div>
-            <button className="w-full py-4 bg-[#FF7050] text-white rounded-xl font-bold uppercase shadow-lg shadow-orange-100 hover:brightness-105 transition-all cursor-pointer">
+            <button className="w-full py-4 bg-[#FF7050] text-white rounded-xl font-bold uppercase shadow-lg shadow-orange-100 hover:brightness-105 transition-all cursor-pointer"
+            onClick={()=>router.push('/order')}
+            >
               Checkout
             </button>
           </div>

@@ -1,6 +1,8 @@
 import Image from "next/image";
 import WishIcon from "../svg/WishIcon";
 import { FaStar } from "react-icons/fa";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface ProductCardProps {
   title: string;
@@ -23,6 +25,7 @@ const ProductCard = ({
   image,
   inStock,
 }: ProductCardProps) => {
+  const router = useRouter();
   return (
     <div className="group flex flex-col p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-[16px] w-full max-w-[350px] font-poppins">
       {/* Product Image Section */}
@@ -39,14 +42,16 @@ const ProductCard = ({
           <WishIcon className="w-7" />
         </button>
 
-        <Image
-          src={image}
-          alt={title}
-          width={220}
-          height={220}
-          className="object-contain group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-          style={{ width: "auto", height: "auto" }}
-        />
+        <Link href={`/product/123`}>
+          <Image
+            src={image}
+            alt={title}
+            width={220}
+            height={220}
+            className="object-contain group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+            style={{ width: "auto", height: "auto" }}
+          />
+        </Link>
       </div>
 
       {/* Details Section */}
@@ -93,7 +98,10 @@ const ProductCard = ({
 
         {/* Action Buttons */}
         <div className="flex flex-col md:flex-row items-center gap-2 mt-3 w-full">
-          <button className="w-full md:flex-1 cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[18px] text-sm font-medium py-[7px] rounded-[8px] transition-all hover:shadow-[0_4px_7.8px_0_rgba(255,112,80,0.56)] border border-[#E2E2E2] hover:border-transparent">
+          <button
+            className="w-full md:flex-1 cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[18px] text-sm font-medium py-[7px] rounded-[8px] transition-all hover:shadow-[0_4px_7.8px_0_rgba(255,112,80,0.56)] border border-[#E2E2E2] hover:border-transparent"
+            onClick={() => router.push(`/order`)}
+          >
             Order Now
           </button>
           <button className="w-full md:flex-1 cursor-pointer bg-white font-poppins md:text-[18px] text-sm font-medium py-[7px] rounded-[8px] border border-[#E2E2E2] hover:bg-gray-50 transition-colors">
