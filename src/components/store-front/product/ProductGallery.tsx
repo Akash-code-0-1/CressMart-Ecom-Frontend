@@ -199,8 +199,9 @@ import { FreeMode, Navigation, Thumbs } from "swiper/modules";
 import {
   MdOutlineKeyboardArrowUp,
   MdOutlineKeyboardArrowDown,
+  MdOutlinePlayCircleFilled,
 } from "react-icons/md";
-import { FaPlay } from "react-icons/fa";
+import { FaPlay, FaYoutube } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import "swiper/css";
 import "swiper/css/free-mode";
@@ -265,9 +266,16 @@ export const ProductGallery: React.FC<GalleryProps> = ({ items }) => {
                   {item.type === "video" && (
                     <button
                       onClick={() => openVideo(item.videoId || "")}
-                      className="cursor-pointer absolute inset-0 m-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center hover:scale-110 transition-transform z-10 bg-transparent border border-white"
+                      className="cursor-pointer absolute inset-0 m-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center z-10"
                     >
-                      <PlayIcon />
+                      <div className="relative flex items-center justify-center w-[64px] h-[64px]">
+                        <div className="absolute inset-0 bg-[#FF0033] rounded-[20%] transform scale-x-110 scale-y-90" />
+                        <FaPlay
+                          size={20}
+                          color="#FFFFFF"
+                          className="relative z-10 ml-0.5"
+                        />
+                      </div>
                     </button>
                   )}
                 </div>

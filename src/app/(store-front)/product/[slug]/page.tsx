@@ -18,47 +18,47 @@ export default function ProductDetailsPage() {
             <ProductGallery
               items={[
                 {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
-                  type: "image",
-                  src: "/images/store-front/products/w.png",
-                },
-                {
                   type: "video",
                   src: "/images/store-front/products/w.png",
                   videoId: "https://www.youtube.com/watch?v=PFjYt66h_i4",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
+                },
+                {
+                  type: "image",
+                  src: "/images/store-front/products/w.png",
                 },
               ]}
             />
