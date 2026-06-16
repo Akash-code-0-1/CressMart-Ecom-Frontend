@@ -57,8 +57,8 @@ export default function ProductDetailsPage() {
                 },
                 {
                   type: "video",
-                  src: "https://img.youtube.com/vi/VIDEO_ID/mqdefault.jpg",
-                  videoId: "VIDEO_ID",
+                  src: "/images/store-front/products/w.png",
+                  videoId: "https://www.youtube.com/watch?v=PFjYt66h_i4",
                 },
               ]}
             />
