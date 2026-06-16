@@ -8,6 +8,7 @@ import SubCategoryBar from "@/components/store-front/category/SubCategoryBar";
 import ProductCard from "@/components/store-front/common/ProductCard";
 import Link from "next/link";
 import { FaChevronRight, FaFilter, FaTimes } from "react-icons/fa";
+import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -78,6 +79,10 @@ const CategoryPage = () => {
             </div>
           </main>
         </div>
+      </div>
+
+      <div className="pt-8 md:pt-16">
+        <RecentlyViewed />
       </div>
 
       {/* 4. Mobile Filter Slide-over Drawer */}

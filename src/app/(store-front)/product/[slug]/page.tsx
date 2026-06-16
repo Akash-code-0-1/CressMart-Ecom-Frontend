@@ -1,3 +1,4 @@
+import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 import { Breadcrumbs } from "@/components/store-front/product/Breadcrumbs";
 import ProductDetailsTabs from "@/components/store-front/product/Productdetailstabs";
 import { ProductGallery } from "@/components/store-front/product/ProductGallery";
@@ -67,6 +68,10 @@ export default function ProductDetailsPage() {
           </div>
         </div>
         <ProductDetailsTabs />
+
+        <div className="pt-8 md:pt-16">
+          <RecentlyViewed />
+        </div>
       </div>
     </div>
   );

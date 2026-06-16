@@ -37,9 +37,7 @@ export const ProductGallery: React.FC<GalleryProps> = ({ items }) => {
 
   return (
     <div className="productgallery w-full max-w-6xl mx-auto font-poppins">
-      {/* Main Grid Wrapper - Changed to block/grid structure to prevent Swiper from collapsing on mobile */}
       <div className="block md:flex gap-4 md:h-[600px]">
-        {/* 1. Main Media Viewer */}
         <div className="w-full md:flex-1 h-[350px] sm:h-[450px] md:h-full rounded-2xl md:rounded-3xl bg-white overflow-hidden relative group border border-gray-100 mb-4 md:mb-0">
           <Swiper
             spaceBetween={10}
@@ -66,7 +64,7 @@ export const ProductGallery: React.FC<GalleryProps> = ({ items }) => {
                   {item.type === "video" && (
                     <button
                       onClick={() => openVideo(item.videoId || "")}
-                      className="absolute inset-0 m-auto w-16 h-16 sm:w-20 sm:h-20 bg-white/90 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform z-10"
+                      className="absolute inset-0 m-auto w-16 h-16 sm:w-20 sm:h-20 bg-white/90 rounded-full flex items-center justify-center hover:scale-110 transition-transform z-10"
                     >
                       <FaPlay className="text-[#FF7050] text-2xl sm:text-3xl ml-1" />
                     </button>
@@ -80,7 +78,7 @@ export const ProductGallery: React.FC<GalleryProps> = ({ items }) => {
         {/* 2. Thumbnails */}
         <div className="w-full md:w-[120px] flex flex-col items-center gap-2">
           {/* Top Arrow (Desktop Only) */}
-          <button className="thumb-prev cursor-pointer hidden md:flex w-10 h-10 items-center justify-center rounded-[8px] bg-[#F9F9F9] hover:bg-gray-100 transition-colors flex-shrink-0">
+          <button className="thumb-prev cursor-pointer hidden md:flex w-10 h-10 items-center justify-center rounded-[8px] bg-[#F9F9F9] hover:bg-gray-100 transition-colors shrink-0">
             <MdOutlineKeyboardArrowUp size={28} color="#727272" />
           </button>
 

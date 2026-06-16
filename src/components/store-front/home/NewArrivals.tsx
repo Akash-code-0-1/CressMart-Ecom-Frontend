@@ -8,7 +8,7 @@ import "swiper/css/navigation";
 import ProductCard from "../common/ProductCard";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-const RecentProducts = () => {
+const NewArrivals = () => {
   const products = Array(8).fill({
     title: "H2O Mini USB Portable Air Humidifier",
     price: 590,
@@ -26,7 +26,7 @@ const RecentProducts = () => {
         {/* Header with Custom Navigation */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold leading-normal">
-            Recent Products
+            New Arrivals
           </h2>
 
           {/* Custom Navigation Arrows */}
@@ -68,4 +68,4 @@ const RecentProducts = () => {
   );
 };
 
-export default RecentProducts;
+export default NewArrivals;

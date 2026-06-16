@@ -248,7 +248,8 @@ const Navbar = () => {
               width={160}
               height={45}
               sizes="(max-width: 768px) 120px, 160px"
-              className="w-[120px] md:w-[160px] h-auto object-contain"
+              className="w-[120px] md:w-[160px] object-contain"
+              style={{ height: "auto" }}
             />
             <button
               onClick={() => setIsDrawerOpen(false)}

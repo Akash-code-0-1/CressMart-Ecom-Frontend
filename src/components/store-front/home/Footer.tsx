@@ -93,8 +93,9 @@ const Footer = () => {
                 alt="Creass Mart"
                 width={230}
                 height={64}
-                className="w-full h-auto object-contain"
+                className="w-full object-contain"
                 priority
+                style={{ height: "auto" }}
               />
             </Link>
 

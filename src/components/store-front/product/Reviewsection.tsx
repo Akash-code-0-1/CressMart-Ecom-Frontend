@@ -1,9 +1,8 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import { FaStar, FaCheckCircle } from "react-icons/fa";
-import { MdOutlinePhotoSizeSelectActual } from "react-icons/md";
-import { HiBadgeCheck, HiOutlineBadgeCheck } from "react-icons/hi";
+import { FaStar } from "react-icons/fa";
+import { HiBadgeCheck } from "react-icons/hi";
 import ViewIcon from "../svg/ViewIcon";
 
 const RatingBarRow = ({

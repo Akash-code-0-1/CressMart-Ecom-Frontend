@@ -6,7 +6,7 @@ import FeaturedCategory from "@/components/store-front/home/FeaturedCategory";
 import Features from "@/components/store-front/home/Features";
 import FlashSale from "@/components/store-front/home/FlashSale";
 import PromotionDiscountProduct from "@/components/store-front/home/PromotionDiscountProduct";
-import RecentProducts from "@/components/store-front/home/RecentProducts";
+import RecentProducts from "@/components/store-front/home/NewArrivals";
 import Suppliers from "@/components/store-front/home/Suppliers";
 import Testimonials from "@/components/store-front/home/Testimonials";
 import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";

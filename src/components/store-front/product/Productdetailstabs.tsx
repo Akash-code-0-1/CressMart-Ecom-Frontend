@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import SpecificationSection from "./Specificationsection";
 import DescriptionSection from "./Descriptionsection";
 import FAQsSection from "./Faqssection";
