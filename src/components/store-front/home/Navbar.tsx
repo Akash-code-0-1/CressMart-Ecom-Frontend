@@ -18,9 +18,6 @@ import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { CgProfile } from "react-icons/cg";
-import { RiUserLine } from "react-icons/ri";
-import { AiOutlineUser } from "react-icons/ai";
 import { LuUserRound } from "react-icons/lu";
 
 const Navbar = () => {
@@ -153,9 +150,14 @@ const Navbar = () => {
                 <WishIcon className="w-8 md:w-10" />
               </button>
 
-              <button className="cursor-pointer">
-                <LuUserRound className="w-8 md:w-10 h-8 md:h-10" strokeWidth={1.2} />
-              </button>
+              <Link href="/profile">
+                <button className="cursor-pointer">
+                  <LuUserRound
+                    className="w-8 md:w-10 h-8 md:h-10"
+                    strokeWidth={1.2}
+                  />
+                </button>
+              </Link>
             </div>
             <div className="hidden lg:flex items-center gap-4">
               <button className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
