@@ -111,15 +111,15 @@ const Navbar = () => {
             <FiMenu />
           </button>
 
-          <Link href="/" className="shrink-0">
-            <div className="relative w-[120px] h-[35px] xl:w-[230px] lg:w-[200px] md:w-[180px] sm:w-[150px] xl:h-[64px] lg:h-[55px] md:h-[50px] sm:h-[45px]">
+          <Link href="/" className="shrink-0 flex items-center">
+            <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
               <Image
                 src="/images/logo.png"
                 alt="Creass Mart"
                 fill
-                sizes="(max-width: 768px) 120px, 230px"
+                sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, (max-width: 1024px) 180px, (max-width: 1280px) 200px, 230px"
                 priority
-                className="object-contain"
+                className="object-contain !h-auto !w-auto" // 👈 Add !h-auto !w-auto to maintain aspect ratio perfectly across all viewports
               />
             </div>
           </Link>

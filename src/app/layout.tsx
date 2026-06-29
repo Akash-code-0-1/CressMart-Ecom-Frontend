@@ -31,9 +31,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* 👈 Added suppressHydrationWarning here to catch body tag attributes injected by browser extensions */}
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <TopHeader />
         <Navbar />
         <main>{children}</main>
