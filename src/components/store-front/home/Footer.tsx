@@ -229,7 +229,17 @@ const Footer = () => {
         {/* --- Bottom Copyright --- */}
         <div className="py-4 text-center">
           <p className="text-[#727272] text-[15px] font-medium">
-            Copyright {currentYear} © Creass Mart. All rights reserved.
+            Developed by{" "}
+            <Link href={"https://codeandget.com"} target="_blank">
+              <Image
+                src={"/images/admin/logo.png"}
+                alt="Code and Get"
+                width={100}
+                height={20}
+                className="inline-block mr-1.5"
+              />
+            </Link>
+            | Copyright {currentYear} © Creass Mart. All rights reserved.
           </p>
         </div>
       </div>
