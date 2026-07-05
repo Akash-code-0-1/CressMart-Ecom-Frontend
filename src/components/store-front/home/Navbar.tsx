@@ -19,8 +19,15 @@ import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { LuUserRound } from "react-icons/lu";
+import { useAuthStore } from "@/store/useAuthStore";
+import CategoryDropdown from "./CategoryDropdown";
 
 const Navbar = () => {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const isStoreReady = useAuthStore((state) => state._hasHydrated);
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(
@@ -90,7 +97,15 @@ const Navbar = () => {
     setOpenMobileDropdown(openMobileDropdown === index ? null : index);
   };
 
-  const router = useRouter();
+  // Safe dynamic asset string compiler
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+  let avatarUrl = null;
+  if (isStoreReady && token && user?.avatar) {
+    const cleanPath = user.avatar.replace(/^\/+/, "");
+    avatarUrl = `${backendBaseUrl}/${cleanPath}`;
+  }
 
   return (
     <>
@@ -102,7 +117,6 @@ const Navbar = () => {
           ${prevScrollPos > 50 ? "shadow-[0_4px_20px_rgba(0,0,0,0.08)]" : ""}
         `}
       >
-        {/* TOP SECTION - 1720px */}
         <div className="max-w-[1720px] mx-auto flex items-center justify-between py-4">
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -119,19 +133,14 @@ const Navbar = () => {
                 fill
                 sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, (max-width: 1024px) 180px, (max-width: 1280px) 200px, 230px"
                 priority
-                className="object-contain !h-auto !w-auto" // 👈 Add !h-auto !w-auto to maintain aspect ratio perfectly across all viewports
+                className="object-contain !h-auto !w-auto"
               />
             </div>
           </Link>
 
           {/* Desktop Search */}
           <div className="hidden lg:flex flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center xl:p-[8px_8px_8px_24px] lg:p-[8px_8px_8px_16px] md:p-[8px_8px_8px_8px] gap-1 lg:gap-3 xl:gap-6">
-            <div className="flex items-center gap-2 cursor-pointer px-2">
-              <span className="text-black text-sm font-medium whitespace-nowrap">
-                All Categories
-              </span>
-              <ChevronDownIcon />
-            </div>
+            <CategoryDropdown categories={navLinks.map((item) => item.name)} />
             <div className="h-6 w-[1.5px] bg-[#E2E2E2]" />
             <input
               type="text"
@@ -151,22 +160,70 @@ const Navbar = () => {
               </button>
 
               <Link href="/profile">
-                <button className="cursor-pointer">
-                  <LuUserRound
-                    className="w-8 md:w-10 h-8 md:h-10"
-                    strokeWidth={1.2}
-                  />
+                <button className="cursor-pointer flex items-center justify-center">
+                  {avatarUrl ? (
+                    <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
+                      <img
+                        src={avatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <LuUserRound
+                      className="w-8 md:w-10 h-8 md:h-10 text-black"
+                      strokeWidth={1.2}
+                    />
+                  )}
                 </button>
               </Link>
             </div>
-            <div className="hidden lg:flex items-center gap-4">
-              <button className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
-                Login
-              </button>
-              <button className="font-semibold uppercase text-white bg-[#FF7050] xl:text-[16px] lg:text-[14px] text-[12px] rounded-[8px] xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer">
-                Signup
-              </button>
-            </div>
+
+            {/* Conditionally hide desktop buttons based on token presence */}
+            {isStoreReady && !token && (
+              <div className="hidden lg:flex items-center gap-4">
+                <button
+                  onClick={() => router.push("/signin")}
+                  className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => router.push("/signup")}
+                  className="font-semibold uppercase text-white bg-[#FF7050] xl:text-[16px] lg:text-[14px] text-[12px] rounded-[8px] xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer"
+                >
+                  Signup
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile & Tablet Search */}
+        <div className="lg:hidden pb-4">
+          <div className="bg-[#F2F2F2] rounded-[8px] flex items-center px-3 py-2 gap-2">
+            {/* Categories */}
+            <CategoryDropdown
+              mobile
+              categories={navLinks.map((item) => item.name)}
+            />
+
+            <div className="h-5 w-px bg-[#E2E2E2] shrink-0" />
+
+            {/* Search Input */}
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="flex-1 min-w-0 bg-transparent outline-none text-[#727272] text-[14px] sm:text-[16px] placeholder:text-[#727272]"
+            />
+
+            {/* Search Button */}
+            <button className="cursor-pointer bg-white p-2 rounded-[8px] shrink-0">
+              <FiSearch size={18} className="text-[#FF7050] sm:w-5 sm:h-5" />
+            </button>
           </div>
         </div>
 
@@ -255,7 +312,6 @@ const Navbar = () => {
         className={`fixed top-0 left-0 h-full w-[320px] bg-white z-[210] transform transition-transform duration-500 ease-in-out lg:hidden shadow-2xl ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="p-6 h-full flex flex-col">
-          {/* Mobile Drawer Header */}
           <div className="flex items-center justify-between mb-8">
             <Image
               src="/images/logo.png"
@@ -275,17 +331,32 @@ const Navbar = () => {
           </div>
 
           <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
-            {/* Mobile Auth Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
-              <button className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#F2F2F2] rounded-lg uppercase tracking-wide cursor-pointer font-inter">
-                LOGIN
-              </button>
-              <button className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#FF7050] text-white rounded-lg uppercase tracking-wide cursor-pointer font-inter">
-                SIGNUP
-              </button>
-            </div>
-
-            <div className="h-[1px] bg-[#F2F2F2] w-full" />
+            {/* Conditionally hide mobile drawer buttons based on token presence */}
+            {isStoreReady && !token && (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                      router.push("/signin");
+                    }}
+                    className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#F2F2F2] rounded-lg uppercase tracking-wide cursor-pointer font-inter"
+                  >
+                    LOGIN
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsDrawerOpen(false);
+                      router.push("/signup");
+                    }}
+                    className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#FF7050] text-white rounded-lg uppercase tracking-wide cursor-pointer font-inter"
+                  >
+                    SIGNUP
+                  </button>
+                </div>
+                <div className="h-[1px] bg-[#F2F2F2] w-full" />
+              </>
+            )}
 
             {/* Mobile Navigation List */}
             <ul className="flex flex-col">
@@ -306,7 +377,6 @@ const Navbar = () => {
                     />
                   </div>
 
-                  {/* Mobile Dropdown Sub-items */}
                   <div
                     className={`overflow-hidden transition-all duration-300 ease-in-out ${openMobileDropdown === idx ? "max-h-96 pb-4" : "max-h-0"}`}
                   >
@@ -371,23 +441,19 @@ const Navbar = () => {
                     <h4 className="text-black font-medium text-base line-clamp-1">
                       {item.name}
                     </h4>
-                    {/* 🗑️ Remove button */}
                     <button
-                      //   onClick={() => removeFromCart(item.id)}
                       className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer shrink-0 mt-0.5"
                       aria-label="Remove item"
                     >
                       <FiTrash2 size={16} />
                     </button>
                   </div>
-                  <div className="">
+                  <div>
                     <p className="text-[#FF7050] font-bold text-lg py-2">
                       BDT {item.price}
                     </p>
                     <div className="flex items-center border w-fit border-gray-200 rounded-md">
-                      {/* ➖ Decrement */}
                       <button
-                        // onClick={() => updateQty(item.id, item.qty - 1)}
                         className="p-1 px-2 cursor-pointer hover:bg-gray-100 transition-colors rounded-l-md"
                         aria-label="Decrease quantity"
                       >
@@ -396,9 +462,7 @@ const Navbar = () => {
                       <span className="px-3 text-sm font-bold border-x border-gray-200">
                         {item.qty}
                       </span>
-                      {/* ➕ Increment */}
                       <button
-                        // onClick={() => updateQty(item.id, item.qty + 1)}
                         className="p-1 px-2 cursor-pointer hover:bg-gray-100 transition-colors rounded-r-md"
                         aria-label="Increase quantity"
                       >
@@ -435,6 +499,121 @@ const Navbar = () => {
             setIsCartOpen(false);
           }}
         />
+      )}
+
+      {/* --- MOBILE BOTTOM NAVIGATION BAR --- */}
+      {isStoreReady && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+          {/* Home Button */}
+          <Link
+            href="/"
+            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
+            </svg>
+            <span className="text-[12px] font-bold mt-1 font-inter">Home</span>
+          </Link>
+
+          {/* Category Drawer Trigger */}
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform cursor-pointer"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+            <span className="text-[12px] font-bold mt-1 font-inter">
+              Category
+            </span>
+          </button>
+
+          {/* Central Custom Logo Button (Floating Action Style) */}
+          <div className="relative -top-5 z-[200]">
+            <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img
+                  src="/images/mini-logo.png"
+                  alt="Brand Logo"
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <span className="text-red-500 font-black text-2xl italic tracking-tighter">
+                  CM
+                </span>
+              </div>
+            </button>
+          </div>
+
+          {/* Chat Button */}
+          <button
+            onClick={() => {
+              setIsDrawerOpen(false); // Close category drawer if open
+              useAuthStore.getState().setIsChatOpen(true); // Open the chat client window
+            }}
+            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform cursor-pointer"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            <span className="text-[12px] font-bold mt-1 font-inter">Chat</span>
+          </button>
+
+          {/* Login / Profile Button */}
+          <Link
+            href={token ? "/profile" : "/signin"}
+            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <span className="text-[12px] font-bold mt-1 font-inter">
+              {token ? "Profile" : "Login"}
+            </span>
+          </Link>
+        </div>
       )}
     </>
   );

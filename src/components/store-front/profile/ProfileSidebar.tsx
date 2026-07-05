@@ -72,7 +72,6 @@
 
 // export default ProfileSidebar;
 
-
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -127,38 +126,62 @@ const ProfileSidebar = () => {
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append("file", file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1"}/users/avatar`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const formData = new FormData();
+
+      // ✅ Backend expects the field name "image"
+      formData.append("image", file);
+
+      const res = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1"
+        }/users/avatar`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
         },
-        body: formData,
-      });
+      );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Image upload failed.");
 
-      const updatedAvatarPath = 
-        data?.avatar || 
-        data?.data?.avatar || 
-        data?.user?.avatar || 
-        data?.data?.user?.avatar || 
-        (typeof data === "string" ? data : null);
+      if (!res.ok) {
+        throw new Error(data?.message || "Image upload failed.");
+      }
+
+      // ✅ Support both current and future backend response formats
+      const updatedAvatarPath =
+        data?.image_url ??
+        data?.avatar ??
+        data?.data?.image_url ??
+        data?.data?.avatar ??
+        data?.user?.avatar ??
+        data?.data?.user?.avatar ??
+        null;
 
       if (!updatedAvatarPath) {
-        throw new Error("Could not extract avatar string from server payload.");
+        throw new Error("Avatar path not found in server response.");
       }
 
-      if (setAuth && user) {
-        setAuth({ ...user, avatar: updatedAvatarPath }, token);
+      if (user && setAuth) {
+        setAuth(
+          {
+            ...user,
+            avatar: updatedAvatarPath,
+          },
+          token,
+        );
       }
 
-      // Update the cache buster string flag to instantly invalidate old asset footprints
+      // Force browser cache refresh
       setCacheBuster(Date.now());
-      
+
+      // Allow selecting the same image again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err: any) {
       alert(err.message || "Could not upload image.");
     } finally {
@@ -166,8 +189,10 @@ const ProfileSidebar = () => {
     }
   };
 
-  const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
-  
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+
   let avatarUrl = null;
   if (user?.avatar) {
     const cleanPath = user.avatar.replace(/^\/+/, "");
@@ -194,12 +219,12 @@ const ProfileSidebar = () => {
 
   return (
     <div className="w-full bg-white rounded-[12px] p-6 border border-[#D2D2D2] h-fit font-poppins">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleFileChange} 
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
         accept="image/png, image/jpeg, image/jpg, image/webp"
-        className="hidden" 
+        className="hidden"
       />
 
       <div className="flex flex-col items-center text-center mb-8">

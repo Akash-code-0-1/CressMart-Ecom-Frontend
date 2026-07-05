@@ -81,7 +81,7 @@ const Footer = () => {
     <footer className="w-full bg-white font-inter pt-20">
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
         {/* --- Top Section: Links & Info --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
           {/* Column 1: Info & Contact */}
           <div className="lg:col-span-1">
             <Link

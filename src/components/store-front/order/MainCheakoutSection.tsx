@@ -98,8 +98,7 @@ const MainCheakoutSection: React.FC = () => {
           <div className="bg-[#FFFF00] p-3 md:p-4 rounded-[12px] flex items-start sm:items-center gap-2 text-sm md:text-[16px] font-normal text-left sm:text-center text-black justify-center">
             <span className="text-base leading-none shrink-0">⚠️</span>
             <span>
-              A 10% advance is required if the delivery ratio is below 80% or
-              spans multiple products.
+Delivery Charge or 10% advance is required if the delivery ratio is below 80% or spans multiple products.
             </span>
           </div>
 

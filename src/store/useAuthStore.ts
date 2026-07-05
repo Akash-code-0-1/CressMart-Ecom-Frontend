@@ -10,15 +10,16 @@ interface User {
   role: string;
 }
 
-// 👈 Updated Contract interface to satisfy compiler type definitions
 interface AuthState {
   user: User | null;
   token: string | null;
-  _hasHydrated: boolean; // 👈 Solves: Property '_hasHydrated' does not exist
+  _hasHydrated: boolean;
+  isChatOpen: boolean; // 👈 Added for tracking global chat window visibility
   setAuth: (user: User, token: string) => void;
   setHasHydrated: (state: boolean) => void;
+  setIsChatOpen: (open: boolean) => void; // 👈 Added action to mutate chat window state
   logout: () => void;
-  clearAuth?: () => void; // 👈 Solves: Property 'clearAuth' does not exist
+  clearAuth?: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -27,10 +28,12 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       _hasHydrated: false,
+      isChatOpen: false, // 👈 Initial state: Chat box is closed by default
       setAuth: (user, token) => set({ user, token }),
       setHasHydrated: (state) => set({ _hasHydrated: state }),
-      logout: () => set({ user: null, token: null }),
-      clearAuth: () => set({ user: null, token: null }),
+      setIsChatOpen: (open) => set({ isChatOpen: open }), // 👈 Direct state mutations hook
+      logout: () => set({ user: null, token: null, isChatOpen: false }), // Reset chat on logout
+      clearAuth: () => set({ user: null, token: null, isChatOpen: false }),
     }),
     {
       name: "auth-storage",
@@ -38,6 +41,11 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
+      // Optional: Prevent chat toggle from saving to localStorage permanently
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
     }
   )
 );

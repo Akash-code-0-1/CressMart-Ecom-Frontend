@@ -108,17 +108,21 @@ export default function FilterSidebar() {
         <div className="relative h-8 flex items-center">
           {/* Track background */}
           <div className="absolute left-0 right-0 h-[5px] rounded-full border border-[#FF7050] bg-gray-100" />
+
           {/* Filled track */}
           <div
             className="absolute left-0 h-[8px] rounded-full bg-[#FF7050]"
-            style={{ width: `${(value / 2000) * 100}%` }}
+            style={{
+              width: `${(value / 100000) * 100}%`,
+            }}
           />
+
           {/* Thumb input */}
           <input
             type="range"
             min={0}
-            max={2000}
-            step={1}
+            max={100000}
+            step={1000}
             value={value}
             onChange={(e) => setValue(Number(e.target.value))}
             className="price-slider absolute w-full z-10"
