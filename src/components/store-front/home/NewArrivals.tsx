@@ -22,7 +22,7 @@ const NewArrivals = () => {
 
   return (
     <section className="w-full bg-[#F9F9F9] py-8 px-4 md:px-10 overflow-hidden">
-      <div className="max-w-[1720px] mx-auto">
+      <div className="max-w-[1710px] mx-auto">
         {/* Header with Custom Navigation */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold leading-normal">
@@ -43,8 +43,8 @@ const NewArrivals = () => {
         {/* Swiper Slider */}
         <Swiper
           modules={[Navigation]}
-          spaceBetween={20}
-          slidesPerView={1.2}
+          spaceBetween={12} /* Slightly smaller gap for clean mobile layouts */
+          slidesPerView={2}  /* Changed from 1.2 to 2 for mobile */
           navigation={{
             prevEl: ".recent-prev",
             nextEl: ".recent-next",

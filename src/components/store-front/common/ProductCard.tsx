@@ -27,87 +27,91 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const router = useRouter();
   return (
-    <div className="group flex flex-col p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-[16px] w-full max-w-[350px] font-poppins">
-      {/* Product Image Section */}
-      <div className="relative bg-white rounded-[12px] p-4 flex items-center justify-center aspect-square mb-3 overflow-hidden">
-        {/* Discount Badge */}
-        {discount && (
-          <div className="absolute top-2 left-2 bg-[#FF7050] text-white text-[12px] font-medium px-[6px] py-[2px] rounded-[8px] z-10">
-            {discount}
-          </div>
-        )}
-
-        {/* Wishlist Icon */}
-        <button className="cursor-pointer absolute top-2 right-2 z-10 hover:scale-110 transition-transform">
-          <WishIcon className="w-7" />
-        </button>
-
-        <Link href={`/product/123`}>
-          <Image
-            src={image}
-            alt={title}
-            width={220}
-            height={220}
-            className="object-contain group-hover:scale-105 transition-transform duration-300 cursor-pointer"
-            style={{ width: "auto", height: "auto" }}
-          />
-        </Link>
-      </div>
-
-      {/* Details Section */}
-      <div className="flex flex-col gap-2">
-        <h3 className="text-black font-poppins md:text-[20px] text-base font-medium leading-tight tuncate">
-          {title}
-        </h3>
-
-        {/* Rating Section */}
-        <div className="flex items-start gap-1 flex-wrap">
-          <div className="flex text-[#EABC01] gap-0.5">
-            {[...Array(5)].map((_, i) => (
-              <span key={i} className="text-[14px]">
-                <FaStar />
-              </span>
-            ))}
-          </div>
-          <span className="text-[#727272] text-[12px] font-medium font-poppins">
-            ({rating.toFixed(1)})
-          </span>
-          <span className="text-[#FF7050] text-[12px] font-medium font-poppins md:ml-auto ml-0">
-            ({reviews} Review)
-          </span>
-        </div>
-
-        {/* Pricing & Stock Section */}
-        <div className="flex items-center justify-between md:mt-1 mt-0 flex-wrap">
-          <div className="flex md:flex-row flex-col md:items-center items-start md:gap-2 gap-0">
-            <span className="text-[#FF7050] font-poppins text-[20px] font-semibold">
-              BDT {price}
-            </span>
-            {oldPrice && (
-              <span className="text-[#727272] font-poppins text-[16px] font-medium line-through">
-                BDT {oldPrice}
-              </span>
-            )}
-          </div>
-          {inStock && (
-            <div className="bg-[#32CD32] text-white text-[12px] font-medium px-[6px] py-[2px] rounded-[8px]">
-              In Stock
+    // Changed max-w-[350px] to md:max-w-[350px] so it stretches cleanly within grid/slider slots on mobile
+    <div className="group flex flex-col p-2.5 md:p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-[16px] w-full md:max-w-[350px] font-poppins h-full justify-between">
+      <div>
+        {/* Product Image Section */}
+        <div className="relative bg-white rounded-[12px] p-3 md:p-4 flex items-center justify-center aspect-square mb-2 md:mb-3 overflow-hidden">
+          {/* Discount Badge */}
+          {discount && (
+            <div className="absolute top-2 left-2 bg-[#FF7050] text-white text-[10px] md:text-[12px] font-medium px-[6px] py-[2px] rounded-[8px] z-10">
+              {discount}
             </div>
           )}
+
+          {/* Wishlist Icon */}
+          <button className="cursor-pointer absolute top-2 right-2 z-10 hover:scale-110 transition-transform">
+            <WishIcon className="w-6 md:w-7" />
+          </button>
+
+          <Link href={`/product/123`}>
+            <Image
+              src={image}
+              alt={title}
+              width={220}
+              height={220}
+              className="object-contain group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+              style={{ width: "auto", height: "auto" }}
+            />
+          </Link>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row items-center gap-2 mt-3 w-full">
-          <button
-            className="w-full md:flex-1 cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[18px] text-sm font-medium py-[7px] rounded-[8px] transition-all hover:shadow-[0_4px_7.8px_0_rgba(255,112,80,0.56)] border border-[#E2E2E2] hover:border-transparent"
-            onClick={() => router.push(`/order`)}
-          >
-            Order Now
-          </button>
-          <button className="w-full md:flex-1 cursor-pointer bg-white font-poppins md:text-[18px] text-sm font-medium py-[7px] rounded-[8px] border border-[#E2E2E2] hover:bg-gray-50 transition-colors">
-            Add To Cart
-          </button>
+        {/* Details Section */}
+        <div className="flex flex-col gap-1 md:gap-2">
+          {/* Typo fixed 'tuncate' to 'line-clamp-2' for neat multi-line titles on mobile rows */}
+          <h3 className="text-black font-poppins md:text-[18px] text-[14px] font-medium leading-tight line-clamp-2 min-h-[36px]">
+            {title}
+          </h3>
+
+          {/* Rating Section */}
+          <div className="flex items-center gap-1 flex-wrap">
+            <div className="flex text-[#EABC01] gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className="text-[11px] md:text-[14px]">
+                  <FaStar />
+                </span>
+              ))}
+            </div>
+            <span className="text-[#727272] text-[10px] md:text-[12px] font-medium font-poppins">
+              ({rating.toFixed(1)})
+            </span>
+            <span className="text-[#FF7050] text-[10px] md:text-[12px] font-medium font-poppins md:ml-auto ml-0">
+              ({reviews} {reviews > 1 ? "Reviews" : "Review"})
+            </span>
+          </div>
+
+          {/* Pricing & Stock Section */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between md:mt-1 mt-0 gap-1">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-[#FF7050] font-poppins text-[16px] md:text-[20px] font-semibold">
+                TK {price}
+              </span>
+              {oldPrice && (
+                <span className="text-[#727272] font-poppins text-[12px] md:text-[16px] font-medium line-through">
+                  TK {oldPrice}
+                </span>
+              )}
+            </div>
+            {inStock && (
+              <div className="bg-[#32CD32] text-white text-[10px] md:text-[12px] font-medium px-[6px] py-[2px] rounded-[8px] w-fit">
+                In Stock
+              </div>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-1.5 mt-3 w-full">
+        <button
+          className="w-full cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[16px] text-xs font-medium py-[6px] md:py-[8px] rounded-[8px] transition-all hover:shadow-[0_4px_7.8px_0_rgba(255,112,80,0.56)] border border-[#E2E2E2] hover:border-transparent"
+          onClick={() => router.push(`/order`)}
+        >
+          Order Now
+        </button>
+        <button className="w-full cursor-pointer bg-white font-poppins md:text-[16px] text-xs font-medium py-[6px] md:py-[8px] rounded-[8px] border border-[#E2E2E2] hover:bg-gray-50 transition-colors">
+          Add To Cart
+        </button>
       </div>
     </div>
   );

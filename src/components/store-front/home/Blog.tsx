@@ -40,7 +40,7 @@ const blogs: BlogPost[] = [
 const Blog: React.FC = () => {
   const router = useRouter();
   return (
-    <section className="font-poppins md:pb-20 pb-10 px-4">
+    <section className="font-poppins md:pb-20 pb-10 px-6">
       <div className="max-w-[1720px] mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
