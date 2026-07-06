@@ -15,7 +15,7 @@ export default function BannerSlider({ bannerImages = [] }: BannerProps) {
   const displayImages = bannerImages.length > 0 ? bannerImages : defaultBanners;
 
   return (
-    <section className="w-full">
+    <section className="max-w-[1720px] mx-auto">
       <Swiper
         modules={[Autoplay, EffectFade]}
         effect="fade"

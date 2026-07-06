@@ -38,8 +38,9 @@ const FAQ = () => {
   };
 
   return (
-    <section className="w-full px-4 md:px-18 bg-white font-poppins">
-      <div className="max-w-full">
+    <section className="w-full px-4 md:px-3 bg-white font-poppins py-12">
+      {/* Restricts width on desktop (lg and up) but allows full width on mobile/tablet */}
+      <div className="w-full lg:max-w-[1740px] mx-auto">
         {/* Title */}
         <h2 className="text-center text-black text-[28px] md:text-[32px] font-semibold mb-12">
           Frequently Asking Questions

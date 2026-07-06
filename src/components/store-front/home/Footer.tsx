@@ -81,9 +81,11 @@ const Footer = () => {
     <footer className="w-full bg-white font-inter pt-20">
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
         {/* --- Top Section: Links & Info --- */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
-          {/* Column 1: Info & Contact */}
-          <div className="lg:col-span-1">
+        {/* Changed grid layout base to grid-cols-2 up to desktop (lg:grid-cols-5) */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
+          
+          {/* Column 1: Info & Contact - spans full width on mobile/tablet, single column on desktop */}
+          <div className="col-span-2 lg:col-span-1">
             <Link
               href="/"
               className="inline-block mb-6 md:mb-8 max-w-[180px] sm:max-w-[210px] md:max-w-[230px] w-full"
@@ -133,7 +135,7 @@ const Footer = () => {
 
           {/* Column 2: Company */}
           <div>
-            <h4 className="text-black font-poppins text-[22px] font-semibold mb-8">
+            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               Company
             </h4>
             <ul className="space-y-4">
@@ -152,7 +154,7 @@ const Footer = () => {
 
           {/* Column 3: Account */}
           <div>
-            <h4 className="text-black font-poppins text-[22px] font-semibold mb-8">
+            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               Account
             </h4>
             <ul className="space-y-4">
@@ -171,7 +173,7 @@ const Footer = () => {
 
           {/* Column 4: Corporate */}
           <div>
-            <h4 className="text-black font-poppins text-[22px] font-semibold mb-8">
+            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               Corporate
             </h4>
             <ul className="space-y-4">
@@ -190,7 +192,7 @@ const Footer = () => {
 
           {/* Column 5: Socials */}
           <div>
-            <h4 className="text-black font-poppins text-[22px] font-semibold mb-8">
+            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               Get In Touch
             </h4>
             <div className="space-y-5">
