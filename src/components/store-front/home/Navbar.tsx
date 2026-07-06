@@ -24,8 +24,9 @@ import CategoryDropdown from "./CategoryDropdown";
 
 const Navbar = () => {
   const router = useRouter();
+  
+  // 🚀 Refactored to only evaluate hydration & user metrics (dropping client token dependence)
   const user = useAuthStore((state) => state.user);
-  const token = useAuthStore((state) => state.token);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -102,7 +103,7 @@ const Navbar = () => {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
   let avatarUrl = null;
-  if (isStoreReady && token && user?.avatar) {
+  if (isStoreReady && user?.avatar) {
     const cleanPath = user.avatar.replace(/^\/+/, "");
     avatarUrl = `${backendBaseUrl}/${cleanPath}`;
   }
@@ -159,7 +160,7 @@ const Navbar = () => {
                 <WishIcon className="w-8 md:w-10" />
               </button>
 
-              <Link href="/profile">
+              <Link href={isStoreReady && user ? "/profile" : "/signin"}>
                 <button className="cursor-pointer flex items-center justify-center">
                   {avatarUrl ? (
                     <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
@@ -182,8 +183,8 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* Conditionally hide desktop buttons based on token presence */}
-            {isStoreReady && !token && (
+            {/* Conditionally hide desktop buttons based on user presence */}
+            {isStoreReady && !user && (
               <div className="hidden lg:flex items-center gap-4">
                 <button
                   onClick={() => router.push("/signin")}
@@ -331,8 +332,8 @@ const Navbar = () => {
           </div>
 
           <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
-            {/* Conditionally hide mobile drawer buttons based on token presence */}
-            {isStoreReady && !token && (
+            {/* Conditionally hide mobile drawer buttons based on user footprint */}
+            {isStoreReady && !user && (
               <>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <button
@@ -519,7 +520,7 @@ const Navbar = () => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
             <span className="text-[12px] font-bold mt-1 font-inter">Home</span>
@@ -593,7 +594,7 @@ const Navbar = () => {
 
           {/* Login / Profile Button */}
           <Link
-            href={token ? "/profile" : "/signin"}
+            href={user ? "/profile" : "/signin"}
             className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform"
           >
             <svg
@@ -610,7 +611,7 @@ const Navbar = () => {
               />
             </svg>
             <span className="text-[12px] font-bold mt-1 font-inter">
-              {token ? "Profile" : "Login"}
+              {user ? "Profile" : "Login"}
             </span>
           </Link>
         </div>

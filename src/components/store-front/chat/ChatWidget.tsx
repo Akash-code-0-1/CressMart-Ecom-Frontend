@@ -7,6 +7,7 @@ import {
   FiSend, FiPaperclip, FiX, FiFileText, FiLoader, FiAlertCircle 
 } from "react-icons/fi";
 import { BsChatDotsFill } from "react-icons/bs";
+import { apiFetch } from "@/utils/api";
 
 interface Attachment {
   type: "IMAGE" | "VIDEO" | "FILE";
@@ -33,7 +34,6 @@ interface Message {
 
 const ChatWidget = () => {
   const user = useAuthStore((state) => state.user);
-  const token = useAuthStore((state) => state.token);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
   
   const isOpen = useAuthStore((state) => state.isChatOpen);
@@ -59,14 +59,13 @@ const ChatWidget = () => {
 
   // SECTION 1: INTERCEPT & RESOLVE CORRECT TARGET CONVERSATION ROOM TRACK REFERENCE
   useEffect(() => {
-    if (!isStoreReady || !token || !isOpen || !user?.id) return;
+    if (!isStoreReady || !isOpen || !user?.id) return;
 
     const syncActiveChatSession = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
-        const res = await fetch(`${baseUrl}/chat/conversations/sync-room`, {
+        // 🔥 Using clean apiFetch wrapper to securely transmit HTTP-only cookies cross-origin
+        const res = await apiFetch("/chat/conversations/sync-room", {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
         });
 
         const jsonResponse = await res.json();
@@ -81,20 +80,19 @@ const ChatWidget = () => {
     };
 
     syncActiveChatSession();
-  }, [token, isStoreReady, isOpen, user?.id]);
+  }, [isStoreReady, isOpen, user?.id]);
 
   // SECTION 2: LOAD TIMESTREAM VISUAL HISTORY
   useEffect(() => {
-    if (!token || !isOpen || !resolvedRoomId) return;
+    if (!isOpen || !resolvedRoomId) return;
 
     const loadChatHistory = async () => {
       try {
         setLoadingHistory(true);
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
         
-        const res = await fetch(`${baseUrl}/chat/conversations/${resolvedRoomId}/messages`, {
+        // 🔥 Using clean apiFetch wrapper to pass server-side cookie context seamlessly
+        const res = await apiFetch(`/chat/conversations/${resolvedRoomId}/messages`, {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
         });
 
         const jsonResponse = await res.json();
@@ -120,16 +118,17 @@ const ChatWidget = () => {
     };
 
     loadChatHistory();
-  }, [token, isOpen, resolvedRoomId]);
+  }, [isOpen, resolvedRoomId]);
 
   // SECTION 3: WS REALTIME EMIT SYNC PIPELINE
   useEffect(() => {
-    if (!token || !isOpen || !resolvedRoomId) return;
+    if (!isOpen || !resolvedRoomId) return;
 
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
     
+    // 🔥 Socket.io handles cookies natively via withCredentials flag matching modern security specs
     const socketInstance = io(`${backendUrl}/chat`, {
-      auth: { token: `Bearer ${token}` },
+      withCredentials: true,
       transports: ["websocket"],
     });
 
@@ -139,7 +138,7 @@ const ChatWidget = () => {
 
     socketInstance.on("newMessage", (message: Message) => {
       setMessages((prev) => {
-        if (!Array.isArray(prev)) return [message];
+        if (!prev || !Array.isArray(prev)) return [message];
         if (prev.some((msg) => msg.id === message.id)) return prev;
         return [...prev, message];
       });
@@ -159,7 +158,7 @@ const ChatWidget = () => {
       socketInstance.emit("leaveRoom", { conversationId: resolvedRoomId });
       socketInstance.disconnect();
     };
-  }, [token, isOpen, user?.id, resolvedRoomId]);
+  }, [isOpen, user?.id, resolvedRoomId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -209,17 +208,16 @@ const ChatWidget = () => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !token) return;
+    if (!file) return;
 
     try {
       setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
-      const res = await fetch(`${baseUrl}/chat/attachments/upload`, {
+      // 🔥 Using clean apiFetch wrapper to securely handle file uploads via cookies
+      const res = await apiFetch("/chat/attachments/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -291,7 +289,7 @@ const ChatWidget = () => {
     );
   };
 
-  if (!isStoreReady || !token) return null;
+  if (!isStoreReady || !user) return null;
 
   return (
     <div className="fixed bottom-[85px] right-4 lg:bottom-6 lg:right-6 z-[210] font-inter flex flex-col items-end selection:bg-orange-100">

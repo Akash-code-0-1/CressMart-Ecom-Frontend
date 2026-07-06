@@ -1,13 +1,15 @@
 "use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "@/store/useAuthStore";
 import { apiFetch } from "@/utils/api";
+import { setSessionToken } from "@/app/actions/auth";
 
 const SignInPage = () => {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,21 +36,16 @@ const SignInPage = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Invalid credentials!");
       
-      // 1. Dynamic token discovery mapping
+      // Dynamic token and user footprint mapping
       const targetToken = data.token || data.accessToken || data.data?.token || data.data?.accessToken;
-      
-      // 2. Safely capture the correct nested user data node
       const rawUser = data.user || data.data?.user || (data.id || data.name ? data : data.data);
 
-      if (!targetToken) {
-        throw new Error("Authentication token missing from response payload.");
-      }
+      if (!targetToken) throw new Error("Authentication token missing.");
 
-      if (!rawUser) {
-        throw new Error("User footprint could not be parsed from server payload.");
-      }
+      // 1. Offload token management securely to Server-side HTTP-only cookies
+      await setSessionToken(targetToken);
 
-      // 3. Normalize the state format explicitly to preserve your avatar properties through logouts
+      // 2. Clear state formatting structural payload and commit to Zustand
       const targetUser = {
         id: rawUser.id || rawUser._id,
         name: rawUser.name || "",
@@ -58,9 +55,8 @@ const SignInPage = () => {
         avatar: rawUser.avatar || data.avatar || data.data?.avatar || null,
       };
 
-      // 4. Commit standardized object schema cleanly to local storage engine
-      setAuth(targetUser, targetToken);
-      
+      setAuthUser(targetUser);
+
       router.refresh();
       router.push("/profile");
     } catch (err: any) {

@@ -1,13 +1,15 @@
 "use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaEnvelope, FaLock, FaUser, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "@/store/useAuthStore";
 import { apiFetch } from "@/utils/api";
+import { setSessionToken } from "@/app/actions/auth";
 
 const SignUpPage = () => {
   const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,13 +40,26 @@ const SignUpPage = () => {
 
       // Dynamic payload normalization strategy
       const targetToken = data.token || data.accessToken || data.data?.token || data.data?.accessToken;
-      const targetUser = data.user || data.data?.user || data;
+      const rawUser = data.user || data.data?.user || data;
 
       if (!targetToken) {
         throw new Error("Authentication token missing from response payload.");
       }
 
-      setAuth(targetUser, targetToken);
+      // 1. Save session token securely in HTTP-only cookies
+      await setSessionToken(targetToken);
+
+      // 2. Standardize data structure and update Zustand
+      const targetUser = {
+        id: rawUser.id || rawUser._id,
+        name: rawUser.name || "",
+        email: rawUser.email || "",
+        phone: rawUser.phone || "",
+        role: rawUser.role || "USER",
+        avatar: rawUser.avatar || data.avatar || data.data?.avatar || null,
+      };
+
+      setAuthUser(targetUser);
       
       router.refresh();
       router.push("/profile");
