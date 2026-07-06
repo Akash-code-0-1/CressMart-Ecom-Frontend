@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { io, Socket } from "socket.io-client";
 import { 
-  FiSend, FiPaperclip, FiX, FiMinus, FiFileText, FiLoader, FiAlertCircle 
+  FiSend, FiPaperclip, FiX, FiFileText, FiLoader, FiAlertCircle 
 } from "react-icons/fi";
 import { BsChatDotsFill } from "react-icons/bs";
 
@@ -36,7 +36,6 @@ const ChatWidget = () => {
   const token = useAuthStore((state) => state.token);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
   
-  // Connect widget visibility to global shared state
   const isOpen = useAuthStore((state) => state.isChatOpen);
   const setIsOpen = useAuthStore((state) => state.setIsChatOpen);
 
@@ -49,38 +48,71 @@ const ChatWidget = () => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  
+  // Real channel tracking state
+  const [resolvedRoomId, setResolvedRoomId] = useState<string>("");
 
-  const activeConversationId = user?.id || ""; 
+  // Refs securely instantiated at the top of component scope
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // FETCH PAST MESSAGES
+  // SECTION 1: INTERCEPT & RESOLVE CORRECT TARGET CONVERSATION ROOM TRACK REFERENCE
   useEffect(() => {
-    if (!isStoreReady || !token || !isOpen || !activeConversationId) return;
+    if (!isStoreReady || !token || !isOpen || !user?.id) return;
+
+    const syncActiveChatSession = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
+        const res = await fetch(`${baseUrl}/chat/conversations/sync-room`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const jsonResponse = await res.json();
+        const verifiedRoomId = jsonResponse?.data?.conversationId || jsonResponse?.conversationId;
+        
+        if (verifiedRoomId) {
+          setResolvedRoomId(verifiedRoomId);
+        }
+      } catch (err) {
+        console.error("Unable to resolve explicit channel track payload routing context:", err);
+      }
+    };
+
+    syncActiveChatSession();
+  }, [token, isStoreReady, isOpen, user?.id]);
+
+  // SECTION 2: LOAD TIMESTREAM VISUAL HISTORY
+  useEffect(() => {
+    if (!token || !isOpen || !resolvedRoomId) return;
 
     const loadChatHistory = async () => {
       try {
         setLoadingHistory(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
         
-        const res = await fetch(`${baseUrl}/chat/conversations/${activeConversationId}/messages`, {
+        const res = await fetch(`${baseUrl}/chat/conversations/${resolvedRoomId}/messages`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.message || "Failed to sync historical messages.");
+        const jsonResponse = await res.json();
+        if (!res.ok) throw new Error(jsonResponse?.message || "Failed to sync historical messages.");
         
-        const extractedMessages = Array.isArray(data) 
-          ? data 
-          : Array.isArray(data?.data) 
-            ? data.data 
+        const responseData = jsonResponse?.data ?? jsonResponse;
+        
+        const extractedMessages = Array.isArray(responseData) 
+          ? responseData 
+          : Array.isArray(responseData?.data) 
+            ? responseData.data 
             : [];
             
         setMessages(extractedMessages);
+        setErrorText(null);
       } catch (err: any) {
         console.error("History fetch error:", err.message);
+        setErrorText(err.message);
         setMessages([]); 
       } finally {
         setLoadingHistory(false);
@@ -88,11 +120,11 @@ const ChatWidget = () => {
     };
 
     loadChatHistory();
-  }, [token, isStoreReady, isOpen, activeConversationId]);
+  }, [token, isOpen, resolvedRoomId]);
 
-  // SOCKET TIMESTREAM SYNC
+  // SECTION 3: WS REALTIME EMIT SYNC PIPELINE
   useEffect(() => {
-    if (!isStoreReady || !token || !isOpen || !activeConversationId) return;
+    if (!token || !isOpen || !resolvedRoomId) return;
 
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
     
@@ -102,8 +134,7 @@ const ChatWidget = () => {
     });
 
     socketInstance.on("connect", () => {
-      setErrorText(null);
-      socketInstance.emit("joinRoom", { conversationId: activeConversationId });
+      socketInstance.emit("joinRoom", { conversationId: resolvedRoomId });
     });
 
     socketInstance.on("newMessage", (message: Message) => {
@@ -125,10 +156,10 @@ const ChatWidget = () => {
     setSocket(socketInstance);
 
     return () => {
-      socketInstance.emit("leaveRoom", { conversationId: activeConversationId });
+      socketInstance.emit("leaveRoom", { conversationId: resolvedRoomId });
       socketInstance.disconnect();
     };
-  }, [token, isStoreReady, isOpen, user?.id, activeConversationId]);
+  }, [token, isOpen, user?.id, resolvedRoomId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -136,24 +167,24 @@ const ChatWidget = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
-    if (!socket) return;
+    if (!socket || !resolvedRoomId) return;
 
     if (!isTyping) {
       setIsTyping(true);
-      socket.emit("typing", { conversationId: activeConversationId });
+      socket.emit("typing", { conversationId: resolvedRoomId });
     }
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socket.emit("stopTyping", { conversationId: activeConversationId });
+      socket.emit("stopTyping", { conversationId: resolvedRoomId });
     }, 2000);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!socket || (!inputText.trim() && pendingAttachments.length === 0)) return;
+    if (!socket || !resolvedRoomId || (!inputText.trim() && pendingAttachments.length === 0)) return;
 
     const cleanAttachments = pendingAttachments.map((att) => ({
       type: att.type,
@@ -164,19 +195,16 @@ const ChatWidget = () => {
     }));
 
     const messageDto = {
-      conversationId: activeConversationId,
+      conversationId: resolvedRoomId,
       text: inputText.trim() || null,
       attachments: cleanAttachments.length > 0 ? cleanAttachments : null,
     };
 
-    socket.emit("sendMessage", messageDto, (response: any) => {
-      if (response?.success) {
-        setInputText("");
-        setPendingAttachments([]); 
-        setIsTyping(false);
-        socket.emit("stopTyping", { conversationId: activeConversationId });
-      }
-    });
+    socket.emit("sendMessage", messageDto);
+    setInputText("");
+    setPendingAttachments([]); 
+    setIsTyping(false);
+    socket.emit("stopTyping", { conversationId: resolvedRoomId });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,24 +223,25 @@ const ChatWidget = () => {
         body: formData,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Upload failed.");
+      const jsonResponse = await res.json();
+      if (!res.ok) throw new Error(jsonResponse?.message || "Upload failed.");
+
+      const innerData = jsonResponse.data;
 
       const attachmentPayload: Attachment = {
-        type: data.type,
-        url: data.url,
-        name: data.name,
-        mimeType: data.mimeType, 
-        size: data.size,
+        type: innerData.type,
+        url: innerData.url,
+        name: file.name,
+        mimeType: file.type || "application/octet-stream", 
+        size: file.size,
       };
 
       setPendingAttachments((prev) => [...prev, attachmentPayload]);
     } catch (err: any) {
       setErrorText(err.message || "Failed to process attachment staging.");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setUploading(false);
   };
 
   const removePendingAttachment = (index: number) => {
@@ -229,7 +258,12 @@ const ChatWidget = () => {
     if (type === "IMAGE") {
       return (
         <div className="mt-1.5 rounded-xl overflow-hidden border border-gray-200 max-w-[220px] shadow-sm bg-white">
-          <img src={absoluteAssetUrl} alt={name} className="w-full h-auto max-h-[160px] object-cover" />
+          <img 
+            src={absoluteAssetUrl} 
+            alt={name} 
+            className="w-full object-cover max-h-[160px]" 
+            style={{ height: "auto" }}
+          />
         </div>
       );
     }
@@ -260,13 +294,9 @@ const ChatWidget = () => {
   if (!isStoreReady || !token) return null;
 
   return (
-    // Fixed positioning adjustments to sit nicely above the new mobile bar on smaller screens
     <div className="fixed bottom-[85px] right-4 lg:bottom-6 lg:right-6 z-[210] font-inter flex flex-col items-end selection:bg-orange-100">
-      
       {isOpen && (
         <div className="w-[calc(100vw-32px)] sm:w-[400px] h-[480px] sm:h-[520px] bg-white border border-gray-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] flex flex-col overflow-hidden mb-4 transition-all duration-300 transform scale-100 origin-bottom-right">
-          
-          {/* Header */}
           <div className="p-4 bg-gradient-to-r from-[#FF7050] to-[#ff846b] text-white flex items-center justify-between shrink-0 shadow-md">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center font-bold text-sm relative border border-white/10 shadow-inner">
@@ -292,7 +322,6 @@ const ChatWidget = () => {
             </div>
           )}
 
-          {/* Viewport Box */}
           <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFC] space-y-4 custom-scrollbar">
             {loadingHistory ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
@@ -344,7 +373,6 @@ const ChatWidget = () => {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Form Entries Layout */}
           <div className="p-3 border-t border-gray-100 bg-white shrink-0 flex flex-col gap-2">
             {pendingAttachments.length > 0 && (
               <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto p-1 bg-gray-50 rounded-lg border border-dashed border-gray-200">
@@ -353,7 +381,12 @@ const ChatWidget = () => {
                   return (
                     <div key={idx} className="relative group flex items-center gap-1.5 bg-white border p-1 rounded-md max-w-[140px]">
                       {att.type === "IMAGE" ? (
-                        <img src={`${storageUrl}${att.url}`} className="w-8 h-8 object-cover rounded" alt="" />
+                        <img 
+                          src={`${storageUrl}${att.url}`} 
+                          className="w-8 object-cover rounded" 
+                          alt="" 
+                          style={{ height: "auto" }}
+                        />
                       ) : (
                         <FiFileText size={16} className="text-[#FF7050]" />
                       )}
@@ -406,7 +439,6 @@ const ChatWidget = () => {
         </div>
       )}
 
-      {/* Action Trigger Button: ONLY VISIBLE ON DESKTOP LAYOUTS (hidden lg:flex) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         type="button"
