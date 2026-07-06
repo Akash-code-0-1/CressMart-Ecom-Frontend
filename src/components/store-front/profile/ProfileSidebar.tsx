@@ -1,78 +1,5 @@
-// "use client";
-// import Link from "next/link";
-// import { usePathname } from "next/navigation";
-// import { FaRegUser, FaRegHeart } from "react-icons/fa";
-// import { BiUser } from "react-icons/bi";
-// import { SlHandbag } from "react-icons/sl";
-// import { IoLogOutOutline } from "react-icons/io5";
-
-// const sidebarLinks = [
-//   { name: "Profile Details", href: "/profile", icon: BiUser },
-//   { name: "Orders", href: "/profile/order", icon: SlHandbag },
-//   { name: "Wish List", href: "/profile/wishlist", icon: FaRegHeart },
-// ];
-
-// const ProfileSidebar = () => {
-//   const pathname = usePathname();
-
-//   return (
-//     <div className="w-full bg-white rounded-[12px] p-6 border border-[#D2D2D2] h-fit font-poppins">
-//       {/* User Info Section */}
-//       <div className="flex flex-col items-center text-center mb-8">
-//         <div className="w-24 h-24 bg-[#F2F2F2] rounded-full mb-4 overflow-hidden border border-gray-100 flex items-center justify-center text-gray-300">
-//           {/* profile image show if never comes defult user icon  */}
-//           <FaRegUser size={40} />
-//         </div>
-//         <h3 className="text-lg font-semibold text-black">Imam Hoshen Ornob</h3>
-//         <p className="text-sm text-gray-400 font-medium">+88 017XX XXXXXX</p>
-//       </div>
-
-//       {/* Navigation Menu */}
-//       <nav className="flex flex-col gap-1">
-//         {sidebarLinks.map((link) => {
-//           const isActive = pathname === link.href;
-//           const Icon = link.icon;
-
-//           return (
-//             <Link
-//               key={link.name}
-//               href={link.href}
-//               className={`flex items-center font-medium gap-4 px-4 py-3.5 rounded-[8px] transition-all relative group ${
-//                 isActive
-//                   ? "text-black bg-[#F9F9F9]"
-//                   : "text-[#727272] hover:bg-gray-50"
-//               }`}
-//             >
-//               <Icon
-//                 size={18}
-//                 className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"}`}
-//               />
-
-//               <span className="text-base">{link.name}</span>
-//               {/* active border */}
-//               {isActive && (
-//                 <div className="absolute right-0 top-1/4 h-1/2 w-[3px] bg-[#FF7050] rounded-l-full" />
-//               )}
-//             </Link>
-//           );
-//         })}
-
-//         {/* Logout Button */}
-//         <button className="flex items-center gap-4 px-4 py-3.5 mt-4 rounded-[8px] text-[#FF4D4D] hover:bg-red-50 transition-all font-medium cursor-pointer w-full text-left group">
-//           <IoLogOutOutline
-//             size={24}
-//             className="group-hover:translate-x-1 transition-transform"
-//           />
-//           <span className="text-sm">Logout</span>
-//         </button>
-//       </nav>
-//     </div>
-//   );
-// };
-
-// export default ProfileSidebar;
-
 "use client";
+
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -81,6 +8,8 @@ import { BiUser } from "react-icons/bi";
 import { SlHandbag } from "react-icons/sl";
 import { IoLogOutOutline } from "react-icons/io5";
 import { useAuthStore } from "@/store/useAuthStore";
+import { deleteSessionToken } from "@/app/actions/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 const sidebarLinks = [
   { name: "Profile Details", href: "/profile", icon: BiUser },
@@ -91,11 +20,12 @@ const sidebarLinks = [
 const ProfileSidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  
   const user = useAuthStore((state) => state.user);
-  const token = useAuthStore((state) => state.token);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
-  const setAuth = useAuthStore((state) => state.setAuth);
-  const clearAuth = useAuthStore((state) => state.logout || state.clearAuth);
+  const setAuthUser = useAuthStore((state) => state.setAuthUser);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
 
   const [hydrated, setHydrated] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -106,12 +36,18 @@ const ProfileSidebar = () => {
     setHydrated(true);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 1. Wipe React Query cache stores
+    queryClient.clear();
+    
+    // 2. Wipe layout store state memory safely
     if (clearAuth) {
       clearAuth();
-    } else {
-      useAuthStore.persist.clearStorage();
     }
+
+    // 3. Clear secure httpOnly session cookies via Server Action
+    await deleteSessionToken();
+    
     router.refresh();
     router.push("/signin");
   };
@@ -122,28 +58,21 @@ const ProfileSidebar = () => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !token) return;
+    if (!file) return;
 
     try {
       setUploading(true);
-
       const formData = new FormData();
-
+      
       // ✅ Backend expects the field name "image"
       formData.append("image", file);
 
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1"
-        }/users/avatar`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        },
-      );
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
+      const res = await fetch(`${baseUrl}/users/avatar`, {
+        method: "PATCH",
+        // Browser automatically populates multi-part headers and includes HTTP-only session cookies
+        body: formData,
+      });
 
       const data = await res.json();
 
@@ -151,7 +80,7 @@ const ProfileSidebar = () => {
         throw new Error(data?.message || "Image upload failed.");
       }
 
-      // ✅ Support both current and future backend response formats
+      // ✅ Robust response footprint lookup matching your backend framework schema
       const updatedAvatarPath =
         data?.image_url ??
         data?.avatar ??
@@ -165,20 +94,19 @@ const ProfileSidebar = () => {
         throw new Error("Avatar path not found in server response.");
       }
 
-      if (user && setAuth) {
-        setAuth(
-          {
-            ...user,
-            avatar: updatedAvatarPath,
-          },
-          token,
-        );
+      if (user && setAuthUser) {
+        setAuthUser({
+          ...user,
+          avatar: updatedAvatarPath,
+        });
       }
 
-      // Force browser cache refresh
+      // Force React Query cache refresh across app context dependencies
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      
+      // Force immediate visual layout reload
       setCacheBuster(Date.now());
 
-      // Allow selecting the same image again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -196,7 +124,6 @@ const ProfileSidebar = () => {
   let avatarUrl = null;
   if (user?.avatar) {
     const cleanPath = user.avatar.replace(/^\/+/, "");
-    // Appending the moving timestamp parameter forces the client layout to bypass the browser cache
     avatarUrl = `${backendBaseUrl}/${cleanPath}?t=${cacheBuster}`;
   }
 
