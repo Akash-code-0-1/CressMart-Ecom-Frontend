@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { io, Socket } from "socket.io-client";
-import { 
-  FiSend, FiPaperclip, FiX, FiFileText, FiLoader, FiAlertCircle 
-} from "react-icons/fi";
+import { useChatEngine } from "@/hooks/useChat";
+import { FiSend, FiPaperclip, FiX, FiFileText, FiLoader, FiAlertCircle } from "react-icons/fi";
 import { BsChatDotsFill } from "react-icons/bs";
 import { apiFetch } from "@/utils/api";
 
@@ -17,21 +15,6 @@ interface Attachment {
   size: number;
 }
 
-interface Message {
-  id: string;
-  conversation_id: string;
-  sender_id: string;
-  text: string | null;
-  attachments: any[] | null; 
-  created_at: string;
-  sender: {
-    id: string;
-    name: string;
-    avatar: string | null;
-    role: string;
-  };
-}
-
 const ChatWidget = () => {
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
@@ -39,171 +22,57 @@ const ChatWidget = () => {
   const isOpen = useAuthStore((state) => state.isChatOpen);
   const setIsOpen = useAuthStore((state) => state.setIsChatOpen);
 
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const [isAdminTyping, setIsAdminTyping] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const [loadingHistory, setLoadingHistory] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
-  
-  // Real channel tracking state
-  const [resolvedRoomId, setResolvedRoomId] = useState<string>("");
+  const [isTyping, setIsTyping] = useState(false);
 
-  // Refs securely instantiated at the top of component scope
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // SECTION 1: INTERCEPT & RESOLVE CORRECT TARGET CONVERSATION ROOM TRACK REFERENCE
+  // 🚀 Core SaaS Abstraction Connection
+  const { 
+    messages, loadingHistory, isAdminTyping, sendTypingStatus, sendMessage 
+  } = useChatEngine(isOpen);
+
+  // ✅ Auto-scroll handler: Forces new messages and admin typing indicators directly into viewport
   useEffect(() => {
-    if (!isStoreReady || !isOpen || !user?.id) return;
-
-    const syncActiveChatSession = async () => {
-      try {
-        // 🔥 Using clean apiFetch wrapper to securely transmit HTTP-only cookies cross-origin
-        const res = await apiFetch("/chat/conversations/sync-room", {
-          method: "GET",
-        });
-
-        const jsonResponse = await res.json();
-        const verifiedRoomId = jsonResponse?.data?.conversationId || jsonResponse?.conversationId;
-        
-        if (verifiedRoomId) {
-          setResolvedRoomId(verifiedRoomId);
-        }
-      } catch (err) {
-        console.error("Unable to resolve explicit channel track payload routing context:", err);
-      }
-    };
-
-    syncActiveChatSession();
-  }, [isStoreReady, isOpen, user?.id]);
-
-  // SECTION 2: LOAD TIMESTREAM VISUAL HISTORY
-  useEffect(() => {
-    if (!isOpen || !resolvedRoomId) return;
-
-    const loadChatHistory = async () => {
-      try {
-        setLoadingHistory(true);
-        
-        // 🔥 Using clean apiFetch wrapper to pass server-side cookie context seamlessly
-        const res = await apiFetch(`/chat/conversations/${resolvedRoomId}/messages`, {
-          method: "GET",
-        });
-
-        const jsonResponse = await res.json();
-        if (!res.ok) throw new Error(jsonResponse?.message || "Failed to sync historical messages.");
-        
-        const responseData = jsonResponse?.data ?? jsonResponse;
-        
-        const extractedMessages = Array.isArray(responseData) 
-          ? responseData 
-          : Array.isArray(responseData?.data) 
-            ? responseData.data 
-            : [];
-            
-        setMessages(extractedMessages);
-        setErrorText(null);
-      } catch (err: any) {
-        console.error("History fetch error:", err.message);
-        setErrorText(err.message);
-        setMessages([]); 
-      } finally {
-        setLoadingHistory(false);
-      }
-    };
-
-    loadChatHistory();
-  }, [isOpen, resolvedRoomId]);
-
-  // SECTION 3: WS REALTIME EMIT SYNC PIPELINE
-  useEffect(() => {
-    if (!isOpen || !resolvedRoomId) return;
-
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
-    
-    // 🔥 Socket.io handles cookies natively via withCredentials flag matching modern security specs
-    const socketInstance = io(`${backendUrl}/chat`, {
-      withCredentials: true,
-      transports: ["websocket"],
-    });
-
-    socketInstance.on("connect", () => {
-      socketInstance.emit("joinRoom", { conversationId: resolvedRoomId });
-    });
-
-    socketInstance.on("newMessage", (message: Message) => {
-      setMessages((prev) => {
-        if (!prev || !Array.isArray(prev)) return [message];
-        if (prev.some((msg) => msg.id === message.id)) return prev;
-        return [...prev, message];
-      });
-    });
-
-    socketInstance.on("userTyping", (data: { userId: string }) => {
-      if (data.userId !== user?.id) setIsAdminTyping(true);
-    });
-
-    socketInstance.on("userStoppedTyping", (data: { userId: string }) => {
-      if (data.userId !== user?.id) setIsAdminTyping(false);
-    });
-
-    setSocket(socketInstance);
-
-    return () => {
-      socketInstance.emit("leaveRoom", { conversationId: resolvedRoomId });
-      socketInstance.disconnect();
-    };
-  }, [isOpen, user?.id, resolvedRoomId]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isAdminTyping]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
-    if (!socket || !resolvedRoomId) return;
-
+    
     if (!isTyping) {
       setIsTyping(true);
-      socket.emit("typing", { conversationId: resolvedRoomId });
+      sendTypingStatus(true);
     }
 
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socket.emit("stopTyping", { conversationId: resolvedRoomId });
+      sendTypingStatus(false);
     }, 2000);
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!socket || !resolvedRoomId || (!inputText.trim() && pendingAttachments.length === 0)) return;
+    if (!inputText.trim() && pendingAttachments.length === 0) return;
 
-    const cleanAttachments = pendingAttachments.map((att) => ({
-      type: att.type,
-      url: att.url,
-      name: att.name || "File Asset",
-      mimeType: att.mimeType || "application/octet-stream",
-      size: Number(att.size) || 0,
-    }));
-
-    const messageDto = {
-      conversationId: resolvedRoomId,
+    sendMessage({
       text: inputText.trim() || null,
-      attachments: cleanAttachments.length > 0 ? cleanAttachments : null,
-    };
+      attachments: pendingAttachments.length > 0 ? pendingAttachments : null,
+    });
 
-    socket.emit("sendMessage", messageDto);
     setInputText("");
-    setPendingAttachments([]); 
+    setPendingAttachments([]);
     setIsTyping(false);
-    socket.emit("stopTyping", { conversationId: resolvedRoomId });
+    sendTypingStatus(false);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,34 +81,36 @@ const ChatWidget = () => {
 
     try {
       setUploading(true);
+      setErrorText(null);
       const formData = new FormData();
       formData.append("file", file);
 
-      // 🔥 Using clean apiFetch wrapper to securely handle file uploads via cookies
-      const res = await apiFetch("/chat/attachments/upload", {
-        method: "POST",
-        body: formData,
+      const res = await apiFetch("/chat/attachments/upload", { 
+        method: "POST", 
+        body: formData 
       });
-
+      
       const jsonResponse = await res.json();
       if (!res.ok) throw new Error(jsonResponse?.message || "Upload failed.");
 
       const innerData = jsonResponse.data;
 
-      const attachmentPayload: Attachment = {
-        type: innerData.type,
-        url: innerData.url,
-        name: file.name,
-        mimeType: file.type || "application/octet-stream", 
-        size: file.size,
-      };
-
-      setPendingAttachments((prev) => [...prev, attachmentPayload]);
+      setPendingAttachments((prev) => [
+        ...prev,
+        {
+          type: innerData.type,
+          url: innerData.url,
+          name: file.name,
+          mimeType: file.type || "application/octet-stream",
+          size: file.size,
+        },
+      ]);
     } catch (err: any) {
       setErrorText(err.message || "Failed to process attachment staging.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setUploading(false);
   };
 
   const removePendingAttachment = (index: number) => {
@@ -372,6 +243,7 @@ const ChatWidget = () => {
           </div>
 
           <div className="p-3 border-t border-gray-100 bg-white shrink-0 flex flex-col gap-2">
+            {/* ✅ Staged Attachment Preview Bar restored */}
             {pendingAttachments.length > 0 && (
               <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto p-1 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                 {pendingAttachments.map((att, idx) => {
