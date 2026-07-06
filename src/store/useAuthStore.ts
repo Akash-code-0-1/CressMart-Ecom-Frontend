@@ -14,10 +14,10 @@ interface AuthState {
   user: User | null;
   token: string | null;
   _hasHydrated: boolean;
-  isChatOpen: boolean; // 👈 Added for tracking global chat window visibility
+  isChatOpen: boolean; 
   setAuth: (user: User, token: string) => void;
   setHasHydrated: (state: boolean) => void;
-  setIsChatOpen: (open: boolean) => void; // 👈 Added action to mutate chat window state
+  setIsChatOpen: (open: boolean) => void; 
   logout: () => void;
   clearAuth?: () => void;
 }
@@ -28,11 +28,11 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       _hasHydrated: false,
-      isChatOpen: false, // 👈 Initial state: Chat box is closed by default
+      isChatOpen: false, 
       setAuth: (user, token) => set({ user, token }),
       setHasHydrated: (state) => set({ _hasHydrated: state }),
-      setIsChatOpen: (open) => set({ isChatOpen: open }), // 👈 Direct state mutations hook
-      logout: () => set({ user: null, token: null, isChatOpen: false }), // Reset chat on logout
+      setIsChatOpen: (open) => set({ isChatOpen: open }), 
+      logout: () => set({ user: null, token: null, isChatOpen: false }),
       clearAuth: () => set({ user: null, token: null, isChatOpen: false }),
     }),
     {
@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-      // Optional: Prevent chat toggle from saving to localStorage permanently
+      
       partialize: (state) => ({
         user: state.user,
         token: state.token,
