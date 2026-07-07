@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // 🚀 Tracks active page routes
 import {
   FiMenu,
   FiX,
@@ -18,12 +19,13 @@ import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { LuUserRound } from "react-icons/lu";
+import { LuUserRound as UserIcon } from "react-icons/lu";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
 
 const Navbar = () => {
   const router = useRouter();
+  const pathname = usePathname(); // 🚀 Active path evaluator
   
   // 🚀 Refactored to only evaluate hydration & user metrics (dropping client token dependence)
   const user = useAuthStore((state) => state.user);
@@ -108,6 +110,19 @@ const Navbar = () => {
     avatarUrl = `${backendBaseUrl}/${cleanPath}`;
   }
 
+  // Unified click handler to ensure proper routing targets based on dynamic hydration state
+  const handleProfileNavigation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isStoreReady && user) {
+      router.push("/profile");
+    } else {
+      router.push("/signin");
+    }
+  };
+
+  // 🚀 Safe evaluation to see if the custom chat modal context state is open
+  const isChatActive = useAuthStore((state: any) => state.isChatOpen);
+
   return (
     <>
       <header
@@ -160,27 +175,25 @@ const Navbar = () => {
                 <WishIcon className="w-8 md:w-10" />
               </button>
 
-              <Link href={isStoreReady && user ? "/profile" : "/signin"}>
-                <button className="cursor-pointer flex items-center justify-center">
-                  {avatarUrl ? (
-                    <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
-                      <img
-                        src={avatarUrl}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <LuUserRound
-                      className="w-8 md:w-10 h-8 md:h-10 text-black"
-                      strokeWidth={1.2}
+              <a href="#" onClick={handleProfileNavigation} className="cursor-pointer flex items-center justify-center">
+                {avatarUrl ? (
+                  <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
+                    <img
+                      src={avatarUrl}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
                     />
-                  )}
-                </button>
-              </Link>
+                  </div>
+                ) : (
+                  <UserIcon
+                    className="w-8 md:w-10 h-8 md:h-10 text-black"
+                    strokeWidth={1.2}
+                  />
+                )}
+              </a>
             </div>
 
             {/* Conditionally hide desktop buttons based on user presence */}
@@ -206,7 +219,6 @@ const Navbar = () => {
         {/* Mobile & Tablet Search */}
         <div className="lg:hidden pb-4">
           <div className="bg-[#F2F2F2] rounded-[8px] flex items-center px-3 py-2 gap-2">
-            {/* Categories */}
             <CategoryDropdown
               mobile
               categories={navLinks.map((item) => item.name)}
@@ -214,14 +226,12 @@ const Navbar = () => {
 
             <div className="h-5 w-px bg-[#E2E2E2] shrink-0" />
 
-            {/* Search Input */}
             <input
               type="text"
               placeholder="Search products..."
               className="flex-1 min-w-0 bg-transparent outline-none text-[#727272] text-[14px] sm:text-[16px] placeholder:text-[#727272]"
             />
 
-            {/* Search Button */}
             <button className="cursor-pointer bg-white p-2 rounded-[8px] shrink-0">
               <FiSearch size={18} className="text-[#FF7050] sm:w-5 sm:h-5" />
             </button>
@@ -308,7 +318,7 @@ const Navbar = () => {
         </span>
       </div>
 
-      {/* --- MOBILE SIDEBAR DRAWER (LEFT) --- */}
+      {/* --- MOBILE SIDEBAR DRAWER --- */}
       <div
         className={`fixed top-0 left-0 h-full w-[320px] bg-white z-[210] transform transition-transform duration-500 ease-in-out lg:hidden shadow-2xl ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
@@ -332,7 +342,6 @@ const Navbar = () => {
           </div>
 
           <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
-            {/* Conditionally hide mobile drawer buttons based on user footprint */}
             {isStoreReady && !user && (
               <>
                 <div className="flex flex-col sm:flex-row gap-3 w-full">
@@ -359,7 +368,6 @@ const Navbar = () => {
               </>
             )}
 
-            {/* Mobile Navigation List */}
             <ul className="flex flex-col">
               {navLinks.map((link, idx) => (
                 <li
@@ -385,6 +393,7 @@ const Navbar = () => {
                       {link.subItems?.map((sub, sIdx) => (
                         <li key={sIdx}>
                           <Link
+                            key={sIdx}
                             href="#"
                             className="text-gray-500 text-base block py-1 hover:text-[#FF7050]"
                           >
@@ -404,7 +413,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* --- CART DRAWER CONTENT (RIGHT) --- */}
+      {/* --- CART DRAWER --- */}
       <div
         className={`font-inter fixed top-0 right-0 h-full w-[320px] md:w-[450px] bg-white z-[210] transform transition-transform duration-500 shadow-2xl ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}
       >
@@ -504,11 +513,14 @@ const Navbar = () => {
 
       {/* --- MOBILE BOTTOM NAVIGATION BAR --- */}
       {isStoreReady && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-          {/* Home Button */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050]">
+          
+          {/* Home Button - Color is constant; active scales up and bolds up */}
           <Link
             href="/"
-            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform"
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 ${
+              pathname === "/" ? "font-bold scale-110" : "font-normal"
+            }`}
           >
             <svg
               className="w-6 h-6"
@@ -523,13 +535,15 @@ const Navbar = () => {
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
-            <span className="text-[12px] font-bold mt-1 font-inter">Home</span>
+            <span className="text-[12px] mt-1 font-inter">Home</span>
           </Link>
 
-          {/* Category Drawer Trigger */}
+          {/* Category Drawer Trigger - Full strength brand color matches active scales */}
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform cursor-pointer"
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
+              isDrawerOpen ? "font-bold scale-110" : "font-normal"
+            }`}
           >
             <svg
               className="w-6 h-6"
@@ -544,12 +558,10 @@ const Navbar = () => {
                 d="M4 6h16M4 12h16M4 18h16"
               />
             </svg>
-            <span className="text-[12px] font-bold mt-1 font-inter">
-              Category
-            </span>
+            <span className="text-[12px] mt-1 font-inter">Category</span>
           </button>
 
-          {/* Central Custom Logo Button (Floating Action Style) */}
+          {/* Central Custom Floating Action Logo */}
           <div className="relative -top-5 z-[200]">
             <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
               <div className="relative w-full h-full flex items-center justify-center">
@@ -568,13 +580,15 @@ const Navbar = () => {
             </button>
           </div>
 
-          {/* Chat Button */}
+          {/* Chat Button - Fixed color logic setup to sync with Zustand modal footprint */}
           <button
             onClick={() => {
-              setIsDrawerOpen(false); // Close category drawer if open
-              useAuthStore.getState().setIsChatOpen(true); // Open the chat client window
+              setIsDrawerOpen(false);
+              useAuthStore.getState().setIsChatOpen(true);
             }}
-            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform cursor-pointer"
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
+              isChatActive ? "font-bold scale-110" : "font-normal"
+            }`}
           >
             <svg
               className="w-6 h-6"
@@ -589,13 +603,18 @@ const Navbar = () => {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            <span className="text-[12px] font-bold mt-1 font-inter">Chat</span>
+            <span className="text-[12px] mt-1 font-inter">Chat</span>
           </button>
 
           {/* Login / Profile Button */}
-          <Link
-            href={user ? "/profile" : "/signin"}
-            className="flex flex-col items-center justify-center w-16 text-center text-[#003366] active:scale-95 transition-transform"
+          <a
+            href="#"
+            onClick={handleProfileNavigation}
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
+              pathname === "/profile" || pathname === "/signin" || pathname === "/signup"
+                ? "font-bold scale-110"
+                : "font-normal"
+            }`}
           >
             <svg
               className="w-6 h-6"
@@ -610,10 +629,10 @@ const Navbar = () => {
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
-            <span className="text-[12px] font-bold mt-1 font-inter">
-              {user ? "Profile" : "Login"}
+            <span className="text-[12px] mt-1 font-inter">
+              {isStoreReady && user ? "Profile" : "Login"}
             </span>
-          </Link>
+          </a>
         </div>
       )}
     </>

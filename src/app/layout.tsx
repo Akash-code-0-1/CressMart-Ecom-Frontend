@@ -6,7 +6,7 @@ import TopHeader from "@/components/store-front/home/TopHeader";
 import FAQ from "@/components/store-front/home/FAQ";
 import Footer from "@/components/store-front/home/Footer";
 import ChatWidget from "@/components/store-front/chat/ChatWidget";
-import QueryProvider from "@/components/providers/QueryProvider";
+import QueryProvider from "@/providers/QueryProvider"; // 👈 1. Import your provider (adjust path if needed)
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,15 +37,12 @@ export default function RootLayout({
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
-        {/* 🚀 Encapsulating global layout tree within TanStack Server State Pipeline Context */}
         <QueryProvider>
           <TopHeader />
           <Navbar />
           <main className="flex-1">{children}</main>
           <FAQ />
           <Footer />
-          
-          {/* Floating Chat Engine Widget sits globally on the bottom-right viewport across all screens */}
           <ChatWidget />
         </QueryProvider>
       </body>
