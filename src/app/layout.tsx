@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/store-front/home/Navbar";
-import TopHeader from "@/components/store-front/home/TopHeader";
-import FAQ from "@/components/store-front/home/FAQ";
-import Footer from "@/components/store-front/home/Footer";
-import ChatWidget from "@/components/store-front/chat/ChatWidget";
-import QueryProvider from "@/providers/QueryProvider"; // 👈 1. Import your provider (adjust path if needed)
+import QueryProvider from "@/providers/QueryProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,12 +33,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
         <QueryProvider>
-          <TopHeader />
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <FAQ />
-          <Footer />
-          <ChatWidget />
+          {/* This simply passes down whatever layouts are matched by routing groups */}
+          {children}
         </QueryProvider>
       </body>
     </html>

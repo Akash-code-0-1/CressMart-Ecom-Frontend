@@ -17,26 +17,36 @@ function getUserRole(token: string): string | null {
 
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  
-  // 🔍 FIXED: Changed from "accessToken" to "auth_token" to match your auth.ts precisely!
-  const token = request.cookies.get("auth_token")?.value;
 
-  // 1. If no token exists, lock protected paths down
-  if (!token) {
-    return NextResponse.redirect(new URL("/signin", request.url));
+  // 1. Skip token authentication validation entirely for the Admin signin entry view
+  if (path === "/admin/dashboard/signin") {
+    return NextResponse.next();
   }
 
-  const role = getUserRole(token);
-
-  // 2. Strict protection for Admin dashboard routes
+  // 🚀 2. PROTECT ADMIN SUB-ROUTES
   if (path.startsWith("/admin")) {
+    const adminToken = request.cookies.get("admin_token")?.value;
+
+    if (!adminToken) {
+      return NextResponse.redirect(new URL("/admin/dashboard/signin", request.url));
+    }
+
+    const role = getUserRole(adminToken);
     if (role !== "ADMIN") {
-      // Non-admins attempting to access backend dashboards are blocked
+      return NextResponse.redirect(new URL("/admin/dashboard/signin", request.url));
+    }
+    
+    return NextResponse.next();
+  }
+
+  // 3. PROTECT STOREFRONT CUSTOMER SUB-ROUTES
+  if (path.startsWith("/profile")) {
+    const customerToken = request.cookies.get("auth_token")?.value;
+    if (!customerToken) {
       return NextResponse.redirect(new URL("/signin", request.url));
     }
   }
 
-  // 3. Storefront `/profile` allows CUSTOMER, ADMIN, or any other logged-in user through safely
   return NextResponse.next();
 }
 

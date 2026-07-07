@@ -28,7 +28,7 @@ const PricingList: React.FC = () => (
       <hr className="border-gray-200 my-1" />
       <div className="flex justify-between items-center mt-2">
         <span className="text-xl font-semibold text-[#FF7050]">
-          Total Amount Due
+          Payable Amount
         </span>
         <span className="text-xl font-semibold text-[#FF7050]">5070 BDT</span>
       </div>
