@@ -6,6 +6,7 @@ import TopHeader from "@/components/store-front/home/TopHeader";
 import FAQ from "@/components/store-front/home/FAQ";
 import Footer from "@/components/store-front/home/Footer";
 import ChatWidget from "@/components/store-front/chat/ChatWidget";
+import QueryProvider from "@/providers/QueryProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,15 +36,18 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
+      {/* 👈 Added suppressHydrationWarning here to catch body tag attributes injected by browser extensions */}
       <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
-        <TopHeader />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <FAQ />
-        <Footer />
-        
-        {/* Floating Chat Engine Widget sits globally on the bottom-right viewport across all screens */}
-        <ChatWidget />
+        <QueryProvider>
+          <TopHeader />
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <FAQ />
+          <Footer />
+
+          {/* Floating Chat Engine Widget sits globally on the bottom-right viewport across all screens */}
+          <ChatWidget />
+        </QueryProvider>
       </body>
     </html>
   );

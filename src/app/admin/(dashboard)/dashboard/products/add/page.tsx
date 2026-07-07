@@ -1,0 +1,15 @@
+"use client";
+
+import ProductUploadMain from "@/components/admin/products/add/ProductUploadMain";
+
+export default function Page() {
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <main className="flex-1 overflow-y-auto focus:outline-none">
+        <div className="p-2 md:p-0">
+          <ProductUploadMain />
+        </div>
+      </main>
+    </div>
+  );
+}
