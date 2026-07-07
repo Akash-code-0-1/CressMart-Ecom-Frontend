@@ -11,11 +11,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <TopHeader />
-        <Navbar />
+        {/* <TopHeader /> */}
+        {/* <Navbar /> */}
         <main>{children}</main>
-        <FAQ />
-        <Footer />
+        {/* <FAQ /> */}
+        {/* <Footer /> */}
       </body>
     </html>
   );
