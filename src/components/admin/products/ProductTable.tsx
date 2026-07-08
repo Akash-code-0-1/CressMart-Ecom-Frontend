@@ -4,7 +4,11 @@ import React, { useState } from "react";
 import { TableColumn } from "@/@types/order.type";
 import { Product } from "@/@types/product.type";
 import Image from "next/image";
-import { MoreVertical } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { apiFetch } from "@/utils/api";
+import { getAdminTokenAction } from "@/app/actions/auth";
+import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
 import DataTable from "../common/DataTable";
 import Pagination from "../common/Pagination";
 
@@ -13,132 +17,96 @@ interface ExtendedTableColumn<T> extends TableColumn<T> {
   headerClassName?: string;
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    sl: 110,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 57,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 2,
-    sl: 109,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 80,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 3,
-    sl: 108,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 61,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 4,
-    sl: 107,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 75,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 5,
-    sl: 106,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 57,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 6,
-    sl: 105,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 69,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 7,
-    sl: 104,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 90,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 8,
-    sl: 103,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 61,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 9,
-    sl: 102,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 57,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-  {
-    id: 10,
-    sl: 101,
-    image: "/images/products/product2.png",
-    name: "Motorcycle Toy [Motorbike Model Showpiece for Boys, Gift for Kids]",
-    category: "Watch",
-    subCategory: "Mans Watch",
-    priority: 51,
-    sku: "pr123456",
-    tags: "New Arrival",
-    status: "Publish",
-  },
-];
-
 export default function ProductTable() {
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const handleSelectRow = (id: number) => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Read live URL parameters to pass directly into your backend queries
+  const page = Number(searchParams.get("page")) || 1;
+  const limit = Number(searchParams.get("limit")) || 10;
+  const search = searchParams.get("search") || "";
+  const category_id = searchParams.get("category_id") || "";
+  const status = searchParams.get("status") || "";
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+
+  const { data: fetchResponse, isLoading } = useQuery({
+    queryKey: ["products-list-panel", page, limit, search, category_id, status],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        search,
+        category_id,
+        status,
+      });
+
+      // 🚀 ABSOLUTE FALLBACK OVERRIDE: Point directly to your NestJS port address layout
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
+      const token = await getAdminTokenAction();
+
+      const res = await fetch(
+        `${backendUrl}/products?${queryParams.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token || ""}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to sync catalog rows");
+      return res.json();
+    },
+  });
+
+  // 🚀 FIXED: Defensively extract products array without breaking structure or style
+  const productList = (() => {
+    if (Array.isArray(fetchResponse)) return fetchResponse;
+    if (fetchResponse && Array.isArray(fetchResponse.data))
+      return fetchResponse.data;
+    if (fetchResponse && Array.isArray(fetchResponse.products))
+      return fetchResponse.products;
+    return [];
+  })();
+
+  const meta = fetchResponse?.meta || { totalPages: 1, total: 0 };
+
+  // 🚀 DELETE PRODUCT MUTATION
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getAdminTokenAction();
+      const res = await apiFetch(`/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token || ""}` },
+      });
+      if (!res.ok) throw new Error("Could not drop target catalog item");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products-list-panel"] });
+      alert("Product successfully deleted from catalog.");
+      setActiveMenuId(null);
+    },
+    onError: (err: any) => alert(err.message),
+  });
+
+  const handlePageChange = (targetPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(targetPage));
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleSelectRow = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id)
         ? prev.filter((itemId) => itemId !== id)
@@ -147,14 +115,14 @@ export default function ProductTable() {
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === products.length) {
+    if (selectedIds.length === productList.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(products.map((product) => product.id));
+      setSelectedIds(productList.map((product: any) => product.id));
     }
   };
 
-  const productColumns: ExtendedTableColumn<Product>[] = [
+  const productColumns: ExtendedTableColumn<any>[] = [
     {
       header: "",
       key: "checkbox-selection",
@@ -164,7 +132,7 @@ export default function ProductTable() {
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer inline-block vertical-middle"
           checked={
-            selectedIds.length === products.length && products.length > 0
+            selectedIds.length === productList.length && productList.length > 0
           }
           onChange={handleSelectAll}
         />
@@ -181,26 +149,34 @@ export default function ProductTable() {
     {
       header: "SL",
       key: "sl",
-      render: (product) => (
+      render: (_, index) => (
         <span className="text-[15px] text-[#1D1A1A] font-normal">
-          {product.sl}
+          {(page - 1) * limit + (index ?? 0) + 1}
         </span>
       ),
     },
     {
       header: "Image",
       key: "image",
-      render: (product) => (
-        <div className="flex items-center">
-          <Image
-            src={product.image}
-            alt={product.name}
-            width={45}
-            height={45}
-            className="rounded-[8px] object-cover"
-          />
-        </div>
-      ),
+      render: (product) => {
+        const rawImg = Array.isArray(product.images) ? product.images[0] : null;
+        const srcUrl = rawImg
+          ? rawImg.startsWith("http")
+            ? rawImg
+            : `${baseStorageUrl}${rawImg}`
+          : "/images/products/product2.png";
+        return (
+          <div className="flex items-center">
+            <img
+              src={srcUrl}
+              alt={product.name}
+              width={45}
+              height={45}
+              className="rounded-[8px] object-cover"
+            />
+          </div>
+        );
+      },
     },
     {
       header: "Name",
@@ -219,7 +195,7 @@ export default function ProductTable() {
       key: "category",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.category}
+          {product.category?.name || "Uncategorized"}
         </span>
       ),
     },
@@ -228,7 +204,7 @@ export default function ProductTable() {
       key: "subCategory",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.subCategory}
+          {product.subCategory || "N/A"}
         </span>
       ),
     },
@@ -246,7 +222,7 @@ export default function ProductTable() {
       key: "sku",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.sku}
+          {product.sku || "N/A"}
         </span>
       ),
     },
@@ -255,7 +231,7 @@ export default function ProductTable() {
       key: "tags",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.tags}
+          {product.meta_tags || "None"}
         </span>
       ),
     },
@@ -265,41 +241,83 @@ export default function ProductTable() {
       render: (product) => (
         <div
           className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${
-            product.status === "Publish"
+            product.status === "PUBLISHED"
               ? "bg-[#C1FFBC] text-[#085E00]"
               : "bg-gray-100 text-gray-500"
           }`}
         >
-          {product.status}
+          {product.status === "PUBLISHED" ? "Publish" : product.status}
         </div>
       ),
     },
     {
       header: "Action",
       key: "action",
-      render: () => (
-        <button className="text-black p-1 transition-colors">
-          <MoreVertical size={20} />
-        </button>
+      render: (product) => (
+        <div className="relative">
+          <button
+            onClick={() =>
+              setActiveMenuId(activeMenuId === product.id ? null : product.id)
+            }
+            className="text-black p-1 transition-colors cursor-pointer"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          {activeMenuId === product.id && (
+            <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/admin/dashboard/products/add?id=${product.id}`)
+                }
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
+              >
+                <Edit3 size={12} /> Edit Item
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Delete this product?"))
+                    deleteMutation.mutate(product.id);
+                }}
+                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
+              >
+                <Trash2 size={12} /> Delete Item
+              </button>
+            </div>
+          )}
+        </div>
       ),
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
+        <Loader2 className="animate-spin text-gray-400" size={24} />
+        <span className="text-xs">Loading data...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white font-poppins">
       <DataTable
-        data={products}
+        data={productList}
         columns={productColumns}
         rowKey="id"
         gradiant={true}
       />
-      <div className="py-5 md:mx-10 mx-2">
-        <Pagination
-          currentPage={1}
-          totalPages={24}
-          onPageChange={(page) => console.log(page)}
-        />
-      </div>
+      {productList.length > 0 && (
+        <div className="py-5 md:mx-10 mx-2">
+          <Pagination
+            currentPage={page}
+            totalPages={meta.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }
