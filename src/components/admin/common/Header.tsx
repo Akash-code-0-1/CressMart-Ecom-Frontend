@@ -1,11 +1,14 @@
 "use client";
-import React, { useState } from "react"; // 🚀 FIXED: Added useState
+
+import React, { useState } from "react";
 import ChatIcon from "@/components/store-front/svg/svg/ChatIcon";
 import GlobalIcon from "@/components/store-front/svg/svg/GlobalIcon";
 import NotificationIcon from "@/components/store-front/svg/svg/NotificationIcon";
 import VideoCamIcon from "@/components/store-front/svg/svg/VideoCamIcon";
 import { useAdminProfileData } from "@/hooks/useProfile";
-import AdminChatModal from "@/components/admin/chat/AdminChatModal"; // 🚀 FIXED: Imported newly made Chat Portal
+import AdminChatModal from "@/components/admin/chat/AdminChatModal"; 
+import { useAuthStore } from "@/store/useAuthStore"; 
+import { useChatNotificationSync } from "@/hooks/useChatNotificationSync"; // 🚀 IMPORT ENGINE HOOK
 import { Search, Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,9 +19,12 @@ interface HeaderProps {
 
 const Header = ({ onMenuToggle }: HeaderProps) => {
   const { data: profile } = useAdminProfileData();
-  
-  // 🚀 FIXED: Interactive modal state toggle variables
   const [chatOpen, setChatOpen] = useState(false);
+
+  // 🚀 LAUNCH THE BACKGROUND ENGINE REAL-TIME CHANNEL
+  useChatNotificationSync();
+
+  const unreadMessageCount = useAuthStore((state) => state.unreadMessageCount) || 0;
 
   const rawUser = profile?.user || profile?.data || profile;
   const adminName = rawUser?.name || "Admin";
@@ -35,7 +41,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
   return (
     <header className="flex items-center justify-between bg-white px-4 md:px-6 py-3 mt-2 rounded-[8px] gap-3 mx-2 sm:mx-4">
-      {/* LEFT: Hamburger (mobile) + Logo + Actions */}
+      {/* LEFT PANEL */}
       <div className="flex items-center gap-3 md:gap-6 shrink-0">
         <button
           onClick={onMenuToggle}
@@ -52,6 +58,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             fill
             className="object-contain"
             sizes="(max-width: 768px) 120px, 155px"
+            priority
           />
         </div>
 
@@ -86,22 +93,26 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         </div>
       </div>
 
-      {/* RIGHT: Icons + Profile */}
+      {/* RIGHT: Action Icons + Badge Indicators */}
       <div className="flex items-center gap-2 md:gap-4 shrink-0">
         
-        {/* 🚀 FIXED: Clicking this button now safely triggers the Chat Modal Overlay window */}
         <button 
           onClick={() => setChatOpen(true)}
-          className="hidden sm:block cursor-pointer p-1 hover:opacity-75 transition-opacity border-none bg-transparent outline-none"
+          className="relative cursor-pointer p-1.5 hover:opacity-75 transition-opacity border-none bg-transparent outline-none flex items-center"
         >
           <ChatIcon />
+          {unreadMessageCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white font-bold text-[9px] min-w-[15px] h-3.5 px-0.5 rounded-full flex items-center justify-center shadow-sm select-none pointer-events-none animate-in zoom-in-50 duration-150">
+              {unreadMessageCount}
+            </span>
+          )}
         </button>
 
         <button className="hidden sm:block cursor-pointer p-1 hover:opacity-75 transition-opacity border-none bg-transparent outline-none">
           <NotificationIcon />
         </button>
 
-        {/* User Profile */}
+        {/* User Profile Navigation Info */}
         <Link 
           href="/admin/dashboard/profile" 
           className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 font-poppins cursor-pointer group"
@@ -117,11 +128,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           <div className="relative">
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FF9F1C] flex items-center justify-center text-white text-xs md:text-sm font-bold border-2 border-orange-100 group-hover:border-[#FF7050] transition-all overflow-hidden">
               {finalAvatarUrl ? (
-                <img 
-                  src={finalAvatarUrl} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
-                />
+                <img src={finalAvatarUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 adminName.charAt(0).toUpperCase()
               )}
@@ -130,7 +137,6 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         </Link>
       </div>
 
-      {/* 🚀 FIXED: Appended portal overlay portal window controller instance down here */}
       <AdminChatModal 
         isOpen={chatOpen} 
         onClose={() => setChatOpen(false)} 

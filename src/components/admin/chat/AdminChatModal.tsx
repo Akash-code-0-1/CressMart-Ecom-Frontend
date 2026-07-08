@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Search, X, MoreHorizontal, Menu, Settings, ShieldAlert } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Search,
+  X,
+  MoreHorizontal,
+  Menu,
+  Settings,
+  ShieldAlert,
+} from "lucide-react";
 import { FiSend, FiLoader, FiFileText, FiPaperclip, FiX } from "react-icons/fi";
 import { io, Socket } from "socket.io-client";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface AdminChatModalProps {
   isOpen: boolean;
@@ -18,7 +26,7 @@ interface ChatRoom {
   customerPhone: string;
   lastMessage: string;
   unreadCount: number;
-  avatar?: string | null; // 🚀 Profile picture string from mapping contract
+  avatar?: string | null;
 }
 
 interface Attachment {
@@ -52,11 +60,13 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [replyText, setReplyText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [useLoadingHistory, setUseLoadingHistory] = useState(false);
 
   const [uploading, setUploading] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>(
+    [],
+  );
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -65,7 +75,19 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const fetchChatRooms = async () => {
+  // 🚀 FIXED: Global unread calculation wrapped in an async microtask queue to eliminate cross-component render errors
+  const syncGlobalStoreCount = useCallback((currentRooms: ChatRoom[]) => {
+    const totalUnread = currentRooms.reduce(
+      (acc: number, room: ChatRoom) => acc + (room.unreadCount || 0),
+      0,
+    );
+    // Queue execution right after render painting finishes
+    Promise.resolve().then(() => {
+      useAuthStore.getState().setUnreadMessageCount(totalUnread);
+    });
+  }, []);
+
+  const fetchChatRooms = useCallback(async () => {
     try {
       const adminToken = await getAdminTokenAction();
       const res = await apiFetch("/chat/rooms", {
@@ -75,25 +97,27 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
           "X-Admin-Request": "true",
         },
       });
+
       if (res.ok) {
         const roomData = await res.json();
-        setRooms(
-          Array.isArray(roomData)
-            ? roomData
-            : roomData?.rooms || roomData?.data || [],
-        );
+        const dynamicRooms = Array.isArray(roomData)
+          ? roomData
+          : roomData?.rooms || roomData?.data || [];
+
+        setRooms(dynamicRooms);
+        syncGlobalStoreCount(dynamicRooms);
       }
     } catch (err) {
       console.error("Failed to load chat conversations:", err);
     }
-  };
+  }, [syncGlobalStoreCount]);
 
   useEffect(() => {
     if (!isOpen) return;
     fetchChatRooms();
     const interval = setInterval(fetchChatRooms, 10000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, fetchChatRooms]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -111,14 +135,49 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
     }
 
     adminSocketInstance.on("newMessage", (message: Message) => {
-      setMessages((prev) => {
-        if (prev.some((m) => m.id === message.id)) return prev;
-        if (message.conversation_id === activeRoom?.id) {
-          return [...prev, message];
+      // Tracks if the administrator is currently looking at this room thread
+      let isViewingThisRoomActive = false;
+
+      setActiveRoom((currentActive) => {
+        if (message.conversation_id === currentActive?.id) {
+          isViewingThisRoomActive = true;
+
+          // 🚀 AUTO-READ TRIGGER:
+          // Since the admin has this chat window wide open, hit the backend to mark it read in the DB instantly
+          apiFetch(`/chat/conversations/${currentActive.id}/messages`, {
+            method: "GET",
+          }).catch((err) =>
+            console.error("Auto-read database sync failed:", err),
+          );
+
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === message.id)) return prev;
+            return [...prev, message];
+          });
         }
-        return prev;
+
+        // Update the rooms list array state variables dynamically
+        setRooms((prevRooms) => {
+          const updatedRooms = prevRooms.map((room) => {
+            if (room.id === message.conversation_id) {
+              return {
+                ...room,
+                lastMessage: message.text || "[Attachment]",
+                // If actively viewing, keep badge at 0, otherwise increment
+                unreadCount: isViewingThisRoomActive
+                  ? 0
+                  : (room.unreadCount || 0) + 1,
+              };
+            }
+            return room;
+          });
+
+          syncGlobalStoreCount(updatedRooms);
+          return updatedRooms;
+        });
+
+        return currentActive;
       });
-      fetchChatRooms(); 
     });
 
     return () => {
@@ -126,7 +185,7 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
         adminSocketInstance.off("newMessage");
       }
     };
-  }, [isOpen, activeRoom?.id]);
+  }, [isOpen, syncGlobalStoreCount]);
 
   useEffect(() => {
     if (!activeRoom?.id || !adminSocketInstance) return;
@@ -147,7 +206,7 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
 
     const fetchMessages = async () => {
       try {
-        setLoadingHistory(true);
+        setUseLoadingHistory(true);
         const adminToken = await getAdminTokenAction();
         const res = await apiFetch(
           `/chat/conversations/${activeRoom.id}/messages`,
@@ -168,7 +227,7 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
       } catch (err) {
         console.error("Failed to load message strings:", err);
       } finally {
-        setLoadingHistory(false);
+        setUseLoadingHistory(false);
       }
     };
 
@@ -190,15 +249,15 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await apiFetch("/chat/attachments/upload", { 
-        method: "POST", 
+      const res = await apiFetch("/chat/attachments/upload", {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${adminToken || ""}`,
           "X-Admin-Request": "true",
         },
-        body: formData 
+        body: formData,
       });
-      
+
       const jsonResponse = await res.json();
       if (!res.ok) throw new Error(jsonResponse?.message || "Upload failed.");
 
@@ -207,7 +266,9 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
       setPendingAttachments((prev) => [
         ...prev,
         {
-          type: innerData.type || (file.type.startsWith("image") ? "IMAGE" : "FILE"),
+          type:
+            innerData.type ||
+            (file.type.startsWith("image") ? "IMAGE" : "FILE"),
           url: innerData.url,
           name: file.name,
           mimeType: file.type || "application/octet-stream",
@@ -235,9 +296,9 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
     setReplyText("");
 
     adminSocketInstance.emit("sendMessage", {
-      conversationId: activeRoom.id, 
+      conversationId: activeRoom.id,
       text: currentText || null,
-      attachments: pendingAttachments.length > 0 ? pendingAttachments : []
+      attachments: pendingAttachments.length > 0 ? pendingAttachments : [],
     });
 
     setPendingAttachments([]);
@@ -263,12 +324,15 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
         target="_blank"
         rel="noopener noreferrer"
         className={`mt-1 flex items-center gap-2 px-3 py-2 rounded-xs text-xs max-w-[240px] transition-all border ${
-          isAdminMsg 
-            ? "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200" 
+          isAdminMsg
+            ? "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
             : "bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200"
         }`}
       >
-        <FiFileText size={14} className={isAdminMsg ? "text-blue-500" : "text-gray-500"} />
+        <FiFileText
+          size={14}
+          className={isAdminMsg ? "text-blue-500" : "text-gray-500"}
+        />
         <span className="truncate">{att.name || "View Attachment"}</span>
       </a>
     );
@@ -285,7 +349,6 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
   return (
     <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4 font-sans text-black antialiased transition-all">
       <div className="bg-white w-full max-w-7xl h-[92vh] rounded-[4px] shadow-2xl flex flex-col overflow-hidden relative border border-gray-200">
-        
         {/* Top Header */}
         <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between z-10">
           <span className="text-[13px] font-normal text-gray-800 tracking-wide">
@@ -300,7 +363,6 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
         </div>
 
         <div className="flex-1 flex overflow-hidden bg-white">
-          
           {/* LEFT PANEL */}
           <div className="w-[280px] md:w-[320px] border-r border-gray-200 flex flex-col bg-[#F3F4F6]/50 shrink-0 justify-between">
             <div>
@@ -330,12 +392,24 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                 ) : (
                   filteredRooms.map((room) => {
                     const isSelected = activeRoom?.id === room.id;
-                    const absoluteAvatarUrl = room.avatar ? `${baseStorageUrl}${room.avatar}` : null;
+                    // Combines the storage asset prefixes correctly
+                    const absoluteAvatarUrl = room.avatar
+                      ? `${baseStorageUrl}${room.avatar}`
+                      : null;
 
                     return (
                       <button
                         key={room.id}
-                        onClick={() => setActiveRoom(room)}
+                        onClick={() => {
+                          setActiveRoom(room);
+                          setRooms((prevRooms) => {
+                            const updated = prevRooms.map((r) =>
+                              r.id === room.id ? { ...r, unreadCount: 0 } : r,
+                            );
+                            syncGlobalStoreCount(updated);
+                            return updated;
+                          });
+                        }}
                         className={`w-full text-left p-3 flex items-center gap-3 transition-all cursor-pointer border border-transparent outline-none ${
                           isSelected
                             ? "bg-[#EAEAEA] rounded-[4px]"
@@ -344,12 +418,17 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                       >
                         <div className="relative shrink-0">
                           <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs overflow-hidden shadow-3xs bg-slate-400">
-                            {/* 🚀 FIXED: Sidebar Avatar Picture Resolution Handler */}
+                            {/* 🚀 DYNAMIC RESOLVER: Correctly maps profile images for both self-chats and customers */}
                             {absoluteAvatarUrl ? (
-                              <img src={absoluteAvatarUrl} alt="" className="w-full h-full object-cover" />
+                              <img
+                                src={absoluteAvatarUrl}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-500 text-white font-bold text-sm">
-                                {room.customerName?.charAt(0).toUpperCase() || "C"}
+                                {room.customerName?.charAt(0).toUpperCase() ||
+                                  "C"}
                               </div>
                             )}
                           </div>
@@ -363,8 +442,10 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                           <p className="text-xs font-semibold text-gray-800 truncate">
                             {room.customerName}
                           </p>
-                          <p className="text-[11px] truncate text-gray-400 mt-0.5 font-medium">
-                            {room.lastMessage || "Was that designed by you?"}
+                          <p
+                            className={`text-[11px] truncate mt-0.5 font-medium ${room.unreadCount > 0 ? "text-gray-900 font-semibold" : "text-gray-400"}`}
+                          >
+                            {room.lastMessage || "No messages yet"}
                           </p>
                         </div>
                       </button>
@@ -406,50 +487,59 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                     </div>
                   )}
 
-                  {loadingHistory ? (
+                  {useLoadingHistory ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-2">
-                      <FiLoader className="animate-spin text-gray-400" size={18} />
-                      <span className="text-xs font-medium">Loading history thread...</span>
+                      <FiLoader
+                        className="animate-spin text-gray-400"
+                        size={18}
+                      />
+                      <span className="text-xs font-medium">
+                        Loading history thread...
+                      </span>
                     </div>
                   ) : (
                     messages.map((msg) => {
                       const isAdminMsg =
                         msg.sender?.role === "ADMIN" ||
                         msg.sender_id === "ADMIN" ||
-                        (msg.sender ? msg.sender.role === "ADMIN" : msg.sender_id !== activeRoom.id);
+                        (msg.sender
+                          ? msg.sender.role === "ADMIN"
+                          : msg.sender_id !== activeRoom.id);
 
-                      // 🚀 FIXED: Dynamic timeline timeline avatar path resolver injection matching active room profiles
-                      const absoluteUserMsgAvatar = msg.sender?.avatar 
-                        ? `${baseStorageUrl}${msg.sender.avatar}` 
-                        : (activeRoom.avatar ? `${baseStorageUrl}${activeRoom.avatar}` : null);
+                      const absoluteUserMsgAvatar = msg.sender?.avatar
+                        ? `${baseStorageUrl}${msg.sender.avatar}`
+                        : activeRoom.avatar
+                          ? `${baseStorageUrl}${activeRoom.avatar}`
+                          : null;
 
                       return (
                         <div
                           key={msg.id}
                           className={`flex w-full items-start gap-3.5 ${isAdminMsg ? "justify-end" : "justify-start"}`}
                         >
-                          {/* 🚀 FIXED UI INJECTION: Show customer image avatar profile on the left of left bubbles */}
                           {!isAdminMsg && (
                             <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 mt-0.5 bg-slate-300 shadow-3xs">
                               {absoluteUserMsgAvatar ? (
-                                <img src={absoluteUserMsgAvatar} alt="" className="w-full h-full object-cover" />
+                                <img
+                                  src={absoluteUserMsgAvatar}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
                                 <div className="w-full h-full bg-slate-400 text-white flex items-center justify-center font-bold text-[11px]">
-                                  {activeRoom.customerName?.charAt(0).toUpperCase() || "C"}
+                                  {activeRoom.customerName
+                                    ?.charAt(0)
+                                    .toUpperCase() || "C"}
                                 </div>
                               )}
                             </div>
                           )}
 
-                          <div className={`flex flex-col max-w-[65%] ${isAdminMsg ? "items-end" : "items-start"}`}>
+                          <div
+                            className={`flex flex-col max-w-[65%] ${isAdminMsg ? "items-end" : "items-start"}`}
+                          >
                             {msg.text && (
-                              <div
-                                className={`px-4 py-2.5 text-[12.5px] leading-relaxed rounded-xs ${
-                                  isAdminMsg
-                                    ? "bg-[#F1F1F1] text-gray-800 font-normal"
-                                    : "bg-[#F1F1F1] text-gray-800 font-normal"
-                                }`}
-                              >
+                              <div className="px-4 py-2.5 text-[12.5px] leading-relaxed rounded-xs bg-[#F1F1F1] text-gray-800 font-normal">
                                 {msg.text}
                               </div>
                             )}
@@ -473,17 +563,33 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                   {pendingAttachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 max-h-16 overflow-y-auto p-1.5 bg-gray-50 rounded border border-dashed border-gray-200">
                       {pendingAttachments.map((att, idx) => {
-                        const storageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+                        const storageUrl =
+                          process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+                            "/api/v1",
+                            "",
+                          ) || "http://localhost:8082";
                         return (
-                          <div key={idx} className="relative flex items-center gap-1.5 bg-white border p-1 rounded max-w-[130px] shadow-3xs">
+                          <div
+                            key={idx}
+                            className="relative flex items-center gap-1.5 bg-white border p-1 rounded max-w-[130px] shadow-3xs"
+                          >
                             {att.type === "IMAGE" ? (
-                              <img src={`${storageUrl}${att.url}`} className="w-6 h-6 object-cover rounded-xs" alt="" />
+                              <img
+                                src={`${storageUrl}${att.url}`}
+                                className="w-6 h-6 object-cover rounded-xs"
+                                alt=""
+                              />
                             ) : (
-                              <FiFileText size={14} className="text-gray-400 ml-1" />
+                              <FiFileText
+                                size={14}
+                                className="text-gray-400 ml-1"
+                              />
                             )}
-                            <span className="text-[10px] text-gray-600 truncate max-w-[70px] font-medium">{att.name}</span>
-                            <button 
-                              type="button" 
+                            <span className="text-[10px] text-gray-600 truncate max-w-[70px] font-medium">
+                              {att.name}
+                            </span>
+                            <button
+                              type="button"
                               onClick={() => removePendingAttachment(idx)}
                               className="bg-red-500 text-white rounded-full p-0.5 ml-1 hover:bg-red-600 cursor-pointer border-none flex items-center justify-center"
                             >
@@ -499,27 +605,46 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
                     onSubmit={handleSendReply}
                     className="flex items-center gap-2 bg-white border border-gray-300 rounded-[4px] px-4 py-2 relative w-full focus-within:border-gray-400 transition-all"
                   >
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                    
-                    <button 
-                      type="button" 
-                      disabled={uploading} 
-                      onClick={() => fileInputRef.current?.click()} 
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
                       className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 cursor-pointer border-none outline-none bg-transparent p-0 mr-1 shrink-0"
                     >
-                      {uploading ? <FiLoader className="animate-spin text-gray-500" size={16} /> : <FiPaperclip size={16} />}
+                      {uploading ? (
+                        <FiLoader
+                          className="animate-spin text-gray-500"
+                          size={16}
+                        />
+                      ) : (
+                        <FiPaperclip size={16} />
+                      )}
                     </button>
 
                     <input
                       type="text"
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
-                      placeholder={uploading ? "Staging asset upload..." : `Write a message for ${activeRoom.customerName}`}
+                      placeholder={
+                        uploading
+                          ? "Staging asset upload..."
+                          : `Write a message for ${activeRoom.customerName}`
+                      }
                       className="w-full bg-transparent border-none outline-none text-xs py-1.5 text-gray-800 pr-12 placeholder-gray-400 font-normal shadow-none"
                     />
                     <button
                       type="submit"
-                      disabled={uploading || (!replyText.trim() && pendingAttachments.length === 0)}
+                      disabled={
+                        uploading ||
+                        (!replyText.trim() && pendingAttachments.length === 0)
+                      }
                       className="absolute right-2 text-white bg-[#0060C0] hover:bg-[#0050A0] p-2 rounded-[4px] transition-all disabled:opacity-40 cursor-pointer border-none outline-none shadow-xs flex items-center justify-center"
                     >
                       <FiSend size={14} />
@@ -529,9 +654,17 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
               </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center bg-white text-gray-400 gap-2.5 p-6">
-                <ShieldAlert size={32} className="text-gray-300 animate-pulse" />
-                <p className="text-xs font-semibold text-gray-700">No Target Conversation Selected</p>
-                <p className="text-[11px] max-w-[220px] text-center text-gray-400 font-medium">Select an open message room thread to begin response sequence logs.</p>
+                <ShieldAlert
+                  size={32}
+                  className="text-gray-300 animate-pulse"
+                />
+                <p className="text-xs font-semibold text-gray-700">
+                  No Target Conversation Selected
+                </p>
+                <p className="text-[11px] max-w-[220px] text-center text-gray-400 font-medium">
+                  Select an open message room thread to begin response sequence
+                  logs.
+                </p>
               </div>
             )}
           </div>
