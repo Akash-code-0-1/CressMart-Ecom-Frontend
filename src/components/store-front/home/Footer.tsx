@@ -78,13 +78,11 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="w-full bg-white font-inter pt-20">
+    <footer className="w-full bg-white font-inter">
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
         {/* --- Top Section: Links & Info --- */}
-        {/* Changed grid layout base to grid-cols-2 up to desktop (lg:grid-cols-5) */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
           
-          {/* Column 1: Info & Contact - spans full width on mobile/tablet, single column on desktop */}
           <div className="col-span-2 lg:col-span-1">
             <Link
               href="/"
@@ -231,7 +229,17 @@ const Footer = () => {
         {/* --- Bottom Copyright --- */}
         <div className="py-4 text-center">
           <p className="text-[#727272] text-[15px] font-medium">
-            Copyright {currentYear} © Creass Mart. All rights reserved.
+            Developed by{" "}
+            <Link href={"https://codeandget.com"} target="_blank">
+              <Image
+                src={"/images/admin/logo.png"}
+                alt="Code and Get"
+                width={100}
+                height={20}
+                className="inline-block mr-1.5"
+              />
+            </Link>
+            | Copyright {currentYear} © Creass Mart. All rights reserved.
           </p>
         </div>
       </div>

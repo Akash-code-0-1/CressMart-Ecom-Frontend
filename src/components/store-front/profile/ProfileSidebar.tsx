@@ -10,6 +10,8 @@ import { IoLogOutOutline } from "react-icons/io5";
 import { useAuthStore } from "@/store/useAuthStore";
 import { deleteSessionToken } from "@/app/actions/auth";
 import { useQueryClient } from "@tanstack/react-query";
+// 🚀 FIXED: Importing our unified network utility wrapper
+import { apiFetch } from "@/utils/api";
 
 const sidebarLinks = [
   { name: "Profile Details", href: "/profile", icon: BiUser },
@@ -37,17 +39,11 @@ const ProfileSidebar = () => {
   }, []);
 
   const handleLogout = async () => {
-    // 1. Wipe React Query cache stores
     queryClient.clear();
-    
-    // 2. Wipe layout store state memory safely
     if (clearAuth) {
       clearAuth();
     }
-
-    // 3. Clear secure httpOnly session cookies via Server Action
     await deleteSessionToken();
-    
     router.refresh();
     router.push("/signin");
   };
@@ -64,13 +60,16 @@ const ProfileSidebar = () => {
       setUploading(true);
       const formData = new FormData();
       
-      // ✅ Backend expects the field name "image"
+      // ✅ Matches your backend NestJS controller interceptor parameter target
       formData.append("image", file);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
-      const res = await fetch(`${baseUrl}/users/avatar`, {
+      // 🚀 FIXED: Replaced raw fetch with apiFetch to properly route customer custom headers
+      const res = await apiFetch("/users/avatar", {
         method: "PATCH",
-        // Browser automatically populates multi-part headers and includes HTTP-only session cookies
+        headers: {
+          // Explicit flag informs JwtStrategy to prioritize customer identity checks
+          "X-Customer-Request": "true"
+        },
         body: formData,
       });
 
@@ -80,7 +79,6 @@ const ProfileSidebar = () => {
         throw new Error(data?.message || "Image upload failed.");
       }
 
-      // ✅ Robust response footprint lookup matching your backend framework schema
       const updatedAvatarPath =
         data?.image_url ??
         data?.avatar ??
@@ -101,10 +99,7 @@ const ProfileSidebar = () => {
         });
       }
 
-      // Force React Query cache refresh across app context dependencies
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      
-      // Force immediate visual layout reload
       setCacheBuster(Date.now());
 
       if (fileInputRef.current) {

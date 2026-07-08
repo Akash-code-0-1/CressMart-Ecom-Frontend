@@ -1,55 +1,3 @@
-// import { create } from "zustand";
-// import { persist, createJSONStorage } from "zustand/middleware";
-
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   phone: string;
-//   avatar?: string | null;
-//   role: string;
-// }
-
-// interface AuthState {
-//   user: User | null;
-//   token: string | null;
-//   _hasHydrated: boolean;
-//   isChatOpen: boolean; 
-//   setAuth: (user: User, token: string) => void;
-//   setHasHydrated: (state: boolean) => void;
-//   setIsChatOpen: (open: boolean) => void; 
-//   logout: () => void;
-//   clearAuth?: () => void;
-// }
-
-// export const useAuthStore = create<AuthState>()(
-//   persist(
-//     (set) => ({
-//       user: null,
-//       token: null,
-//       _hasHydrated: false,
-//       isChatOpen: false, 
-//       setAuth: (user, token) => set({ user, token }),
-//       setHasHydrated: (state) => set({ _hasHydrated: state }),
-//       setIsChatOpen: (open) => set({ isChatOpen: open }), 
-//       logout: () => set({ user: null, token: null, isChatOpen: false }),
-//       clearAuth: () => set({ user: null, token: null, isChatOpen: false }),
-//     }),
-//     {
-//       name: "auth-storage",
-//       storage: createJSONStorage(() => localStorage),
-//       onRehydrateStorage: () => (state) => {
-//         state?.setHasHydrated(true);
-//       },
-
-//       partialize: (state) => ({
-//         user: state.user,
-//         token: state.token,
-//       }),
-//     }
-//   )
-// );
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
@@ -63,10 +11,12 @@ interface User {
 }
 
 interface AuthState {
-  user: User | null;
+  user: User | null;          // Storefront Customer Slot
+  adminUser: User | null;     // 🚀 Isolated Admin Slot
   _hasHydrated: boolean;
   isChatOpen: boolean;
-  setAuthUser: (user: User) => void;
+  setAuthUser: (user: User | null) => void;
+  setAdminUser: (admin: User | null) => void; // 🚀 Isolated Admin Setter
   setHasHydrated: (state: boolean) => void;
   setIsChatOpen: (open: boolean) => void;
   clearAuth: () => void;
@@ -76,12 +26,14 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      adminUser: null, // Initialized cleanly to null
       _hasHydrated: false,
       isChatOpen: false,
       setAuthUser: (user) => set({ user }),
+      setAdminUser: (adminUser) => set({ adminUser }), 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
       setIsChatOpen: (open) => set({ isChatOpen: open }),
-      clearAuth: () => set({ user: null, isChatOpen: false }),
+      clearAuth: () => set({ user: null, adminUser: null, isChatOpen: false }),
     }),
     {
       name: "auth-user-storage",
@@ -89,8 +41,10 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
+      // 🚀 Save BOTH user types concurrently in the persisted storage state
       partialize: (state) => ({
         user: state.user,
+        adminUser: state.adminUser,
       }),
     }
   )

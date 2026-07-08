@@ -199,9 +199,8 @@ import { FreeMode, Navigation, Thumbs } from "swiper/modules";
 import {
   MdOutlineKeyboardArrowUp,
   MdOutlineKeyboardArrowDown,
-  MdOutlinePlayCircleFilled,
 } from "react-icons/md";
-import { FaPlay, FaYoutube } from "react-icons/fa";
+import { FaPlay } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import "swiper/css";
 import "swiper/css/free-mode";

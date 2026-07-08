@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { FaPlus, FaSpinner, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
-import { useProfileData, useUpdateProfileMutation, useAddAddressMutation } from "@/hooks/useProfile";
+import React, { useState, useEffect, useRef } from "react";
+import { FaSpinner, FaCheckCircle, FaExclamationCircle, FaCamera } from "react-icons/fa";
+// 🚀 FIXED: Imported useUpdateCustomerAvatarMutation to clear the undefined error
+import { useProfileData, useUpdateProfileMutation, useUpdateCustomerAvatarMutation, useAddAddressMutation } from "@/hooks/useProfile";
 
 interface AddressItem {
   id?: string;
@@ -15,21 +16,37 @@ const ProfileDetailsForm = () => {
   const { data: profile, isLoading, isError, error } = useProfileData();
   
   const updateProfile = useUpdateProfileMutation();
+  const uploadAvatar = useUpdateCustomerAvatarMutation(); // 🚀 FIXED: Initialized the avatar mutation handler
   const addAddress = useAddAddressMutation();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [primaryAddress, setPrimaryAddress] = useState("");
   const [newAddressInput, setNewAddressInput] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Keep local inputs in sync with backend server cache pipeline data updates
   useEffect(() => {
     if (profile) {
-      setName(profile.name || "");
-      setEmail(profile.email || "");
+      const rawUser = profile.user || profile.data || profile;
+      setName(rawUser.name || "");
+      setEmail(rawUser.email || "");
       
-      const addressList = profile.addresses || profile.user?.addresses || [];
+      // Calculate active base paths matching backend upload static server configuration assets
+      const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+      if (rawUser.avatar) {
+        setAvatarPreview(rawUser.avatar.startsWith("data:") || rawUser.avatar.startsWith("http") 
+          ? rawUser.avatar 
+          : `${backendBaseUrl}/${rawUser.avatar.replace(/^\/+/, "")}`
+        );
+      } else {
+        setAvatarPreview(null);
+      }
+      
+      const addressList = profile.addresses || rawUser.addresses || [];
       if (Array.isArray(addressList)) {
         const primary = addressList.find((addr: AddressItem) => addr.label === "PRIMARY");
         setPrimaryAddress(primary ? primary.address : "");
@@ -89,6 +106,29 @@ const ProfileDetailsForm = () => {
     });
   };
 
+  const handleCustomerImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        return setStatus({ type: "error", text: "Image file size must be under 2MB." });
+      }
+      
+      // Instantly generate object url for instant frontend UI render feedback
+      const localUrl = URL.createObjectURL(file);
+      setAvatarPreview(localUrl);
+      setStatus(null);
+      
+      uploadAvatar.mutate(file, { 
+        onSuccess: () => {
+          setStatus({ type: "success", text: "Profile image changed successfully!" });
+        },
+        onError: (err: any) => {
+          setStatus({ type: "error", text: err.message || "Failed to upload image." });
+        }
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center text-gray-500 font-poppins gap-3">
@@ -101,6 +141,8 @@ const ProfileDetailsForm = () => {
   const customAddresses = (profile?.addresses || profile?.user?.addresses || []).filter(
     (addr: AddressItem) => addr.label === "CUSTOM"
   );
+
+  const isPendingState = updateProfile.isPending || uploadAvatar.isPending;
 
   return (
     <div className="bg-white rounded-[12px] border border-[#D2D2D2] overflow-hidden font-poppins">
@@ -125,6 +167,46 @@ const ProfileDetailsForm = () => {
           </div>
         )}
 
+        {/* 🚀 FIXED: Dynamic Interactive Profile Picture Widget Section */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#FAFAFA] p-4 rounded-[10px] border border-dashed border-gray-200">
+          <div className="relative group w-16 h-16 shrink-0">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FF9F1C] flex items-center justify-center text-white text-xl font-bold overflow-hidden border-2 border-white shadow-xs relative">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile Avatar" className="w-full h-full object-cover" />
+              ) : (
+                name.charAt(0).toUpperCase() || "U"
+              )}
+              {uploadAvatar.isPending && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white">
+                  <FaSpinner className="animate-spin" size={14} />
+                </div>
+              )}
+            </div>
+            
+            {!uploadAvatar.isPending && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer outline-none"
+              >
+                <FaCamera size={14} />
+              </button>
+            )}
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleCustomerImageUpload} 
+              accept="image/*" 
+              className="hidden" 
+            />
+          </div>
+          <div className="text-center sm:text-left">
+            <h4 className="text-sm font-semibold text-black">Profile Avatar Picture</h4>
+            <p className="text-xs text-gray-400 mt-0.5">Supports JPEG, PNG, or WEBP up to 2MB boundary bounds.</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-base font-semibold text-[#727272]">Name</label>
@@ -140,7 +222,7 @@ const ProfileDetailsForm = () => {
             <label className="text-base font-semibold text-[#727272]">Phone</label>
             <input
               type="text"
-              value={profile?.phone || ""}
+              value={profile?.phone || profile?.user?.phone || ""}
               disabled
               placeholder="No phone record registered"
               className="w-full bg-[#F9F9F9] rounded-[10px] p-4 text-sm text-gray-700 outline-none border border-transparent disabled:opacity-60 disabled:cursor-not-allowed"
@@ -169,7 +251,7 @@ const ProfileDetailsForm = () => {
           <div className="flex justify-end mt-4">
             <button
               onClick={handleSaveChanges}
-              disabled={updateProfile.isPending}
+              disabled={isPendingState}
               className="bg-[#32CD32] hover:bg-[#2cb92c] transition-colors text-white px-6 py-3 rounded-[12px] text-base font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {updateProfile.isPending && <FaSpinner className="animate-spin" size={16} />}
@@ -224,7 +306,6 @@ const ProfileDetailsForm = () => {
   );
 };
 
-// Internal icon micro-shim to cleanly support legacy font layout structures inside deep trees
 const PlusIconShim = () => (
   <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" height="10" width="10" xmlns="http://www.w3.org/2000/svg">
     <path d="M416 208H240V32c0-17.67-14.33-32-32-32h-32c-17.67 0-32 14.33-32 32v176H32c-17.67 0-32 14.33-32 32v32c0 17.67 14.33 32 32 32h144v176c0 17.67 14.33 32 32 32h32c17.67 0 32-14.33 32-32V304h176c17.67 0 32-14.33 32-32v-32c0-17.67-14.33-32-32-32z"></path>

@@ -26,7 +26,13 @@ export function useChatEngine(isOpen: boolean) {
   const { data: roomId } = useQuery({
     queryKey: ["chat", "room"],
     queryFn: async () => {
-      const res = await apiFetch("/chat/conversations/sync-room");
+      const res = await apiFetch("/chat/conversations/sync-room", {
+        method: "GET",
+        headers: {
+          // 🚀 FIXED: Protects handshake endpoint from being hijacked by admin cookies
+          "X-Customer-Request": "true"
+        }
+      });
       const json = await res.json();
       return json?.data?.conversationId || json?.conversationId || "";
     },
@@ -37,7 +43,13 @@ export function useChatEngine(isOpen: boolean) {
   const { data: messages = [], isLoading: loadingHistory } = useQuery<Message[]>({
     queryKey: ["chat", "messages", roomId],
     queryFn: async () => {
-      const res = await apiFetch(`/chat/conversations/${roomId}/messages`);
+      const res = await apiFetch(`/chat/conversations/${roomId}/messages`, {
+        method: "GET",
+        headers: {
+          // 🚀 FIXED: Isolates message history requests to storefront customer profile context
+          "X-Customer-Request": "true"
+        }
+      });
       if (!res.ok) throw new Error("Failed to sync structural messaging metrics.");
       const json = await res.json();
       const responseData = json?.data ?? json;
@@ -53,9 +65,13 @@ export function useChatEngine(isOpen: boolean) {
     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
     
     if (!sharedSocketInstance) {
+      // 🚀 FIXED: Injected explicit custom header into the websocket layer instance configuration
       sharedSocketInstance = io(`${backendUrl}/chat`, {
         withCredentials: true,
         transports: ["websocket"],
+        extraHeaders: {
+          "X-Customer-Request": "true" // 🔒 Locks WebSocket initialization strictly to customer credentials context
+        }
       });
     }
 
