@@ -43,3 +43,25 @@
 //   const result = await response.json();
 //   return result.data || result;
 // };
+
+
+
+export interface DashboardStatsResponse {
+  overview: Record<string, unknown>;
+  orderLifecycle: Record<string, unknown>;
+  charts: {
+    performance: Record<string, unknown>;
+    salesByCategory: Record<string, unknown>;
+  };
+  products: Record<string, unknown>;
+}
+
+export const fetchAdminDashboardStats = async (): Promise<DashboardStatsResponse> => ({
+  overview: {},
+  orderLifecycle: {},
+  charts: {
+    performance: {},
+    salesByCategory: {},
+  },
+  products: {},
+});

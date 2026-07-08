@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dayjs from "dayjs";
-// import { fetchAdminDashboardStats } from "@/api/dashboardApi";
+import { fetchAdminDashboardStats } from "@/api/dashboardApi";
 import OverviewSection from "@/components/admin/home/OverviewSection";
 import DashboardStats from "@/components/admin/home/DashboardStats";
 import ProductAnalytics from "@/components/admin/home/ProductAnalytics";
