@@ -43,28 +43,49 @@
 //   const result = await response.json();
 //   return result.data || result;
 // };
+import {
+  DashboardOverview,
+  OrderLifecycle,
+  PerformanceChartItem,
+} from "@/types/dashboard";
 
 export interface DashboardStatsResponse {
-  overview: Record<string, unknown>;
-  orderLifecycle: Record<string, unknown>;
+  overview: DashboardOverview;
+  orderLifecycle: OrderLifecycle;
   charts: {
-    performance: Record<string, unknown>;
-    salesByCategory: Record<string, unknown>;
+    performance: PerformanceChartItem[];
+    salesByCategory: {
+      name: string;
+      value: number;
+      color?: string;
+    }[];
   };
-  products: Record<string, unknown>;
+  products: [];
 }
 
 export const fetchAdminDashboardStats = async (
   _filter: string,
   _date?: Date,
-): Promise<DashboardStatsResponse> => {
-  return {
-    overview: {},
-    orderLifecycle: {},
-    charts: {
-      performance: {},
-      salesByCategory: {},
-    },
-    products: {},
-  };
-};
+): Promise<DashboardStatsResponse> => ({
+  overview: {
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    onlineNow: 0,
+    todayVisitors: 0,
+    totalVisitors: 0,
+  },
+  orderLifecycle: {
+    PENDING: 0,
+    CONFIRMED: 0,
+    SHIPPED: 0,
+    DELIVERED: 0,
+    CANCELED: 0,
+    RETURNED: 0,
+  },
+  charts: {
+    performance: [],
+    salesByCategory: [],
+  },
+  products: [],
+});
