@@ -81,7 +81,7 @@
 import React from "react";
 import SalesByCategoryChart from "./SalesByCategoryChart";
 import SalesPerformenceChart from "./SalesPerformenceChart";
-import { PerformanceChartItem } from "@/types/dashboard";
+// import { PerformanceChartItem } from "@/types/dashboard";
 
 // Define a type for the Category data based on your UI needs
 interface CategoryData {

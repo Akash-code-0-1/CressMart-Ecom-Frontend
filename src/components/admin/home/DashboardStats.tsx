@@ -20,11 +20,12 @@ import ConfirmIcon from "@/components/store-front/svg/svg/ConfirmIcon";
 import TruckIcon from "@/components/store-front/svg/svg/TruckIcon";
 import DeliverdIcon from "@/components/store-front/svg/svg/DeliverdIcon";
 import ReturnIcon from "@/components/store-front/svg/svg/ReturnIcon";
-import {
-  DashboardOverview,
-  OrderLifecycle,
-  PerformanceChartItem,
-} from "@/types/dashboard";
+
+// import {
+//   DashboardOverview,
+//   OrderLifecycle,
+//   PerformanceChartItem,
+// } from "../../../../src/@types/dashboard";
 
 interface DashboardStatsProps {
   overview?: DashboardOverview;
