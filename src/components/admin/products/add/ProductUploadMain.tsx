@@ -16,21 +16,9 @@ import {
   ChevronDown,
   CheckCircle2,
   Circle,
-  AlignLeft,
-  Bold,
-  Code,
-  Italic,
-  LinkIcon,
-  List,
-  ListOrdered,
-  Quote,
-  Smile,
-  Type,
-  Underline,
-  ChevronUp,
   Trash2,
-  Star,
   Loader2,
+  ChevronUp,
 } from "lucide-react";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
@@ -160,6 +148,7 @@ export default function ProductUploadMain() {
       slug: "",
       category_id: "",
       brand_id: "",
+      unit_id: "",
       modelName: "",
       short_description: "",
       description: "",
@@ -190,7 +179,6 @@ export default function ProductUploadMain() {
 
   const watchedValues = methods.watch();
 
-  // 🚀 TANSTACK MUTATION: Connected directly to the your target NestJS ProductsController `@Post()` handler
   const productMutation = useMutation({
     mutationFn: async (targetStatus: "DRAFT" | "PUBLISHED") => {
       const token = await getAdminTokenAction();
@@ -203,27 +191,21 @@ export default function ProductUploadMain() {
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
 
-      // 🚀 THE FIX: Update the mutation payload mapping block inside ProductUploadMain.tsx
       const finalPayload = {
-        category_id: formPayload.category_id,
+        category_id: formPayload.category_id || null,
         brand_id: formPayload.brand_id || null,
+        unit_id: formPayload.unit_id || null,
         name: formPayload.name,
         slug: cleanSlug,
         short_description: formPayload.short_description || null,
         description: formPayload.description,
         status: targetStatus,
-        // 🚀 FIX A: Ensure master images are a flat, clean array of valid string URLs
-        images: Array.isArray(images)
-          ? images.map((img: any) => String(img))
-          : [],
+        images: Array.isArray(images) ? images.map((img: any) => String(img)) : [],
         priority: Number(formPayload.priority) || 100,
         regular_price: Number(formPayload.regular_price) || 0,
         sell_price: Number(formPayload.sell_price) || 0,
         cost_price: Number(formPayload.cost_price) || 0,
-        quantity: formPayload.is_variant_mandatory
-          ? 0
-          : Number(formPayload.quantity) || 0,
-        unit_name: formPayload.unit_name || "Pcs",
+        quantity: formPayload.is_variant_mandatory ? 0 : Number(formPayload.quantity) || 0,
         warranty: formPayload.warranty || null,
         sku: formPayload.sku || null,
         barcode: formPayload.barcode || null,
@@ -231,9 +213,7 @@ export default function ProductUploadMain() {
         meta_title: formPayload.seoTitle || null,
         meta_description: formPayload.seoDescription || null,
         meta_tags: formPayload.seoKeywords || null,
-        shipping_type: formPayload.applyDefaultDelivery
-          ? "DEFAULT"
-          : "SPECIFIC",
+        shipping_type: formPayload.applyDefaultDelivery ? "DEFAULT" : "SPECIFIC",
         tag_ids: formPayload.tag_ids,
         shipping_config: [
           { zone: "Dhaka", charge: Number(formPayload.deliveryChargeDefault) },
@@ -244,15 +224,12 @@ export default function ProductUploadMain() {
               : Number(formPayload.deliveryChargeSpecificOutside),
           },
         ],
-        // 🚀 FIX B: Ensure variant image arrays pass only valid flat string data arrays
         variants: formPayload.variants.map((v: any) => ({
           attribute: v.attribute,
           stock: Number(v.stock) || 0,
           sku: v.sku || `SKU-${Date.now()}`,
           price: Number(v.price) || 0,
-          images: Array.isArray(v.images)
-            ? v.images.map((img: any) => String(img))
-            : [],
+          images: Array.isArray(v.images) ? v.images.map((img: any) => String(img)) : [],
         })),
       };
 
@@ -268,8 +245,7 @@ export default function ProductUploadMain() {
       if (!res.ok) {
         const errorJson = await res.json();
         throw new Error(
-          errorJson?.message ||
-            "Failed to successfully complete backend row append operations.",
+          errorJson?.message || "Failed to successfully complete backend row append operations."
         );
       }
       return res.json();
@@ -294,20 +270,11 @@ export default function ProductUploadMain() {
 
   return (
     <FormProvider {...methods}>
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="w-full min-h-screen font-lato pb-12"
-      >
-        {/* Global Command Action Bar Header */}
+      <form onSubmit={(e) => e.preventDefault()} className="w-full min-h-screen font-lato pb-12">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-4 p-4 bg-white border-b border-gray-100 rounded-[8px]">
           <div>
-            <h1 className="text-xl font-bold text-black sm:text-2xl">
-              Product Upload
-            </h1>
-            <p className="text-xs text-gray-400">
-              Integrated server state transactional environment panel workspace
-              console
-            </p>
+            <h1 className="text-xl font-bold text-black sm:text-2xl">Product Upload</h1>
+            <p className="text-xs text-gray-400">Integrated server state transactional panel console</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <button
@@ -316,29 +283,11 @@ export default function ProductUploadMain() {
               onClick={() => productMutation.mutate("DRAFT")}
               className="flex items-center gap-2 px-6 py-3.5 rounded-[8px] bg-white text-[#070606] font-semibold text-sm justify-center border border-gray-200 cursor-pointer disabled:opacity-50 hover:bg-gray-50 transition-colors"
             >
-              {productMutation.isPending ? (
-                <Loader2 className="animate-spin" size={16} />
-              ) : (
-                <EditFileIcon />
-              )}{" "}
-              Save Draft
+              {productMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <EditFileIcon />} Save Draft
             </button>
             <PrimaryButton
-              onClick={() => {
-                if (!productMutation.isPending) {
-                  productMutation.mutate("PUBLISHED");
-                }
-              }}
-              icon={
-                productMutation.isPending ? (
-                  <Loader2 className="animate-spin" size={18} />
-                ) : (
-                  <Plus
-                    size={24}
-                    className="border-2 border-white rounded-full p-0.5"
-                  />
-                )
-              }
+              onClick={() => { if (!productMutation.isPending) productMutation.mutate("PUBLISHED"); }}
+              icon={productMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Plus size={24} className="border-2 border-white rounded-full p-0.5" />}
               label={productMutation.isPending ? "Uploading..." : "Add Product"}
               className={`w-full sm:w-auto justify-center bg-[#085E00] hover:bg-[#064400] ${productMutation.isPending ? "opacity-50 pointer-events-none" : ""}`}
             />
@@ -346,34 +295,18 @@ export default function ProductUploadMain() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:mx-4 mx-2">
-          {/* LEFT SECTION FORM ELEMENT ROWS */}
           <div className="lg:col-span-8 flex flex-col gap-4">
-            <GeneralInfoSection
-              images={images}
-              setImages={setImages}
-              uploading={uploadingMedia}
-              setUploading={setUploadingMedia}
-            />
+            <GeneralInfoSection images={images} setImages={setImages} uploading={uploadingMedia} setUploading={setUploadingMedia} />
 
             <SectionWrapper title="Pricing">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <Label required>Sell Price (৳)</Label>
-                  <Input
-                    type="number"
-                    name="sell_price"
-                    placeholder="0"
-                    options={{ required: true }}
-                  />
+                  <Input type="number" name="sell_price" placeholder="0" options={{ required: true }} />
                 </div>
                 <div>
                   <Label required>Regular Price (৳)</Label>
-                  <Input
-                    type="number"
-                    name="regular_price"
-                    placeholder="0"
-                    options={{ required: true }}
-                  />
+                  <Input type="number" name="regular_price" placeholder="0" options={{ required: true }} />
                 </div>
                 <div>
                   <Label>Cost Price (Optional) (৳)</Label>
@@ -389,47 +322,26 @@ export default function ProductUploadMain() {
             <SeoSection />
           </div>
 
-          {/* RIGHT COMPONENT SIDEBAR SELECTIONS */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            {/* Completion Evaluation Tracker Metric */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100">
-              <h3 className="text-black font-medium text-[20px] mb-2">
-                Ready To Publish
-              </h3>
+              <h3 className="text-black font-medium text-[20px] mb-2">Ready To Publish</h3>
               <div className="flex items-center justify-between mb-4">
                 <div className="h-2 flex-1 bg-gray-100 rounded-full overflow-hidden mr-3">
-                  <div
-                    className="h-full bg-[#085E00] transition-all duration-200"
-                    style={{ width: `${completeness}%` }}
-                  />
+                  <div className="h-full bg-[#085E00] transition-all duration-200" style={{ width: `${completeness}%` }} />
                 </div>
-                <span className="text-[11px] font-bold text-gray-500">
-                  {completeness}%
-                </span>
+                <span className="text-[11px] font-bold text-gray-500">{completeness}%</span>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5 text-xs">
-                  {watchedValues.name ? (
-                    <CheckCircle2 size={16} className="text-[#085E00]" />
-                  ) : (
-                    <Circle size={16} className="text-gray-200" />
-                  )}
+                  {watchedValues.name ? <CheckCircle2 size={16} className="text-[#085E00]" /> : <Circle size={16} className="text-gray-200" />}
                   <span>Item Identification parameters mapped</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-xs">
-                  {images.length > 0 ? (
-                    <CheckCircle2 size={16} className="text-[#085E00]" />
-                  ) : (
-                    <Circle size={16} className="text-gray-200" />
-                  )}
+                  {images.length > 0 ? <CheckCircle2 size={16} className="text-[#085E00]" /> : <Circle size={16} className="text-gray-200" />}
                   <span>Media assets loaded to storage</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-xs">
-                  {watchedValues.category_id ? (
-                    <CheckCircle2 size={16} className="text-[#085E00]" />
-                  ) : (
-                    <Circle size={16} className="text-gray-200" />
-                  )}
+                  {watchedValues.category_id ? <CheckCircle2 size={16} className="text-[#085E00]" /> : <Circle size={16} className="text-gray-200" />}
                   <span>Target catalog category bound</span>
                 </div>
               </div>
@@ -445,27 +357,24 @@ export default function ProductUploadMain() {
   );
 }
 
-// ── SUB COMPONENT SECTION: GENERAL INFORMATION ──
-function GeneralInfoSection({
-  images,
-  setImages,
-  uploading,
-  setUploading,
-}: any) {
+function GeneralInfoSection({ images, setImages, uploading, setUploading }: any) {
   const { register, setValue, watch } = useFormContext();
   const fileRef = useRef<HTMLInputElement>(null);
   const autoSlug = watch("autoSlug");
 
-  // 🚀 INTERCONNECTED HANDLER: Connects to ProductsController `@Post('upload-image')` endpoint
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
       setUploading(true);
       const token = await getAdminTokenAction();
       const bodyData = new FormData();
-      bodyData.append("image", file);
+      
+      // Append matching your NestJS FilesInterceptor('images', 8) name key structure
+      Array.from(files).forEach((file) => {
+        bodyData.append("images", file);
+      });
 
       const res = await apiFetch("/products/upload-image", {
         method: "POST",
@@ -473,9 +382,12 @@ function GeneralInfoSection({
         body: bodyData,
       });
 
-      if (!res.ok) throw new Error("File intercept tracking failure");
+      if (!res.ok) throw new Error("File upload failed");
       const data = await res.json();
-      setImages((prev: string[]) => [...prev, data.image_url]);
+      
+      if (data.success && Array.isArray(data.image_urls)) {
+        setImages((prev: string[]) => [...prev, ...data.image_urls]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -489,10 +401,7 @@ function GeneralInfoSection({
         <div>
           <div className="flex justify-between items-end mb-1">
             <Label required>Item Name</Label>
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => setValue("autoSlug", !autoSlug)}
-            >
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setValue("autoSlug", !autoSlug)}>
               <span className="text-xs text-gray-400">Auto Slug</span>
               <Toggle name="autoSlug" />
             </div>
@@ -531,10 +440,7 @@ function GeneralInfoSection({
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2.5 mb-4">
                 {images.map((src: string, i: number) => (
-                  <div
-                    key={i}
-                    className="relative group w-16 h-16 rounded border overflow-hidden bg-white shadow-3xs"
-                  >
+                  <div key={i} className="relative group w-16 h-16 rounded border overflow-hidden bg-white shadow-3xs">
                     <img
                       src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "")}${src}`}
                       className="w-full h-full object-cover"
@@ -542,11 +448,7 @@ function GeneralInfoSection({
                     />
                     <button
                       type="button"
-                      onClick={() =>
-                        setImages(
-                          images.filter((_: any, idx: number) => idx !== i),
-                        )
-                      }
+                      onClick={() => setImages(images.filter((_: any, idx: number) => idx !== i))}
                       className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 size={12} />
@@ -557,17 +459,8 @@ function GeneralInfoSection({
             )}
             <label className="cursor-pointer flex flex-col items-center">
               <IamgeIcon size="48" color="#999" />
-              <span className="text-xs text-gray-500 mt-2 font-medium">
-                Stage gallery photos
-              </span>
-              <input
-                type="file"
-                ref={fileRef}
-                className="hidden"
-                onChange={handleUpload}
-                accept="image/*"
-                disabled={uploading}
-              />
+              <span className="text-xs text-gray-500 mt-2 font-medium">Stage gallery photos</span>
+              <input type="file" ref={fileRef} className="hidden" onChange={handleUpload} accept="image/*" multiple disabled={uploading} />
             </label>
             {uploading && (
               <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
@@ -599,10 +492,25 @@ function GeneralInfoSection({
   );
 }
 
-// ── SUB COMPONENT SECTION: INVENTORY CONTROL ──
 function InventorySection({ Barcode }: any) {
-  const { register, watch } = useFormContext();
+  const { register, watch, setValue } = useFormContext();
   const isVariantMandatory = watch("is_variant_mandatory");
+  const selectedUnitId = watch("unit_id");
+
+  const { data: unitsRes } = useQuery({
+    queryKey: ["units-list-dropdown"],
+    queryFn: async () => {
+      const res = await apiFetch("/units");
+      return res.json();
+    }
+  });
+
+  const unitsList = (() => {
+    if (Array.isArray(unitsRes)) return unitsRes;
+    if (unitsRes && Array.isArray(unitsRes.data)) return unitsRes.data;
+    if (unitsRes && Array.isArray(unitsRes.data?.data)) return unitsRes.data.data;
+    return [];
+  })();
 
   return (
     <SectionWrapper title="Inventory">
@@ -618,8 +526,24 @@ function InventorySection({ Barcode }: any) {
           />
         </div>
         <div>
-          <Label>Unit Name</Label>
-          <Input name="unit_name" placeholder="Piece, kg, liter" />
+          <Label>Unit Selection Mapping</Label>
+          <div className="relative w-full">
+            <select
+              value={selectedUnitId || ""}
+              onChange={(e) => {
+                setValue("unit_id", e.target.value);
+                const matchObj = unitsList.find((u: any) => u.id === e.target.value);
+                if (matchObj) setValue("unit_name", matchObj.name);
+              }}
+              className="w-full bg-[#F9FAFB] border border-gray-200 text-gray-800 px-4 py-3 text-sm rounded-[8px] outline-none appearance-none cursor-pointer"
+            >
+              <option value="">Select Package Unit</option>
+              {unitsList.map((unit: any) => (
+                <option key={unit.id} value={unit.id}>{unit.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
         </div>
         <div>
           <Label>Warranty</Label>
@@ -642,13 +566,9 @@ function InventorySection({ Barcode }: any) {
   );
 }
 
-// ── SUB COMPONENT SECTION: DYNAMIC VARIATIONS MATRIX ──
 function VariantsSection() {
   const { control, register, watch, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "variants",
-  });
+  const { fields, append, remove } = useFieldArray({ control, name: "variants" });
   const isMandatory = watch("is_variant_mandatory");
 
   const [vAttr, setVAttr] = useState("");
@@ -663,108 +583,51 @@ function VariantsSection() {
       stock: Number(vStock) || 0,
       price: Number(vPrice) || 0,
       sku: vSku || `SKU-${Date.now()}`,
+      images: []
     });
-    setVAttr("");
-    setVStock("");
-    setVPrice("");
-    setVSku("");
+    setVAttr(""); setVStock(""); setVPrice(""); setVSku("");
   };
 
   return (
-    <SectionWrapper
-      title="Product Variants"
-      description="Track complex child variations securely tied to database relation configurations mappings."
-    >
+    <SectionWrapper title="Product Variants" description="Track variations mappings.">
       <div className="border border-sky-400 rounded-[12px] p-5 space-y-4 bg-white">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-base font-semibold text-black">
-              Make this variant mandatory
-            </h4>
-            <p className="text-xs text-gray-400">
-              Forces selection rules onto storefront client checkout lines
-            </p>
+            <h4 className="text-base font-semibold text-black">Make this variant mandatory</h4>
+            <p className="text-xs text-gray-400">Forces selection rules onto storefront client checkout lines</p>
           </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => setValue("is_variant_mandatory", !isMandatory)}
-          >
+          <div className="cursor-pointer" onClick={() => setValue("is_variant_mandatory", !isMandatory)}>
             <Toggle name="is_variant_mandatory" />
           </div>
         </div>
 
         {fields.map((field, idx) => (
-          <div
-            key={field.id}
-            className="flex justify-between items-center text-xs bg-gray-50 p-2.5 rounded border"
-          >
-            <span>
-              <strong>{watch(`variants.${idx}.attribute`)}</strong> | ৳
-              {watch(`variants.${idx}.price`)} | Stock:{" "}
-              {watch(`variants.${idx}.stock`)}
-            </span>
-            <button
-              type="button"
-              onClick={() => remove(idx)}
-              className="text-red-500 hover:text-red-700"
-            >
-              <Trash2 size={14} />
-            </button>
+          <div key={field.id} className="flex justify-between items-center text-xs bg-gray-50 p-2.5 rounded border">
+            <span><strong>{watch(`variants.${idx}.attribute`)}</strong> | ৳{watch(`variants.${idx}.price`)} | Stock: {watch(`variants.${idx}.stock`)}</span>
+            <button type="button" onClick={() => remove(idx)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
           </div>
         ))}
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold mb-1 block">
-              Option Name
-            </label>
-            <input
-              value={vAttr}
-              onChange={(e) => setVAttr(e.target.value)}
-              className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
-              placeholder="e.g., Silver, Matte Black"
-            />
+            <label className="text-xs font-semibold mb-1 block">Option Name</label>
+            <input value={vAttr} onChange={(e) => setVAttr(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="e.g., Silver, Matte Black" />
           </div>
           <div>
             <label className="text-xs font-semibold mb-1 block">Price</label>
-            <input
-              type="number"
-              value={vPrice}
-              onChange={(e) => setVPrice(e.target.value)}
-              className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
-              placeholder="72000"
-            />
+            <input type="number" value={vPrice} onChange={(e) => setVPrice(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="72000" />
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1 block">
-              Stock Level
-            </label>
-            <input
-              type="number"
-              value={vStock}
-              onChange={(e) => setVStock(e.target.value)}
-              className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
-              placeholder="30"
-            />
+            <label className="text-xs font-semibold mb-1 block">Stock Level</label>
+            <input type="number" value={vStock} onChange={(e) => setVStock(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="30" />
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1 block">
-              Custom Variant SKU
-            </label>
-            <input
-              value={vSku}
-              onChange={(e) => setVSku(e.target.value)}
-              className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
-              placeholder="SAM-REF-BLK"
-            />
+            <label className="text-xs font-semibold mb-1 block">Custom Variant SKU</label>
+            <input value={vSku} onChange={(e) => setVSku(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="SAM-REF-BLK" />
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handlePushOption}
-          className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90"
-        >
+        <button type="button" onClick={handlePushOption} className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90">
           <PluseIcon /> Commit Option
         </button>
       </div>
@@ -772,12 +635,10 @@ function VariantsSection() {
   );
 }
 
-// ── SUB COMPONENT SECTION: DYNAMIC BRAND COUPLING ──
 function BrandSection() {
   const { setValue, watch } = useFormContext();
   const activeBrandId = watch("brand_id");
 
-  // 🚀 TANSTACK QUERY: Connected directly to your target BrandsController `@Get()` endpoint
   const { data: brandResponse } = useQuery({
     queryKey: ["brands-list-select"],
     queryFn: async () => {
@@ -786,21 +647,15 @@ function BrandSection() {
     },
   });
 
-  // 🚀 FIXED: Defensively extract your brands safely regardless of wrapper schemas
   const brandList = (() => {
     if (Array.isArray(brandResponse)) return brandResponse;
-    if (brandResponse && Array.isArray(brandResponse.data))
-      return brandResponse.data;
-    if (brandResponse && Array.isArray(brandResponse.brands))
-      return brandResponse.brands;
-    return []; // Reliable baseline array prevents .map() from throwing runtime failures
+    if (brandResponse && Array.isArray(brandResponse.data)) return brandResponse.data;
+    if (brandResponse && Array.isArray(brandResponse.data?.data)) return brandResponse.data.data;
+    return [];
   })();
 
   return (
-    <SectionWrapper
-      title="Brand Metadata"
-      description="Connect product rows to system brand indexes."
-    >
+    <SectionWrapper title="Brand Metadata" description="Connect product rows to system brand indexes.">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Select Brand</Label>
@@ -812,15 +667,10 @@ function BrandSection() {
             >
               <option value="">Select Brand Mapping</option>
               {brandList.map((brand: any) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
+                <option key={brand.id} value={brand.id}>{brand.name}</option>
               ))}
             </select>
-            <ChevronDown
-              size={14}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-            />
+            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
         <div>
@@ -832,7 +682,6 @@ function BrandSection() {
   );
 }
 
-// ── SUB COMPONENT SECTION: SHIPPING SCALING ──
 function ShippingSection() {
   const { watch, setValue } = useFormContext();
   const applyDefault = watch("applyDefaultDelivery");
@@ -842,17 +691,10 @@ function ShippingSection() {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-sm font-semibold text-gray-800">
-              Apply default global shipping rates
-            </h4>
-            <p className="text-xs text-gray-400">
-              If disabled, specific rates apply dynamically
-            </p>
+            <h4 className="text-sm font-semibold text-gray-800">Apply default global shipping rates</h4>
+            <p className="text-xs text-gray-400">If disabled, specific rates apply dynamically</p>
           </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => setValue("applyDefaultDelivery", !applyDefault)}
-          >
+          <div className="cursor-pointer" onClick={() => setValue("applyDefaultDelivery", !applyDefault)}>
             <Toggle name="applyDefaultDelivery" />
           </div>
         </div>
@@ -860,29 +702,17 @@ function ShippingSection() {
         {applyDefault ? (
           <div>
             <Label>Delivery Charge (Default Global Rate)</Label>
-            <Input
-              type="number"
-              name="deliveryChargeDefault"
-              placeholder="120"
-            />
+            <Input type="number" name="deliveryChargeDefault" placeholder="120" />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Inside Dhaka Charge</Label>
-              <Input
-                type="number"
-                name="deliveryChargeSpecificInside"
-                placeholder="60"
-              />
+              <Input type="number" name="deliveryChargeSpecificInside" placeholder="60" />
             </div>
             <div>
               <Label>Outside Dhaka Charge</Label>
-              <Input
-                type="number"
-                name="deliveryChargeSpecificOutside"
-                placeholder="200"
-              />
+              <Input type="number" name="deliveryChargeSpecificOutside" placeholder="200" />
             </div>
           </div>
         )}
@@ -891,43 +721,31 @@ function ShippingSection() {
   );
 }
 
-// ── SUB COMPONENT SECTION: META SEO INFO ──
 function SeoSection() {
   return (
     <SectionWrapper title="SEO Meta Search Info">
       <div className="space-y-4">
         <div>
           <Label>Meta Search Keywords</Label>
-          <Input
-            name="seoKeywords"
-            placeholder="samsung, refrigerator, 525 litre, home appliance"
-          />
+          <Input name="seoKeywords" placeholder="samsung, refrigerator, 525 litre, home appliance" />
         </div>
         <div>
           <Label>SEO Meta Title</Label>
-          <Input
-            name="seoTitle"
-            placeholder="Samsung 525 Litre Refrigerator - Best Price"
-          />
+          <Input name="seoTitle" placeholder="Samsung 525 Litre Refrigerator - Best Price" />
         </div>
         <div>
           <Label>SEO Meta Description Layout</Label>
-          <Input
-            name="seoDescription"
-            placeholder="Buy original Samsung 525 Litre Refrigerator at the best price..."
-          />
+          <Input name="seoDescription" placeholder="Buy original Samsung 525 Litre Refrigerator at the best price..." />
         </div>
       </div>
     </SectionWrapper>
   );
 }
 
-// ── SIDEBAR SELECTION COMPONENT: CATEGORIES NESTED TREE ──
 function SidebarCatalogSection() {
   const { setValue, watch } = useFormContext();
   const activeCatId = watch("category_id");
 
-  // 🚀 TANSTACK QUERY: Connected directly to CategoriesController `@Get('tree')`
   const { data: treeResponse, isLoading } = useQuery({
     queryKey: ["categories-nested-tree-upload"],
     queryFn: async () => {
@@ -944,18 +762,22 @@ function SidebarCatalogSection() {
         <option value={node.id}>
           {"\u00A0\u00A0".repeat(level) + (level > 0 ? "├─ " : "") + node.name}
         </option>
-        {node.children &&
-          node.children.length > 0 &&
-          unwindTree(node.children, level + 1)}
+        {node.children && node.children.length > 0 && unwindTree(node.children, level + 1)}
       </React.Fragment>
     ));
   };
 
+  const parsedTreeNodes = (() => {
+    if (!treeResponse) return [];
+    if (Array.isArray(treeResponse)) return treeResponse;
+    if (treeResponse.data && Array.isArray(treeResponse.data)) return treeResponse.data;
+    if (treeResponse.data?.data && Array.isArray(treeResponse.data.data)) return treeResponse.data.data;
+    return [];
+  })();
+
   return (
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-black font-medium text-[20px] mb-4">
-        Catalog Selection
-      </h3>
+      <h3 className="text-black font-medium text-[20px] mb-4">Catalog Selection</h3>
       <Label required>System Category Tree</Label>
       <div className="relative w-full">
         <select
@@ -963,31 +785,19 @@ function SidebarCatalogSection() {
           onChange={(e) => setValue("category_id", e.target.value)}
           className="w-full bg-[#F9FAFB] border border-gray-200 text-gray-800 px-4 py-3 text-xs rounded-[8px] outline-none appearance-none cursor-pointer focus:bg-white"
         >
-          <option value="">
-            {isLoading
-              ? "Synchronizing tree schemas..."
-              : "Select Category Node*"}
-          </option>
-          {treeResponse &&
-            unwindTree(
-              Array.isArray(treeResponse) ? treeResponse : treeResponse.data,
-            )}
+          <option value="">{isLoading ? "Synchronizing tree schemas..." : "Select Category Node*"}</option>
+          {parsedTreeNodes.length > 0 && unwindTree(parsedTreeNodes)}
         </select>
-        <ChevronDown
-          size={14}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-        />
+        <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
       </div>
     </div>
   );
 }
 
-// ── SIDEBAR SELECTION COMPONENT: TAGS SELECTION ──
 function SidebarTagSection() {
   const { setValue, watch } = useFormContext();
   const activeTags = watch("tag_ids") || [];
 
-  // 🚀 TANSTACK QUERY: Connected directly to your target TagsController `@Get()` endpoint
   const { data: tagsResponse } = useQuery({
     queryKey: ["tags-list-upload-select"],
     queryFn: async () => {
@@ -996,14 +806,11 @@ function SidebarTagSection() {
     },
   });
 
-  // 🚀 FIXED: Defensively extract tags data matrix safely into a verified Array payload
   const tagsList = (() => {
     if (Array.isArray(tagsResponse)) return tagsResponse;
-    if (tagsResponse && Array.isArray(tagsResponse.data))
-      return tagsResponse.data;
-    if (tagsResponse && Array.isArray(tagsResponse.tags))
-      return tagsResponse.tags;
-    return []; // absolute stable array fallback prevents .map() runtime exception crashes
+    if (tagsResponse && Array.isArray(tagsResponse.data)) return tagsResponse.data;
+    if (tagsResponse && Array.isArray(tagsResponse.data?.data)) return tagsResponse.data.data;
+    return [];
   })();
 
   const handleToggleTagSelection = (tagId: string) => {
@@ -1025,9 +832,7 @@ function SidebarTagSection() {
               key={tag.id}
               onClick={() => handleToggleTagSelection(tag.id)}
               className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${
-                isSelected
-                  ? "bg-sky-50 text-sky-700 font-semibold"
-                  : "hover:bg-gray-100 text-gray-600"
+                isSelected ? "bg-sky-50 text-sky-700 font-semibold" : "hover:bg-gray-100 text-gray-600"
               }`}
             >
               <span>{tag.name}</span>
@@ -1035,24 +840,17 @@ function SidebarTagSection() {
             </div>
           );
         })}
-        {tagsList.length === 0 && (
-          <span className="text-[11px] text-gray-400">
-            No tags found in catalog records.
-          </span>
-        )}
+        {tagsList.length === 0 && <span className="text-[11px] text-gray-400">No tags found.</span>}
       </div>
     </div>
   );
 }
 
-// ── SIDEBAR SELECTION COMPONENT: PRODUCT CONDITION ──
 function ConditionSection() {
   const { register } = useFormContext();
   return (
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-[#003032] font-bold text-md mb-4">
-        Product Condition
-      </h3>
+      <h3 className="text-[#003032] font-bold text-md mb-4">Product Condition</h3>
       <div className="relative">
         <select
           {...register("condition")}
@@ -1062,10 +860,7 @@ function ConditionSection() {
           <option value="USED">Used / Second Hand</option>
           <option value="REFURBISHED">Refurbished / Factory Restored</option>
         </select>
-        <ChevronDown
-          size={14}
-          className="text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-        />
+        <ChevronDown size={14} className="text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
     </div>
   );

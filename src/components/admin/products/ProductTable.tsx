@@ -40,46 +40,41 @@ export default function ProductTable() {
   const { data: fetchResponse, isLoading } = useQuery({
     queryKey: ["products-list-panel", page, limit, search, category_id, status],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        search,
-        category_id,
-        status,
+      const queryParams = new URLSearchParams();
+      queryParams.set("page", String(page));
+      queryParams.set("limit", String(limit));
+      if (search) queryParams.set("search", search);
+      if (category_id) queryParams.set("category_id", category_id);
+      if (status) queryParams.set("status", status);
+
+      const res = await apiFetch(`/products?${queryParams.toString()}`, {
+        method: "GET"
       });
-
-      // 🚀 ABSOLUTE FALLBACK OVERRIDE: Point directly to your NestJS port address layout
-      const backendUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
-      const token = await getAdminTokenAction();
-
-      const res = await fetch(
-        `${backendUrl}/products?${queryParams.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token || ""}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
 
       if (!res.ok) throw new Error("Failed to sync catalog rows");
       return res.json();
     },
   });
 
-  // 🚀 FIXED: Defensively extract products array without breaking structure or style
+  // 🚀 FIXED: Double unpack to unwrap response.data.data safely to bypass the nest
   const productList = (() => {
-    if (Array.isArray(fetchResponse)) return fetchResponse;
-    if (fetchResponse && Array.isArray(fetchResponse.data))
+    if (!fetchResponse) return [];
+    
+    // Check if the payload matches your precise Postman structure envelope
+    if (fetchResponse.data && Array.isArray(fetchResponse.data.data)) {
+      return fetchResponse.data.data;
+    }
+    if (Array.isArray(fetchResponse.data)) {
       return fetchResponse.data;
-    if (fetchResponse && Array.isArray(fetchResponse.products))
-      return fetchResponse.products;
+    }
+    if (Array.isArray(fetchResponse)) {
+      return fetchResponse;
+    }
     return [];
   })();
 
-  const meta = fetchResponse?.meta || { totalPages: 1, total: 0 };
+  // 🚀 FIXED: Safely read meta details object from the first data level layer
+  const meta = fetchResponse?.data?.meta || fetchResponse?.meta || { totalPages: 1, total: 0 };
 
   // 🚀 DELETE PRODUCT MUTATION
   const deleteMutation = useMutation({
@@ -160,7 +155,7 @@ export default function ProductTable() {
       key: "image",
       render: (product) => {
         const rawImg = Array.isArray(product.images) ? product.images[0] : null;
-        const srcUrl = rawImg
+        const srcUrl = rawImg && rawImg !== "undefined"
           ? rawImg.startsWith("http")
             ? rawImg
             : `${baseStorageUrl}${rawImg}`
