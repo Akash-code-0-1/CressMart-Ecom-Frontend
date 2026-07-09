@@ -566,7 +566,7 @@ const Navbar = () => {
             <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
               <div className="relative w-full h-full flex items-center justify-center">
                 <img
-                  src="/images/mini-logo.png"
+                  src="/images/minilogo.png"
                   alt="Brand Logo"
                   className="w-10 h-10 object-contain"
                   onError={(e) => {
@@ -574,7 +574,6 @@ const Navbar = () => {
                   }}
                 />
                 <span className="text-red-500 font-black text-2xl italic tracking-tighter">
-                  CM
                 </span>
               </div>
             </button>
