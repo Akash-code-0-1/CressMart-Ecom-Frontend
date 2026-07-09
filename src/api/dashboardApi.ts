@@ -44,8 +44,6 @@
 //   return result.data || result;
 // };
 
-
-
 export interface DashboardStatsResponse {
   overview: Record<string, unknown>;
   orderLifecycle: Record<string, unknown>;
@@ -56,12 +54,17 @@ export interface DashboardStatsResponse {
   products: Record<string, unknown>;
 }
 
-export const fetchAdminDashboardStats = async (): Promise<DashboardStatsResponse> => ({
-  overview: {},
-  orderLifecycle: {},
-  charts: {
-    performance: {},
-    salesByCategory: {},
-  },
-  products: {},
-});
+export const fetchAdminDashboardStats = async (
+  _filter: string,
+  _date?: Date,
+): Promise<DashboardStatsResponse> => {
+  return {
+    overview: {},
+    orderLifecycle: {},
+    charts: {
+      performance: {},
+      salesByCategory: {},
+    },
+    products: {},
+  };
+};
