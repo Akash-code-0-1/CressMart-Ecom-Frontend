@@ -324,8 +324,11 @@ export default function ProductUploadMain() {
               Save Draft
             </button>
             <PrimaryButton
-              disabled={productMutation.isPending}
-              onClick={() => productMutation.mutate("PUBLISHED")}
+              onClick={() => {
+                if (!productMutation.isPending) {
+                  productMutation.mutate("PUBLISHED");
+                }
+              }}
               icon={
                 productMutation.isPending ? (
                   <Loader2 className="animate-spin" size={18} />
@@ -337,7 +340,7 @@ export default function ProductUploadMain() {
                 )
               }
               label={productMutation.isPending ? "Uploading..." : "Add Product"}
-              className="w-full sm:w-auto justify-center bg-[#085E00] hover:bg-[#064400]"
+              className={`w-full sm:w-auto justify-center bg-[#085E00] hover:bg-[#064400] ${productMutation.isPending ? "opacity-50 pointer-events-none" : ""}`}
             />
           </div>
         </div>
