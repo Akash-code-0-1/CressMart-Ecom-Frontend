@@ -2,7 +2,7 @@
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import VisitorOrderChart from './VisitorOrderChart';
 import OrderSummaryChart from './OrderSummaryChart';
-import ReturnIcon from '@/components/svg/ReturnIcon';
+import ReturnIcon from '@/components/store-front/svg/svg/ReturnIcon';
 
 const orderSummaryData = [
     { name: 'Pending', value: 31, color: '#26007F' },
