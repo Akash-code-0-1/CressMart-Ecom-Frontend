@@ -45,17 +45,19 @@ export const deleteTag = async (id: string) => {
   return res.json();
 };
 
-// 🚀 4. UPLOAD MEDIA ASSETS (UNIVERSAL FOR IMAGE AND BANNER FILTERS)
+// 🚀 4. UPLOAD MEDIA ASSETS (FIXED ROUTING PATHWAY TO THE VALID CONTROLLER MAPPING)
 export const uploadTagMedia = async (file: File) => {
   const token = await getAdminTokenAction();
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await apiFetch("/tags/upload-image", {
+  // 🚀 FIXED: Pointed directly to the generic category file interceptor matrix endpoint 
+  const res = await apiFetch("/categories/upload-image", {
     method: "POST",
     headers: { Authorization: `Bearer ${token || ""}` },
     body: formData,
   });
+  
   if (!res.ok) throw new Error("Failed to upload graphic asset.");
   const data = await res.json();
   return data?.image_url || data?.data?.image_url || "";

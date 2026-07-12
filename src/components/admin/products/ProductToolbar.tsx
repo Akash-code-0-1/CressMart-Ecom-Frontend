@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +11,6 @@ import ThreeBarIcon from "@/components/store-front/svg/svg/ThreeBarIcon";
 import PrimaryButton from "../common/PrimaryButton";
 import ImportFileIcon from "@/components/store-front/svg/svg/ImportFileIcon";
 import ExportIcon from "@/components/store-front/svg/svg/ExportIcon";
-import SelectTrigger from "../common/SelectTrigger";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
 import ViewIcon from "@/components/store-front/svg/svg/ViewIcon";
 
@@ -27,6 +26,14 @@ export default function ProductToolbar() {
   const currentStatus = searchParams.get("status") || "";
   const currentLimit = searchParams.get("limit") || "10";
 
+  // Local state to manage the immediate search string input typing value
+  const [searchTerm, setSearchTerm] = useState(currentSearch);
+
+  // Keep local search text input state in sync if URL parameters alter from outside
+  useEffect(() => {
+    setSearchTerm(currentSearch);
+  }, [currentSearch]);
+
   // Async fetch categories tree for filtering
   const { data: treeRes } = useQuery({
     queryKey: ["categories-tree-filter"],
@@ -36,13 +43,39 @@ export default function ProductToolbar() {
     }
   });
 
-  // 🚀 FIXED: Defensively unpack categories hierarchy array to match your NestJS Tree response schema
-  const categories = (() => {
-    if (Array.isArray(treeRes)) return treeRes;
-    if (treeRes && Array.isArray(treeRes.data)) return treeRes.data;
-    if (treeRes && Array.isArray(treeRes.categories)) return treeRes.categories;
-    return [];
-  })();
+  // 🚀 FIXED: Deep scan and flatten the entire category tree structural data
+  // This extracts deep child categories (e.g., Fresh Fruits) so they display with accurate hierarchy indicators
+  const flattenedCategories = useMemo(() => {
+    const list: Array<{ id: string; name: string }> = [];
+
+    const parsedTreeNodes = (() => {
+      if (!treeRes) return [];
+      if (Array.isArray(treeRes)) return treeRes;
+      if (treeRes.data && Array.isArray(treeRes.data)) return treeRes.data;
+      if (treeRes.data?.data && Array.isArray(treeRes.data.data)) return treeRes.data.data;
+      if (treeRes.categories && Array.isArray(treeRes.categories)) return treeRes.categories;
+      return [];
+    })();
+
+    const flatten = (nodes: any[], level = 0) => {
+      if (!Array.isArray(nodes)) return;
+      nodes.forEach((node) => {
+        if (node && node.id && node.name) {
+          const prefix = level > 0 ? `${"  ".repeat(level)}├─ ` : "";
+          list.push({
+            id: node.id,
+            name: `${prefix}${node.name}`
+          });
+        }
+        if (node && node.children && node.children.length > 0) {
+          flatten(node.children, level + 1);
+        }
+      });
+    };
+
+    flatten(parsedTreeNodes);
+    return list;
+  }, [treeRes]);
 
   const updateSearchQuery = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -51,6 +84,18 @@ export default function ProductToolbar() {
     params.set("page", "1"); // Reset pagination on filter change
     router.push(`${pathname}?${params.toString()}`);
   };
+
+  // 🚀 DEBOUNCED SEARCH TYPING IMPLEMENTATION ENGINE
+  // Listens to user typing modifications on searchTerm and commits them to query params after 300ms pause
+  useEffect(() => {
+    const delayDebounceTimer = setTimeout(() => {
+      if (searchTerm !== currentSearch) {
+        updateSearchQuery("search", searchTerm);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceTimer);
+  }, [searchTerm]);
 
   // 🚀 LIVE EXPORT ROUTING
   const handleExportExcel = async () => {
@@ -75,7 +120,7 @@ export default function ProductToolbar() {
     }
   };
 
-  // 🚀 LIVE IMPORT ROUTING
+// 🚀 LIVE IMPORT ROUTING WITH EXTENDED REJECTION TRACING
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -94,7 +139,29 @@ export default function ProductToolbar() {
       const responseJson = await res.json();
       if (!res.ok) throw new Error(responseJson?.message || "File processing failure.");
 
-      alert(`Import Success! Mapped: ${responseJson.successCount} rows, Errors: ${responseJson.failedCount}`);
+      // ── MATCH EXACT BACKEND CASING ──
+      const baseSuccess = responseJson.successCount ?? 0;
+      const baseFailed = responseJson.failedCount ?? 0;
+      const errorLogs: string[] = responseJson.errors || [];
+
+      // If the backend collected error strings inside the trace array, display them explicitly
+      if (errorLogs.length > 0) {
+        console.error("Excel Row Reject Summary:", errorLogs);
+        
+        // Show up to the first 5 line errors cleanly formatted inside the dialog pop-up
+        const errorSummary = errorLogs.slice(0, 5).join("\n");
+        const totalHidden = errorLogs.length > 5 ? `\n...and ${errorLogs.length - 5} more line items.` : "";
+        
+        alert(
+          `Import Processed With Anomalies!\n\n` +
+          `✅ Successfully Added/Updated: ${baseSuccess} rows\n` +
+          `❌ Rejected / Failed Rows: ${baseFailed}\n\n` +
+          `📋 Error Logs Breakdown:\n${errorSummary}${totalHidden}`
+        );
+      } else {
+        alert(`Import Complete! Successfully processed all ${baseSuccess} product rows.`);
+      }
+      
       window.location.reload();
     } catch (err: any) {
       alert(`Import Fault: ${err.message}`);
@@ -109,13 +176,13 @@ export default function ProductToolbar() {
         <h2 className="text-[#023337] text-[22px] font-bold">Products</h2>
 
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full lg:w-auto">
-          {/* Search Input Bar */}
+          {/* Search Input Bar (Real-Time Typying Bound) */}
           <div className="relative flex items-center bg-[#F9F9F9] border border-gray-100 rounded-[8px] px-3 py-2 w-full md:w-[292px]">
             <Search size={20} className="text-gray-400 mr-2" />
             <input
               type="text"
-              defaultValue={currentSearch}
-              onKeyDown={(e) => { if (e.key === 'Enter') updateSearchQuery("search", (e.target as HTMLInputElement).value); }}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search products/SKU..."
               className="bg-transparent border-none outline-none text-sm w-full text-black placeholder:text-[#7B7B7B]"
             />
@@ -168,15 +235,17 @@ export default function ProductToolbar() {
             <span className="text-sm font-normal text-black">Filter :</span>
           </div>
 
-          {/* Category Dropdown Selector */}
+          {/* Category Dropdown Selector (Supports Deep Leaf-node Mappings) */}
           <select
             value={currentCategory}
             onChange={(e) => updateSearchQuery("category_id", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer max-w-[160px]"
+            className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer max-w-[180px]"
           >
             <option value="">All Categories</option>
-            {categories.map((cat: any) => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            {flattenedCategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
             ))}
           </select>
 

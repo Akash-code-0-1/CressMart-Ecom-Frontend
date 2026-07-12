@@ -1,68 +1,29 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import {
-  useForm,
-  FormProvider,
-  useFormContext,
-  useFieldArray,
-} from "react-hook-form";
+import React, { useState, useRef, useEffect } from "react";
+import { useForm, FormProvider, useFormContext, useFieldArray } from "react-hook-form";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Calendar,
-  Barcode,
-  ChevronDown,
-  CheckCircle2,
-  Circle,
-  Trash2,
-  Loader2,
-  ChevronUp,
-} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Plus, Calendar, Barcode, ChevronDown, CheckCircle2, Circle, Trash2, Loader2, ChevronUp, Save } from "lucide-react";
 import { apiFetch } from "@/utils/api";
-import { getAdminTokenAction } from "@/app/actions/auth";
+import { uploadProductMedia, createProduct, updateProduct, fetchSingleProduct } from "@/services-api/productService";
 
 import EditFileIcon from "@/components/store-front/svg/svg/EditFileIcon";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
-import CloseIcon from "@/components/store-front/svg/svg/CloseIcon";
 import PrimaryButton from "../../common/PrimaryButton";
-import SeconderyButton from "../../common/SeconderyButton";
 
 // ── SHARED BASE ATOMIC DESIGN MOLECULES ──
-export const Label = ({
-  children,
-  required,
-  subLabel,
-}: {
-  children: React.ReactNode;
-  required?: boolean;
-  subLabel?: string;
-}) => (
+export const Label = ({ children, required, subLabel }: { children: React.ReactNode; required?: boolean; subLabel?: string }) => (
   <div className="flex justify-between items-center mb-1.5">
     <label className="text-base font-normal text-black select-none">
       {children} {required && <span className="text-[#E30000]">*</span>}
     </label>
-    {subLabel && (
-      <span className="text-[10px] text-gray-400 font-medium">{subLabel}</span>
-    )}
+    {subLabel && <span className="text-[10px] text-gray-400 font-medium">{subLabel}</span>}
   </div>
 );
 
-export const Input = ({
-  placeholder,
-  icon: Icon,
-  type = "text",
-  name,
-  options = {},
-}: {
-  placeholder?: string;
-  icon?: React.ElementType;
-  type?: string;
-  name: string;
-  options?: any;
-}) => {
+export const Input = ({ placeholder, icon: Icon, type = "text", name, options = {} }: { placeholder?: string; icon?: React.ElementType; type?: string; name: string; options?: any }) => {
   const { register } = useFormContext();
   return (
     <div className="relative w-full">
@@ -72,12 +33,7 @@ export const Input = ({
         {...register(name, options)}
         className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none placeholder:text-[#A2A2A2] text-gray-800 border border-transparent focus:border-gray-200 focus:bg-white transition-all"
       />
-      {Icon && (
-        <Icon
-          size={18}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-        />
-      )}
+      {Icon && <Icon size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />}
     </div>
   );
 };
@@ -86,50 +42,23 @@ export const Toggle = ({ name }: { name: string }) => {
   const { watch, setValue } = useFormContext();
   const checked = watch(name);
   return (
-    <div
-      className="flex items-center gap-2 select-none cursor-pointer"
-      onClick={() => setValue(name, !checked)}
-    >
-      <div
-        className={`w-10 h-5 rounded-full relative transition-colors ${checked ? "bg-[#1DA1F2]" : "bg-gray-200"}`}
-      >
-        <div
-          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${checked ? "left-5" : "left-0.5"}`}
-        />
+    <div className="flex items-center gap-2 select-none cursor-pointer" onClick={() => setValue(name, !checked)}>
+      <div className={`w-10 h-5 rounded-full relative transition-colors ${checked ? "bg-[#1DA1F2]" : "bg-gray-200"}`}>
+        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${checked ? "left-5" : "left-0.5"}`} />
       </div>
     </div>
   );
 };
 
-export const SectionWrapper = ({
-  title,
-  children,
-  description,
-}: {
-  title: string;
-  children: React.ReactNode;
-  description?: string;
-}) => {
+export const SectionWrapper = ({ title, children, description }: { title: string; children: React.ReactNode; description?: string }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   return (
     <div className="bg-white rounded-[8px] px-4 py-5 mb-4 transition-all border border-gray-100">
-      <div
-        className="flex justify-between items-center mb-4 cursor-pointer select-none"
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
+      <div className="flex justify-between items-center mb-4 cursor-pointer select-none" onClick={() => setIsCollapsed(!isCollapsed)}>
         <h3 className="text-[#003032] font-medium text-xl">{title}</h3>
-        <ChevronUp
-          size={24}
-          color="black"
-          strokeWidth={2.5}
-          className={`transition-transform duration-200 ${isCollapsed ? "rotate-180" : ""}`}
-        />
+        <ChevronUp size={24} color="black" strokeWidth={2.5} className={`transition-transform duration-200 ${isCollapsed ? "rotate-180" : ""}`} />
       </div>
-      {description && !isCollapsed && (
-        <p className="text-xs text-[#A2A2A2] -mt-3 mb-5 leading-tight">
-          {description}
-        </p>
-      )}
+      {description && !isCollapsed && <p className="text-xs text-[#A2A2A2] -mt-3 mb-5 leading-tight">{description}</p>}
       <div className={isCollapsed ? "hidden" : "block"}>{children}</div>
     </div>
   );
@@ -139,8 +68,12 @@ export const SectionWrapper = ({
 export default function ProductUploadMain() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [images, setImages] = useState<string[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+
+  const productId = searchParams.get("id");
+  const isEditMode = !!productId;
 
   const methods = useForm({
     defaultValues: {
@@ -179,27 +112,73 @@ export default function ProductUploadMain() {
 
   const watchedValues = methods.watch();
 
-  const productMutation = useMutation({
+  const { data: existingProduct, isLoading: loadingExistingProduct } = useQuery({
+    queryKey: ["product-single-edit-node", productId],
+    queryFn: () => fetchSingleProduct(productId!),
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (isEditMode && existingProduct) {
+      methods.reset({
+        name: existingProduct.name || "",
+        slug: existingProduct.slug || "",
+        category_id: existingProduct.category_id || existingProduct.category?.id || "",
+        brand_id: existingProduct.brand_id || existingProduct.brand?.id || "",
+        unit_id: existingProduct.unit_id || existingProduct.unit?.id || "",
+        modelName: existingProduct.modelName || "",
+        short_description: existingProduct.short_description || "",
+        description: existingProduct.description || "",
+        regular_price: String(existingProduct.regular_price ?? 0),
+        sell_price: String(existingProduct.sell_price ?? 0),
+        cost_price: String(existingProduct.cost_price ?? 0),
+        quantity: String(existingProduct.quantity ?? 0),
+        unit_name: existingProduct.unit_name || "Pcs",
+        warranty: existingProduct.warranty || "",
+        sku: existingProduct.sku || "",
+        barcode: existingProduct.barcode || "",
+        priority: String(existingProduct.priority ?? 100),
+        is_variant_mandatory: !!existingProduct.is_variant_mandatory,
+        autoSlug: false,
+        status: existingProduct.status || "DRAFT",
+        condition: existingProduct.condition || "NEW",
+        seoTitle: existingProduct.meta_title || "",
+        seoDescription: existingProduct.meta_description || "",
+        seoKeywords: existingProduct.meta_tags || "",
+        tag_ids: Array.isArray(existingProduct.tag_ids) ? existingProduct.tag_ids : [],
+        applyDefaultDelivery: existingProduct.shipping_type === "DEFAULT",
+        deliveryChargeDefault: String(existingProduct.shipping_config?.[0]?.charge ?? 120),
+        deliveryChargeSpecificInside: String(existingProduct.shipping_config?.[0]?.charge ?? 60),
+        deliveryChargeSpecificOutside: String(existingProduct.shipping_config?.[1]?.charge ?? 200),
+        variants: Array.isArray(existingProduct.variants) ? existingProduct.variants.map((v: any) => ({
+          attribute: v.attribute || "",
+          stock: v.stock ?? 0,
+          sku: v.sku || "",
+          price: v.price ?? 0,
+          images: v.images || []
+        })) : [],
+      });
+      if (Array.isArray(existingProduct.images)) {
+        setImages(existingProduct.images);
+      }
+    }
+  }, [existingProduct, isEditMode, methods]);
+
+ const productMutation = useMutation({
     mutationFn: async (targetStatus: "DRAFT" | "PUBLISHED") => {
-      const token = await getAdminTokenAction();
       const formPayload = methods.getValues();
+      const cleanSlug = formPayload.slug || formPayload.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-      const cleanSlug =
-        formPayload.slug ||
-        formPayload.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
-
-      const finalPayload = {
+      // 🚀 FIXED: Send flat database scalar ID fields directly so NestJS validation picks it up smoothly
+      const finalPayload: any = {
+        name: formPayload.name,
+        slug: cleanSlug,
         category_id: formPayload.category_id || null,
         brand_id: formPayload.brand_id || null,
         unit_id: formPayload.unit_id || null,
-        name: formPayload.name,
-        slug: cleanSlug,
         short_description: formPayload.short_description || null,
         description: formPayload.description,
-        status: targetStatus,
+        status: isEditMode ? formPayload.status : targetStatus,
         images: Array.isArray(images) ? images.map((img: any) => String(img)) : [],
         priority: Number(formPayload.priority) || 100,
         regular_price: Number(formPayload.regular_price) || 0,
@@ -214,51 +193,61 @@ export default function ProductUploadMain() {
         meta_description: formPayload.seoDescription || null,
         meta_tags: formPayload.seoKeywords || null,
         shipping_type: formPayload.applyDefaultDelivery ? "DEFAULT" : "SPECIFIC",
-        tag_ids: formPayload.tag_ids,
         shipping_config: [
           { zone: "Dhaka", charge: Number(formPayload.deliveryChargeDefault) },
           {
             zone: "Outside Dhaka",
-            charge: formPayload.applyDefaultDelivery
-              ? Number(formPayload.deliveryChargeDefault)
-              : Number(formPayload.deliveryChargeSpecificOutside),
+            charge: formPayload.applyDefaultDelivery ? Number(formPayload.deliveryChargeDefault) : Number(formPayload.deliveryChargeSpecificOutside),
           },
         ],
-        variants: formPayload.variants.map((v: any) => ({
+      };
+
+      // Exclude sub-arrays on PATCH requests to comply with Prisma constraints
+      if (!isEditMode) {
+        finalPayload.tag_ids = formPayload.tag_ids || [];
+        finalPayload.variants = formPayload.variants.map((v: any) => ({
           attribute: v.attribute,
           stock: Number(v.stock) || 0,
           sku: v.sku || `SKU-${Date.now()}`,
           price: Number(v.price) || 0,
           images: Array.isArray(v.images) ? v.images.map((img: any) => String(img)) : [],
-        })),
-      };
-
-      const res = await apiFetch("/products", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token || ""}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(finalPayload),
-      });
-
-      if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(
-          errorJson?.message || "Failed to successfully complete backend row append operations."
-        );
+        }));
       }
-      return res.json();
+
+      if (isEditMode && productId) {
+        return updateProduct(productId, finalPayload);
+      }
+      return createProduct(finalPayload);
     },
-    onSuccess: (data, status) => {
-      queryClient.invalidateQueries({ queryKey: ["products-list-panel"] });
-      alert(`Success: Product records stored and marked as ${status}!`);
+onSuccess: (data, variables) => {
+      // 🚀 1. Wipe out the main products lists query cache
+      queryClient.invalidateQueries({
+        queryKey: ["products-list-panel"],
+        exact: false
+      });
+      
+      // 🚀 2. CRITICAL: Clear out this exact single product item cache row too so it refetches cleanly next time
+      if (isEditMode && productId) {
+        queryClient.invalidateQueries({
+          queryKey: ["product-single-edit-node", productId],
+          exact: true
+        });
+        queryClient.removeQueries({
+          queryKey: ["product-single-edit-node", productId]
+        });
+      }
+      
+      alert(isEditMode ? "Product updated successfully!" : "Product created successfully!");
+      
       methods.reset();
       setImages([]);
+      
+      // 🚀 3. Route back to dashboard and immediately prompt Next.js to sync server component states
       router.push("/admin/dashboard/products");
+      router.refresh();
     },
     onError: (err: any) => {
-      alert(`Validation Rejection: ${err.message}`);
+      alert(`Rejection Error: ${err.message}`);
     },
   });
 
@@ -268,28 +257,39 @@ export default function ProductUploadMain() {
     (watchedValues.sell_price ? 25 : 0) +
     (images.length > 0 ? 25 : 0);
 
+  if (isEditMode && loadingExistingProduct) {
+    return (
+      <div className="h-64 w-full flex items-center justify-center text-gray-400 gap-2 bg-[#F9FAFB]">
+        <Loader2 className="animate-spin text-gray-500" />
+        <span className="text-xs">Synchronizing target product row data from servers...</span>
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={(e) => e.preventDefault()} className="w-full min-h-screen font-lato pb-12">
         <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-4 p-4 bg-white border-b border-gray-100 rounded-[8px]">
           <div>
-            <h1 className="text-xl font-bold text-black sm:text-2xl">Product Upload</h1>
+            <h1 className="text-xl font-bold text-black sm:text-2xl">{isEditMode ? "Edit Product Workspace" : "Product Upload"}</h1>
             <p className="text-xs text-gray-400">Integrated server state transactional panel console</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <button
-              type="button"
-              disabled={productMutation.isPending}
-              onClick={() => productMutation.mutate("DRAFT")}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-[8px] bg-white text-[#070606] font-semibold text-sm justify-center border border-gray-200 cursor-pointer disabled:opacity-50 hover:bg-gray-50 transition-colors"
-            >
-              {productMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <EditFileIcon />} Save Draft
-            </button>
+            {!isEditMode && (
+              <button
+                type="button"
+                disabled={productMutation.isPending}
+                onClick={() => productMutation.mutate("DRAFT")}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-[8px] bg-white text-[#070606] font-semibold text-sm justify-center border border-gray-200 cursor-pointer disabled:opacity-50 hover:bg-gray-50 transition-colors"
+              >
+                {productMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <EditFileIcon />} Save Draft
+              </button>
+            )}
             <PrimaryButton
               onClick={() => { if (!productMutation.isPending) productMutation.mutate("PUBLISHED"); }}
-              icon={productMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Plus size={24} className="border-2 border-white rounded-full p-0.5" />}
-              label={productMutation.isPending ? "Uploading..." : "Add Product"}
-              className={`w-full sm:w-auto justify-center bg-[#085E00] hover:bg-[#064400] ${productMutation.isPending ? "opacity-50 pointer-events-none" : ""}`}
+              icon={productMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : isEditMode ? <Save size={16} /> : <Plus size={24} className="border-2 border-white rounded-full p-0.5" />}
+              label={productMutation.isPending ? "Saving..." : isEditMode ? "Save Product Changes" : "Add Product"}
+              className={`w-full sm:w-auto justify-center bg-[#085E00] hover:bg-[#064400] ${productMutation.isPending ? "opacity-60 pointer-events-none" : ""}`}
             />
           </div>
         </div>
@@ -316,9 +316,9 @@ export default function ProductUploadMain() {
             </SectionWrapper>
 
             <InventorySection Calendar={Calendar} Barcode={Barcode} />
-            <VariantsSection />
+            <VariantsSection isEditMode={isEditMode} />
             <BrandSection />
-            <ShippingSection />
+            <ShippingSection isEditMode={isEditMode} />
             <SeoSection />
           </div>
 
@@ -348,7 +348,7 @@ export default function ProductUploadMain() {
             </div>
 
             <SidebarCatalogSection />
-            <SidebarTagSection />
+            <SidebarTagSection isEditMode={isEditMode} />
             <ConditionSection />
           </div>
         </div>
@@ -361,6 +361,7 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
   const { register, setValue, watch } = useFormContext();
   const fileRef = useRef<HTMLInputElement>(null);
   const autoSlug = watch("autoSlug");
+  const baseStorageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -368,30 +369,15 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
 
     try {
       setUploading(true);
-      const token = await getAdminTokenAction();
-      const bodyData = new FormData();
-      
-      // Append matching your NestJS FilesInterceptor('images', 8) name key structure
-      Array.from(files).forEach((file) => {
-        bodyData.append("images", file);
-      });
-
-      const res = await apiFetch("/products/upload-image", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token || ""}` },
-        body: bodyData,
-      });
-
-      if (!res.ok) throw new Error("File upload failed");
-      const data = await res.json();
-      
-      if (data.success && Array.isArray(data.image_urls)) {
-        setImages((prev: string[]) => [...prev, ...data.image_urls]);
+      const paths = await uploadProductMedia(files);
+      if (paths.length > 0) {
+        setImages((prev: string[]) => [...prev, ...paths]);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert(`Asset Sync Rejection: ${err.message}`);
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = ""; 
     }
   };
 
@@ -411,10 +397,7 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
               required: true,
               onChange: (e) => {
                 if (autoSlug) {
-                  const computed = e.target.value
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/(^-|-$)/g, "");
+                  const computed = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
                   setValue("slug", computed);
                 }
               },
@@ -426,45 +409,36 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
 
         <div>
           <Label>Product Slug (URL Path)</Label>
-          <input
-            {...register("slug")}
-            disabled={autoSlug}
-            className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-500 disabled:opacity-60"
-            placeholder="samsung-galaxy-s23-ultra"
-          />
+          <input {...register("slug")} disabled={autoSlug} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-500 disabled:opacity-60" placeholder="samsung-galaxy-s23-ultra" />
         </div>
 
         <div>
           <Label required>Media Gallery</Label>
-          <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center">
+          <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[160px]">
             {images.length > 0 && (
-              <div className="flex flex-wrap gap-2.5 mb-4">
+              <div className="flex flex-wrap gap-2.5 mb-4 justify-center">
                 {images.map((src: string, i: number) => (
-                  <div key={i} className="relative group w-16 h-16 rounded border overflow-hidden bg-white shadow-3xs">
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "")}${src}`}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
+                  <div key={i} className="relative group w-20 h-20 rounded border overflow-hidden bg-white shadow-3xs">
+                    <img src={src.startsWith("http") ? src : `${baseStorageUrl}${src}`} className="w-full h-full object-cover" alt="" />
                     <button
                       type="button"
-                      onClick={() => setImages(images.filter((_: any, idx: number) => idx !== i))}
-                      className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setImages(images.filter((_, idx) => idx !== i))}
+                      className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <label className="cursor-pointer flex flex-col items-center">
+            <div onClick={() => fileRef.current?.click()} className="cursor-pointer flex flex-col items-center select-none">
               <IamgeIcon size="48" color="#999" />
-              <span className="text-xs text-gray-500 mt-2 font-medium">Stage gallery photos</span>
-              <input type="file" ref={fileRef} className="hidden" onChange={handleUpload} accept="image/*" multiple disabled={uploading} />
-            </label>
+              <span className="text-xs text-gray-500 mt-2 font-medium">Stage gallery photos (Multiple Allowed)</span>
+            </div>
+            <input type="file" ref={fileRef} className="hidden" onChange={handleUpload} accept="image/*" multiple disabled={uploading} />
             {uploading && (
-              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                <Loader2 className="animate-spin text-orange-500" />
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-[8px]">
+                <Loader2 className="animate-spin text-orange-500" size={24} />
               </div>
             )}
           </div>
@@ -472,20 +446,12 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
 
         <div>
           <Label>Short Description</Label>
-          <textarea
-            {...register("short_description")}
-            className="w-full bg-[#F9FAFB] rounded-[8px] px-4 py-3 text-sm min-h-[80px] outline-none text-gray-800"
-            placeholder="Summary highlights..."
-          />
+          <textarea {...register("short_description")} className="w-full bg-[#F9FAFB] rounded-[8px] px-4 py-3 text-sm min-h-[80px] outline-none text-gray-800 resize-none" placeholder="Summary highlights..." />
         </div>
 
         <div>
           <Label required>Product Description</Label>
-          <textarea
-            {...register("description", { required: true })}
-            className="w-full bg-[#F9FAFB] rounded-[8px] p-4 min-h-[140px] outline-none text-sm text-gray-800"
-            placeholder="Full technical parameters logs..."
-          />
+          <textarea {...register("description", { required: true })} className="w-full bg-[#F9FAFB] rounded-[8px] p-4 min-h-[140px] outline-none text-sm text-gray-800 resize-none" placeholder="Full technical parameters logs..." />
         </div>
       </div>
     </SectionWrapper>
@@ -517,13 +483,7 @@ function InventorySection({ Barcode }: any) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <Label>Quantity (Stock)</Label>
-          <input
-            type="number"
-            {...register("quantity")}
-            disabled={isVariantMandatory}
-            className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50"
-            placeholder={isVariantMandatory ? "Derived from attributes" : "50"}
-          />
+          <input type="number" {...register("quantity")} disabled={isVariantMandatory} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50" placeholder={isVariantMandatory ? "Derived from attributes" : "50"} />
         </div>
         <div>
           <Label>Unit Selection Mapping</Label>
@@ -545,28 +505,16 @@ function InventorySection({ Barcode }: any) {
             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
-        <div>
-          <Label>Warranty</Label>
-          <Input name="warranty" placeholder="12 months" />
-        </div>
-        <div>
-          <Label>SKU / Code</Label>
-          <Input name="sku" placeholder="SAM-REF-525" />
-        </div>
-        <div>
-          <Label>Barcode</Label>
-          <Input name="barcode" placeholder="88091..." icon={Barcode} />
-        </div>
-        <div>
-          <Label>Priority Rank</Label>
-          <Input type="number" name="priority" placeholder="100" />
-        </div>
+        <div><Label>Warranty</Label><Input name="warranty" placeholder="12 months" /></div>
+        <div><Label>SKU / Code</Label><Input name="sku" placeholder="SAM-REF-525" /></div>
+        <div><Label>Barcode</Label><Input name="barcode" placeholder="88091..." icon={Barcode} /></div>
+        <div><Label>Priority Rank</Label><Input type="number" name="priority" placeholder="100" /></div>
       </div>
     </SectionWrapper>
   );
 }
 
-function VariantsSection() {
+function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
   const { control, register, watch, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
   const isMandatory = watch("is_variant_mandatory");
@@ -578,25 +526,19 @@ function VariantsSection() {
 
   const handlePushOption = () => {
     if (!vAttr || !vPrice) return;
-    append({
-      attribute: vAttr,
-      stock: Number(vStock) || 0,
-      price: Number(vPrice) || 0,
-      sku: vSku || `SKU-${Date.now()}`,
-      images: []
-    });
+    append({ attribute: vAttr, stock: Number(vStock) || 0, price: Number(vPrice) || 0, sku: vSku || `SKU-${Date.now()}`, images: [] });
     setVAttr(""); setVStock(""); setVPrice(""); setVSku("");
   };
 
   return (
-    <SectionWrapper title="Product Variants" description="Track variations mappings.">
+    <SectionWrapper title="Product Variants" description={isEditMode ? "Variants are managed read-only during core metadata edit." : "Track variations mappings."}>
       <div className="border border-sky-400 rounded-[12px] p-5 space-y-4 bg-white">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div>
             <h4 className="text-base font-semibold text-black">Make this variant mandatory</h4>
             <p className="text-xs text-gray-400">Forces selection rules onto storefront client checkout lines</p>
           </div>
-          <div className="cursor-pointer" onClick={() => setValue("is_variant_mandatory", !isMandatory)}>
+          <div className="cursor-pointer" onClick={() => !isEditMode && setValue("is_variant_mandatory", !isMandatory)}>
             <Toggle name="is_variant_mandatory" />
           </div>
         </div>
@@ -604,32 +546,25 @@ function VariantsSection() {
         {fields.map((field, idx) => (
           <div key={field.id} className="flex justify-between items-center text-xs bg-gray-50 p-2.5 rounded border">
             <span><strong>{watch(`variants.${idx}.attribute`)}</strong> | ৳{watch(`variants.${idx}.price`)} | Stock: {watch(`variants.${idx}.stock`)}</span>
-            <button type="button" onClick={() => remove(idx)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+            {!isEditMode && (
+              <button type="button" onClick={() => remove(idx)} className="text-red-500 hover:text-red-700"><Trash2 size={14} /></button>
+            )}
           </div>
         ))}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-semibold mb-1 block">Option Name</label>
-            <input value={vAttr} onChange={(e) => setVAttr(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="e.g., Silver, Matte Black" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1 block">Price</label>
-            <input type="number" value={vPrice} onChange={(e) => setVPrice(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="72000" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1 block">Stock Level</label>
-            <input type="number" value={vStock} onChange={(e) => setVStock(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="30" />
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1 block">Custom Variant SKU</label>
-            <input value={vSku} onChange={(e) => setVSku(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="SAM-REF-BLK" />
-          </div>
-        </div>
-
-        <button type="button" onClick={handlePushOption} className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90">
-          <PluseIcon /> Commit Option
-        </button>
+        {!isEditMode && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs font-semibold mb-1 block">Option Name</label><input value={vAttr} onChange={(e) => setVAttr(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="e.g., Silver, Matte Black" /></div>
+              <div><label className="text-xs font-semibold mb-1 block">Price</label><input type="number" value={vPrice} onChange={(e) => setVPrice(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="72000" /></div>
+              <div><label className="text-xs font-semibold mb-1 block">Stock Level</label><input type="number" value={vStock} onChange={(e) => setVStock(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="30" /></div>
+              <div><label className="text-xs font-semibold mb-1 block">Custom Variant SKU</label><input value={vSku} onChange={(e) => setVSku(e.target.value)} className="w-full bg-gray-50 border p-2 text-xs rounded outline-none" placeholder="SAM-REF-BLK" /></div>
+            </div>
+            <button type="button" onClick={handlePushOption} className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90">
+              <PluseIcon /> Commit Option
+            </button>
+          </>
+        )}
       </div>
     </SectionWrapper>
   );
@@ -673,47 +608,34 @@ function BrandSection() {
             <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
-        <div>
-          <Label>Model Variant Reference String</Label>
-          <Input name="modelName" placeholder="Ex: RT53 Refrigerator" />
-        </div>
+        <div><Label>Model Variant Reference String</Label><Input name="modelName" placeholder="Ex: RT53 Refrigerator" /></div>
       </div>
     </SectionWrapper>
   );
 }
 
-function ShippingSection() {
+function ShippingSection({ isEditMode }: { isEditMode: boolean }) {
   const { watch, setValue } = useFormContext();
   const applyDefault = watch("applyDefaultDelivery");
 
   return (
-    <SectionWrapper title="Shipping Configuration">
+    <SectionWrapper title="Shipping Configuration" description={isEditMode ? "Shipping zones configurations are structural relations." : undefined}>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
             <h4 className="text-sm font-semibold text-gray-800">Apply default global shipping rates</h4>
             <p className="text-xs text-gray-400">If disabled, specific rates apply dynamically</p>
           </div>
-          <div className="cursor-pointer" onClick={() => setValue("applyDefaultDelivery", !applyDefault)}>
+          <div className="cursor-pointer" onClick={() => !isEditMode && setValue("applyDefaultDelivery", !applyDefault)}>
             <Toggle name="applyDefaultDelivery" />
           </div>
         </div>
-
         {applyDefault ? (
-          <div>
-            <Label>Delivery Charge (Default Global Rate)</Label>
-            <Input type="number" name="deliveryChargeDefault" placeholder="120" />
-          </div>
+          <div><Label>Delivery Charge (Default Global Rate)</Label><Input type="number" name="deliveryChargeDefault" placeholder="120" /></div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Inside Dhaka Charge</Label>
-              <Input type="number" name="deliveryChargeSpecificInside" placeholder="60" />
-            </div>
-            <div>
-              <Label>Outside Dhaka Charge</Label>
-              <Input type="number" name="deliveryChargeSpecificOutside" placeholder="200" />
-            </div>
+            <div><Label>Inside Dhaka Charge</Label><Input type="number" name="deliveryChargeSpecificInside" placeholder="60" /></div>
+            <div><Label>Outside Dhaka Charge</Label><Input type="number" name="deliveryChargeSpecificOutside" placeholder="200" /></div>
           </div>
         )}
       </div>
@@ -725,18 +647,9 @@ function SeoSection() {
   return (
     <SectionWrapper title="SEO Meta Search Info">
       <div className="space-y-4">
-        <div>
-          <Label>Meta Search Keywords</Label>
-          <Input name="seoKeywords" placeholder="samsung, refrigerator, 525 litre, home appliance" />
-        </div>
-        <div>
-          <Label>SEO Meta Title</Label>
-          <Input name="seoTitle" placeholder="Samsung 525 Litre Refrigerator - Best Price" />
-        </div>
-        <div>
-          <Label>SEO Meta Description Layout</Label>
-          <Input name="seoDescription" placeholder="Buy original Samsung 525 Litre Refrigerator at the best price..." />
-        </div>
+        <div><Label>Meta Search Keywords</Label><Input name="seoKeywords" placeholder="samsung, refrigerator, 525 litre, home appliance" /></div>
+        <div><Label>SEO Meta Title</Label><Input name="seoTitle" placeholder="Samsung 525 Litre Refrigerator - Best Price" /></div>
+        <div><Label>SEO Meta Description Layout</Label><Input name="seoDescription" placeholder="Buy original Samsung 525 Litre Refrigerator at the best price..." /></div>
       </div>
     </SectionWrapper>
   );
@@ -759,9 +672,7 @@ function SidebarCatalogSection() {
     if (!Array.isArray(nodes)) return null;
     return nodes.map((node) => (
       <React.Fragment key={node.id}>
-        <option value={node.id}>
-          {"\u00A0\u00A0".repeat(level) + (level > 0 ? "├─ " : "") + node.name}
-        </option>
+        <option value={node.id}>{"\u00A0\u00A0".repeat(level) + (level > 0 ? "├─ " : "") + node.name}</option>
         {node.children && node.children.length > 0 && unwindTree(node.children, level + 1)}
       </React.Fragment>
     ));
@@ -780,11 +691,7 @@ function SidebarCatalogSection() {
       <h3 className="text-black font-medium text-[20px] mb-4">Catalog Selection</h3>
       <Label required>System Category Tree</Label>
       <div className="relative w-full">
-        <select
-          value={activeCatId || ""}
-          onChange={(e) => setValue("category_id", e.target.value)}
-          className="w-full bg-[#F9FAFB] border border-gray-200 text-gray-800 px-4 py-3 text-xs rounded-[8px] outline-none appearance-none cursor-pointer focus:bg-white"
-        >
+        <select value={activeCatId || ""} onChange={(e) => setValue("category_id", e.target.value)} className="w-full bg-[#F9FAFB] border border-gray-200 text-gray-800 px-4 py-3 text-xs rounded-[8px] outline-none appearance-none cursor-pointer focus:bg-white">
           <option value="">{isLoading ? "Synchronizing tree schemas..." : "Select Category Node*"}</option>
           {parsedTreeNodes.length > 0 && unwindTree(parsedTreeNodes)}
         </select>
@@ -794,7 +701,7 @@ function SidebarCatalogSection() {
   );
 }
 
-function SidebarTagSection() {
+function SidebarTagSection({ isEditMode }: { isEditMode: boolean }) {
   const { setValue, watch } = useFormContext();
   const activeTags = watch("tag_ids") || [];
 
@@ -814,9 +721,8 @@ function SidebarTagSection() {
   })();
 
   const handleToggleTagSelection = (tagId: string) => {
-    const updatedTags = activeTags.includes(tagId)
-      ? activeTags.filter((id: string) => id !== tagId)
-      : [...activeTags, tagId];
+    if (isEditMode) return;
+    const updatedTags = activeTags.includes(tagId) ? activeTags.filter((id: string) => id !== tagId) : [...activeTags, tagId];
     setValue("tag_ids", updatedTags);
   };
 
@@ -828,13 +734,7 @@ function SidebarTagSection() {
         {tagsList.map((tag: any) => {
           const isSelected = activeTags.includes(tag.id);
           return (
-            <div
-              key={tag.id}
-              onClick={() => handleToggleTagSelection(tag.id)}
-              className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${
-                isSelected ? "bg-sky-50 text-sky-700 font-semibold" : "hover:bg-gray-100 text-gray-600"
-              }`}
-            >
+            <div key={tag.id} onClick={() => handleToggleTagSelection(tag.id)} className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-sky-50 text-sky-700 font-semibold" : "hover:bg-gray-100 text-gray-600"} ${isEditMode ? "opacity-60 cursor-not-allowed" : ""}`}>
               <span>{tag.name}</span>
               {isSelected && <span className="font-bold text-sky-600">✓</span>}
             </div>
@@ -852,10 +752,7 @@ function ConditionSection() {
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
       <h3 className="text-[#003032] font-bold text-md mb-4">Product Condition</h3>
       <div className="relative">
-        <select
-          {...register("condition")}
-          className="w-full bg-[#F9FAFB] border border-gray-200 px-4 py-3 rounded-[8px] text-xs text-gray-700 outline-none appearance-none cursor-pointer"
-        >
+        <select {...register("condition")} className="w-full bg-[#F9FAFB] border border-gray-200 px-4 py-3 rounded-[8px] text-xs text-gray-700 outline-none appearance-none cursor-pointer">
           <option value="NEW">New / Boxed</option>
           <option value="USED">Used / Second Hand</option>
           <option value="REFURBISHED">Refurbished / Factory Restored</option>
