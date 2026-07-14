@@ -413,57 +413,62 @@ export default function ReviewTable() {
   };
 
   // 🚀 FIXED: Robust image replacement handler with correct scope
-  const handleModalImageReplacement = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file || !editingReviewId) return;
+const handleModalImageReplacement = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file || !editingReviewId) return;
 
-    setIsUploadingImage(true);
-    try {
-      const formData = new FormData();
-      formData.append("images", file);
+  setIsUploadingImage(true);
+  try {
+    const formData = new FormData();
+    formData.append("images", file);
 
-      const token = await getAdminTokenAction();
+    const token = await getAdminTokenAction();
+    const res = await fetch(`${baseApiUrl}/reviews/admin/${editingReviewId}/upload-images`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token || ""}` },
+      body: formData,
+    });
 
-      // 🚀 CALL THE NEW CONTEXTUAL ENDPOINT
-      const res = await fetch(
-        `${baseApiUrl}/reviews/admin/${editingReviewId}/upload-images`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token || ""}` },
-          body: formData,
-        },
-      );
+    if (!res.ok) throw new Error("Upload failed");
 
-      if (!res.ok) throw new Error("Upload failed");
+    const payload = await res.json();
+    const newPaths = payload.image_urls || [];
+    
+    // 🚀 OPTIMISTIC UPDATE: Update the modal state immediately
+    setModalImages(newPaths); 
+    
+    // 🚀 Update the local ReviewTable view immediately
+    // Find the current item and update its rawImages in the Query Cache
+    queryClient.setQueryData(["admin-reviews-list", rPage, statusFilter, cSearch, forceBypass], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+            ...oldData,
+            data: {
+                ...oldData.data,
+                data: oldData.data.data.map((r: any) => 
+                    r.id === editingReviewId ? { ...r, images: newPaths } : r
+                )
+            }
+        };
+    });
 
-      const payload = await res.json();
-
-      // Update local state for immediate UI feedback
-      if (payload.image_urls) {
-        setModalImages(payload.image_urls);
-      }
-
-      // Force refresh data
-      setForceBypass(true);
-      queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
-    } catch (err) {
-      console.error("❌ UPLOAD ERROR:", err);
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
-
-  // Build current dynamic review path string matching selection modifications
-  let currentModalProductImage =
-    activeReviewItem?.productImage || FALLBACK_AVATAR;
-  if (modalImages.length > 0 && modalImages[0]) {
-    currentModalProductImage =
-      modalImages[0].startsWith("http") || modalImages[0].startsWith("data:")
-        ? modalImages[0]
-        : `${BACKEND_URL}${modalImages[0].startsWith("/") ? modalImages[0] : `/${modalImages[0]}`}`;
+    setForceBypass(true);
+  } catch (err) {
+    console.error("❌ UPLOAD ERROR:", err);
+  } finally {
+    setIsUploadingImage(false);
   }
+};
+
+// Ensure this block is at the top of your component so it re-runs on every render
+let currentModalProductImage = activeReviewItem?.productImage || FALLBACK_AVATAR;
+
+// 🚀 THIS MUST WATCH modalImages
+if (modalImages && modalImages.length > 0 && modalImages[0]) {
+  currentModalProductImage = modalImages[0].startsWith("http") 
+    ? modalImages[0] 
+    : `${BACKEND_URL}${modalImages[0].startsWith("/") ? modalImages[0] : `/${modalImages[0]}`}`;
+}
 
   const columns: TableColumn<ReviewItem>[] = [
     {
