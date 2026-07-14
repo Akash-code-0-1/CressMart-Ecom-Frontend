@@ -1,171 +1,3 @@
-// "use client";
-
-// import React, { useState } from "react";
-// import Image from "next/image";
-// import { MoreVertical } from "lucide-react";
-// import DataTable from "../../common/DataTable";
-// import Pagination from "../../common/Pagination";
-
-// interface TableColumn<T> {
-//   header: string;
-//   key: string;
-//   render?: (item: T, index: number) => React.ReactNode;
-//   headerRender?: () => React.ReactNode;
-//   className?: string;
-//   headerClassName?: string;
-// }
-
-// interface BrandItem {
-//   id: number;
-//   sl: number;
-//   image: string;
-//   brandName: string;
-//   products: number;
-//   priority: number;
-//   status: "Publish" | "Draft";
-// }
-
-// const brands: BrandItem[] = Array.from({ length: 10 }, (_, index) => ({
-//   id: index + 1,
-//   sl: index + 1,
-//   image: "/images/products/product2.png",
-//   brandName: "Toy",
-//   products: 5,
-//   priority: 100,
-//   status: index === 7 ? "Draft" : "Publish", // Row 8 is set to Draft to match image_519f01.png
-// }));
-
-// export default function BrandTable() {
-//   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-
-//   const handleSelectRow = (id: number) => {
-//     setSelectedIds((prev) =>
-//       prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
-//     );
-//   };
-
-//   const handleSelectAll = () => {
-//     if (selectedIds.length === brands.length) {
-//       setSelectedIds([]);
-//     } else {
-//       setSelectedIds(brands.map((item) => item.id));
-//     }
-//   };
-
-//   const columns: TableColumn<BrandItem>[] = [
-//     {
-//       header: "",
-//       key: "checkbox-selection",
-//       headerClassName: "w-[45px]",
-//       headerRender: () => (
-//         <input
-//           type="checkbox"
-//           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-//           checked={selectedIds.length === brands.length && brands.length > 0}
-//           onChange={handleSelectAll}
-//         />
-//       ),
-//       render: (item) => (
-//         <input
-//           type="checkbox"
-//           className="w-4 h-4 rounded border-[#EAF8E7] accent-[#1DA1F2] cursor-pointer"
-//           checked={selectedIds.includes(item.id)}
-//           onChange={() => handleSelectRow(item.id)}
-//         />
-//       ),
-//     },
-//     {
-//       header: "SL",
-//       key: "sl",
-//       render: (item) => (
-//         <span className="text-[15px] text-[#1D1A1A] font-normal">
-//           {item.sl}
-//         </span>
-//       ),
-//     },
-//     {
-//       header: "Image/icon",
-//       key: "image",
-//       render: (item) => (
-//         <div className="flex items-center">
-//           <Image
-//             src={item.image}
-//             alt={item.brandName}
-//             width={45}
-//             height={45}
-//             className="rounded-[8px] object-cover"
-//           />
-//         </div>
-//       ),
-//     },
-//     {
-//       header: "Brand Name",
-//       key: "brandName",
-//       render: (item) => (
-//         <span className="text-[15px] text-[#1D1A1A] font-normal">
-//           {item.brandName}
-//         </span>
-//       ),
-//     },
-//     {
-//       header: "Products",
-//       key: "products",
-//       render: (item) => (
-//         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-//           {item.products}
-//         </span>
-//       ),
-//     },
-//     {
-//       header: "Priority",
-//       key: "priority",
-//       render: (item) => (
-//         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-//           {item.priority}
-//         </span>
-//       ),
-//     },
-//     {
-//       header: "Status",
-//       key: "status",
-//       render: (item) => (
-//         <div
-//           className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${
-//             item.status === "Publish"
-//               ? "bg-[#C1FFBC] text-[#085E00]"
-//               : "bg-[#FFE2C1] text-[#A65E00]" // Matches style configuration for Draft item
-//           }`}
-//         >
-//           {item.status}
-//         </div>
-//       ),
-//     },
-//     {
-//       header: "Action",
-//       key: "action",
-//       render: () => (
-//         <button className="text-black p-1 transition-colors">
-//           <MoreVertical size={20} />
-//         </button>
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <div className="bg-white font-poppins">
-//       <DataTable data={brands} columns={columns} rowKey="id" gradiant={true} />
-
-//       <div className="py-5 md:mx-10 mx-2">
-//         <Pagination
-//           currentPage={1}
-//           totalPages={24}
-//           onPageChange={(page) => console.log(page)}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import React, { useState } from "react";
@@ -200,18 +32,22 @@ export default function BrandTable() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const baseStorageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
 
-  // FETCH WORKFLOW: Load real live brand elements from backend servers
+
   const { data: serverPayload, isLoading } = useQuery({
     queryKey: ["catalog-brands-list", page, limit, search, status],
     queryFn: () => {
       let mappedStatus = "";
       if (status === "PUBLISHED") mappedStatus = "active";
       if (status === "DRAFT") mappedStatus = "draft";
-
       return fetchAllBrands({ page, limit, search, status: mappedStatus });
     },
+
+    staleTime: 0, 
+    refetchOnMount: true, 
   });
 
   const brandList = serverPayload?.data || [];
@@ -235,7 +71,9 @@ export default function BrandTable() {
   };
 
   const handleSelectRow = (id: string) => {
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]);
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
+    );
   };
 
   const handleSelectAll = () => {
@@ -257,7 +95,9 @@ export default function BrandTable() {
         <input
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.length === brandList.length && brandList.length > 0}
+          checked={
+            selectedIds.length === brandList.length && brandList.length > 0
+          }
           onChange={handleSelectAll}
         />
       ),
@@ -281,15 +121,29 @@ export default function BrandTable() {
         </span>
       ),
     },
+    // Inside BrandTable.tsx, update the Image column
     {
       header: "Image/icon",
       key: "image",
-      className: "px-4 py-3 align-middle",
-      headerClassName: "px-4 py-3 text-left",
       render: (item) => {
         const rawImg = item.logo_url;
-        const srcUrl = rawImg ? (rawImg.startsWith("http") ? rawImg : `${baseStorageUrl}${rawImg}`) : "/images/products/product2.png";
-        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border" />;
+        // 🚀 FIX: Append timestamp ?t=... to force browser to refresh the image
+        const baseUrl = rawImg
+          ? rawImg.startsWith("http")
+            ? rawImg
+            : `${baseStorageUrl}${rawImg}`
+          : "/images/products/product2.png";
+
+        const srcUrl = rawImg ? `${baseUrl}?t=${Date.now()}` : baseUrl;
+
+        return (
+          <img
+            src={srcUrl}
+            key={srcUrl} // KEY + srcUrl forces React to re-render when the image changes
+            alt={item.name}
+            className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border"
+          />
+        );
       },
     },
     {
@@ -331,11 +185,16 @@ export default function BrandTable() {
       className: "px-4 py-3 align-middle",
       headerClassName: "px-4 py-3 text-left",
       render: (item) => {
-        const isPublished = item.status === "PUBLISHED" || item.status === "active" || item.status === "Publish";
+        const isPublished =
+          item.status === "PUBLISHED" ||
+          item.status === "active" ||
+          item.status === "Publish";
         return (
           <div
             className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${
-              isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-[#FFE2C1] text-[#A65E00]"
+              isPublished
+                ? "bg-[#C1FFBC] text-[#085E00]"
+                : "bg-[#FFE2C1] text-[#A65E00]"
             }`}
           >
             {isPublished ? "Publish" : "Draft"}
@@ -350,25 +209,32 @@ export default function BrandTable() {
       headerClassName: "px-4 py-3 text-right",
       render: (item) => (
         <div className="relative inline-block text-left">
-          <button 
-            onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)} 
+          <button
+            onClick={() =>
+              setActiveMenuId(activeMenuId === item.id ? null : item.id)
+            }
             className="text-black p-1 transition-colors cursor-pointer"
           >
             <MoreVertical size={20} />
           </button>
-          
+
           {activeMenuId === item.id && (
             <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50 text-left">
               <button
                 type="button"
-                onClick={() => router.push(`/admin/dashboard/brand/add?id=${item.id}`)}
+                onClick={() =>
+                  router.push(`/admin/dashboard/brand/add?id=${item.id}`)
+                }
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
               >
                 <Edit3 size={12} /> Edit Brand
               </button>
               <button
                 type="button"
-                onClick={() => { if (window.confirm("Delete this brand record permanently?")) deleteMutation.mutate(item.id); }}
+                onClick={() => {
+                  if (window.confirm("Delete this brand record permanently?"))
+                    deleteMutation.mutate(item.id);
+                }}
                 className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
               >
                 <Trash2 size={12} /> Delete Brand
@@ -384,7 +250,9 @@ export default function BrandTable() {
     return (
       <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
         <Loader2 className="animate-spin text-gray-400" size={24} />
-        <span className="text-xs">Synchronizing global brand catalog entries...</span>
+        <span className="text-xs">
+          Synchronizing global brand catalog entries...
+        </span>
       </div>
     );
   }
