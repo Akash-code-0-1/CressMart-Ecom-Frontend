@@ -5,13 +5,20 @@ import Link from "next/link";
 import ChevronDownIcon from "../svg/ChevronDownIcon";
 import LocationIcon from "../svg/LocationIcon";
 import TrackIcon from "../svg/TrackIcon";
+import { useQuery } from "@tanstack/react-query";
+import { getSettings } from "@/services-api/globalSettingsService";
 
 const TopHeader = () => {
   const [language, setLanguage] = useState<"BAN" | "ENG">("BAN");
   const [openLanguage, setOpenLanguage] = useState(false);
-
   const languageRef = useRef<HTMLDivElement>(null);
 
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
+  });
+  const announcement = settings?.data?.announcement;
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -21,17 +28,9 @@ const TopHeader = () => {
         setOpenLanguage(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const marqueeText =
-    language === "BAN"
-      ? "Creass Mart এখন হাজারো মানুষের আস্থার অনলাইন দোকান! – সেরা পণ্য, সেরা দাম এবং দ্রুত ডেলিভারি! হাতে পেয়েই টাকা দিন! 💵 থাকছে শতভাগ Original পণ্যের নিশ্চয়তা | Creass Mart – Budget Friendly, Premium Shopping এর সেরা অভিজ্ঞতার জন্য!"
-      : "Creass Mart is trusted by thousands! Best products, best prices, and fast delivery! Pay after receiving your order! 💵 100% Original products guaranteed. Budget Friendly, Premium Shopping Experience.";
-
   return (
     <div className="w-full bg-white border-b border-[#E2E2E2] font-inter py-3 px-4 md:px-10">
       <div className="max-w-[1720px] mx-auto flex items-center justify-between gap-4 lg:gap-10">
@@ -59,11 +58,11 @@ const TopHeader = () => {
         <div className="flex-1 overflow-hidden relative">
           <div className="whitespace-nowrap flex animate-marquee-normal">
             <span className="text-[#2E2E2E] text-[13px] md:text-[14px] px-10">
-              {marqueeText}
+              {announcement}
             </span>
 
             <span className="text-[#2E2E2E] text-[13px] md:text-[14px] px-10">
-              {marqueeText}
+              {announcement}
             </span>
           </div>
         </div>
@@ -99,7 +98,7 @@ const TopHeader = () => {
                       setLanguage("BAN");
                       setOpenLanguage(false);
                     }}
-                    className={`w-full px-4 py-2 text-left text-[13px] hover:bg-gray-100 ${
+                    className={`w-full cursor-pointer px-4 py-2 text-left text-[13px] hover:bg-gray-100 ${
                       language === "BAN" ? "font-semibold bg-gray-50" : ""
                     }`}
                   >
@@ -111,7 +110,7 @@ const TopHeader = () => {
                       setLanguage("ENG");
                       setOpenLanguage(false);
                     }}
-                    className={`w-full px-4 py-2 text-left text-[13px] hover:bg-gray-100 ${
+                    className={`w-full cursor-pointer px-4 py-2 text-left text-[13px] hover:bg-gray-100 ${
                       language === "ENG" ? "font-semibold bg-gray-50" : ""
                     }`}
                   >

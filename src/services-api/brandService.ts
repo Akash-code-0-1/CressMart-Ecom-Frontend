@@ -18,11 +18,11 @@ export const fetchAllBrands = async (query: BrandQuery) => {
 
   const res = await apiFetch(`/brand?${queryParams.toString()}`);
   if (!res.ok) throw new Error("Failed to retrieve brands collection array.");
-  
+
   const json = await res.json();
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  
+
   return { data: Array.isArray(records) ? records : [], meta };
 };
 
@@ -57,8 +57,11 @@ export const uploadBrandImage = async (file: File) => {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to process brand graphic file stream asset upload.");
-  
+  if (!res.ok)
+    throw new Error(
+      "Failed to process brand graphic file stream asset upload.",
+    );
+
   const data = await res.json();
   // 🚀 FIXED: Extract the correct 'logo_url' attribute returned from your NestJS controller
   return { logo_url: data?.logo_url || data?.data?.logo_url || "" };
@@ -84,19 +87,24 @@ export const createBrand = async (payload: {
 
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize brand creation record.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize brand creation record.",
+    );
   }
   return res.json();
 };
 
 // 🚀 6. UPDATE EXISTING BRAND RECORD
-export const updateBrand = async (id: string, payload: {
-  name: string;
-  slug: string;
-  priority?: number;
-  logo_url?: string; // 🚀 FIXED: Changed from image_url to match UpdateBrandDto
-  status: "active" | "draft";
-}) => {
+export const updateBrand = async (
+  id: string,
+  payload: {
+    name: string;
+    slug: string;
+    priority?: number;
+    logo_url?: string; // 🚀 FIXED: Changed from image_url to match UpdateBrandDto
+    status: "active" | "draft";
+  },
+) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/brand/${id}`, {
     method: "PATCH",
@@ -109,7 +117,45 @@ export const updateBrand = async (id: string, payload: {
 
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to execute brand record update changes.");
+    throw new Error(
+      errorJson?.message || "Failed to execute brand record update changes.",
+    );
   }
+  return res.json();
+};
+
+// ================= store front  ====================
+
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_tags?: string;
+  status: "active" | "inactive" | string;
+}
+
+export interface BrandResponse {
+  success: boolean;
+  statusCode: number;
+  data: {
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+    data: Brand[];
+  };
+}
+
+export const getBrands = async (
+  page = 1,
+  limit = 20,
+): Promise<BrandResponse> => {
+  const res = await apiFetch(`/brand?page=${page}&limit=${limit}`);
+  if (!res.ok) throw new Error("Failed to fetch brands");
   return res.json();
 };

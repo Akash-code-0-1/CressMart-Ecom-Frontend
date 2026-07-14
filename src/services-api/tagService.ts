@@ -18,11 +18,11 @@ export const fetchAllTags = async (query: TagQuery) => {
 
   const res = await apiFetch(`/tags?${queryParams.toString()}`);
   if (!res.ok) throw new Error("Failed to retrieve tags dataset allocation.");
-  
+
   const json = await res.json();
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  
+
   return { data: Array.isArray(records) ? records : [], meta };
 };
 
@@ -51,20 +51,20 @@ export const uploadTagMedia = async (file: File) => {
   const formData = new FormData();
   formData.append("image", file);
 
-  // 🚀 FIXED: Pointed directly to the generic category file interceptor matrix endpoint 
+  // 🚀 FIXED: Pointed directly to the generic category file interceptor matrix endpoint
   const res = await apiFetch("/categories/upload-image", {
     method: "POST",
     headers: { Authorization: `Bearer ${token || ""}` },
     body: formData,
   });
-  
+
   if (!res.ok) throw new Error("Failed to upload graphic asset.");
   const data = await res.json();
   return data?.image_url || data?.data?.image_url || "";
 };
 
-// 🚀 5. CREATE NEW TAG 
-export const createTag = async (payload: any) => {
+// 🚀 5. CREATE NEW TAG
+export const createTag = async (payload: Record<string, unknown>) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch("/tags", {
     method: "POST",
@@ -76,13 +76,18 @@ export const createTag = async (payload: any) => {
   });
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize tag record creation.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize tag record creation.",
+    );
   }
   return res.json();
 };
 
 // 🚀 6. UPDATE EXISTING TAG RECORD
-export const updateTag = async (id: string, payload: any) => {
+export const updateTag = async (
+  id: string,
+  payload: Record<string, unknown>,
+) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/tags/${id}`, {
     method: "PATCH",
@@ -94,7 +99,93 @@ export const updateTag = async (id: string, payload: any) => {
   });
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize tag record modifications.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize tag record modifications.",
+    );
   }
   return res.json();
 };
+
+// ================= store front ===========================
+
+//  get home page tags products
+
+export interface HomeProduct {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  price: number;
+  old_price: number;
+  discount_tag: string | null;
+  rating: string;
+  review_count: number;
+  stock_status: string;
+  quantity_left: number;
+}
+
+export interface HomeTagSection {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  meta_title: string;
+  meta_tags: string;
+  meta_description: string;
+  banner_url: string;
+  is_flash_sale: boolean;
+  start_date: string | null;
+  end_date: string;
+  products: HomeProduct[];
+}
+
+export const getHomeTags = async (): Promise<HomeTagSection[]> => {
+  try {
+    const response = await apiFetch(`tags/home`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 600 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} - ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result.data || result;
+  } catch (error) {
+    console.error("Fetch Error (getHomeTags):", error);
+    throw error;
+  }
+};
+
+// // flash sales tag
+// export interface Tag {
+//   id: string;
+//   name: string;
+//   slug: string;
+//   is_flash_sale: boolean;
+//   start_date: string | null;
+//   end_date: string | null;
+//   display_order: number;
+//   image_url?: string;
+//   banner_url?: string;
+//   products?: any[];
+// }
+
+// export const getFlashHomeTags = async (): Promise<Tag[]> => {
+//   try {
+//     const response = await apiFetch(`/tags/home`, {
+//       cache: "no-store",
+//     });
+
+//     if (!response.ok) return [];
+//     const result = await response.json();
+//     return result.data || result;
+//   } catch (error) {
+//     console.error("Error fetching tags:", error);
+//     return [];
+//   }
+// };
