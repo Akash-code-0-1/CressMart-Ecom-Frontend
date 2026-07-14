@@ -18,11 +18,11 @@ export const fetchAllBrands = async (query: BrandQuery) => {
 
   const res = await apiFetch(`/brand?${queryParams.toString()}`);
   if (!res.ok) throw new Error("Failed to retrieve brands collection array.");
-  
+
   const json = await res.json();
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  
+
   return { data: Array.isArray(records) ? records : [], meta };
 };
 
@@ -57,8 +57,11 @@ export const uploadBrandImage = async (file: File) => {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to process brand graphic file stream asset upload.");
-  
+  if (!res.ok)
+    throw new Error(
+      "Failed to process brand graphic file stream asset upload.",
+    );
+
   const data = await res.json();
   // 🚀 FIXED: Extract the correct 'logo_url' attribute returned from your NestJS controller
   return { logo_url: data?.logo_url || data?.data?.logo_url || "" };
@@ -84,19 +87,16 @@ export const createBrand = async (payload: {
 
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize brand creation record.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize brand creation record.",
+    );
   }
   return res.json();
 };
 
 // 🚀 6. UPDATE EXISTING BRAND RECORD
-export const updateBrand = async (id: string, payload: {
-  name: string;
-  slug: string;
-  priority?: number;
-  logo_url?: string; // 🚀 FIXED: Changed from image_url to match UpdateBrandDto
-  status: "active" | "draft";
-}) => {
+// Inside brandService.ts
+export const updateBrand = async (id: string, payload: any) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/brand/${id}`, {
     method: "PATCH",
@@ -107,9 +107,8 @@ export const updateBrand = async (id: string, payload: {
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to execute brand record update changes.");
-  }
+  if (!res.ok) throw new Error("Failed to update.");
+
+  // 🚀 IMPORTANT: The backend must return the updated brand object here
   return res.json();
 };
