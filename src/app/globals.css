@@ -4,6 +4,7 @@
 @theme {
   --font-inter: 'Inter', sans-serif;
   --font-poppins: 'Poppins', sans-serif;
+  --font-lato: 'Lato', sans-serif;
   
   --animate-marquee-normal: marquee 15s linear infinite;
 
@@ -15,6 +16,9 @@
 
 
 /* price range css  */
+.font-lato{
+  font-family: 'Lato', sans-serif;
+}
 
 /* Slider wrapper */
 .slider-wrapper {
