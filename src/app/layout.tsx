@@ -17,6 +17,12 @@ const poppins = Poppins({
   subsets: ["latin"],
 });
 
+const lato = Lato({
+  variable: "--font-lato",
+  weight: ["400", "700", "900"],
+  subsets: ["latin"],
+});
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSettings();
   const info = settings?.data || settings;

@@ -4,25 +4,26 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  FiMenu,
-  FiX,
-  FiSearch,
-  FiChevronDown,
-  FiChevronRight,
-} from "react-icons/fi";
+import { FiMenu, FiX, FiSearch, FiChevronDown } from "react-icons/fi";
 import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
-import { FaFireAlt } from "react-icons/fa";
-import { LuUserRound as UserIcon } from "react-icons/lu";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
+import { Category, getCategoryTree } from "@/services-api/categoryService";
+import { apiFetch } from "@/utils/api";
+import { Product } from "@/@types/product.type";
+import { useDebounce } from "@/hooks/useDebounce";
 
+interface SearchResponse {
+  data: {
+    data: Product[];
+  };
+}
 const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -136,19 +137,19 @@ const Navbar = () => {
             <FiMenu />
           </button>
 
-            <Link href="/" className="shrink-0 flex items-center">
-              {/* The 'relative' class fixes the 'fill' warning */}
-              <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
-                <Image
-                  src={logoUrl ? `${baseUrl}${logoUrl}` : "/images/logo.png"}
-                  alt="Creass Mart"
-                  fill
-                  priority
-                  unoptimized // Add this to bypass 'next/image' domain restriction without config changes
-                  className="object-contain"
-                />
-              </div>
-            </Link>
+          <Link href="/" className="shrink-0 flex items-center">
+            {/* The 'relative' class fixes the 'fill' warning */}
+            <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
+              <Image
+                src={logoUrl ? `${baseUrl}${logoUrl}` : "/images/logo.png"}
+                alt="Creass Mart"
+                fill
+                priority
+                unoptimized // Add this to bypass 'next/image' domain restriction without config changes
+                className="object-contain"
+              />
+            </div>
+          </Link>
 
           {/* Desktop Search Bar */}
           <form
@@ -229,7 +230,7 @@ const Navbar = () => {
 
               <a
                 href="#"
-                onClick={handleProfileNavigation}
+                onClick={handleProfileNav}
                 className="cursor-pointer flex items-center justify-center"
               >
                 {avatarUrl ? (
@@ -451,7 +452,7 @@ const Navbar = () => {
           {/* Login / Profile Button */}
           <a
             href="#"
-            onClick={handleProfileNavigation}
+            onClick={handleProfileNav}
             className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
               pathname === "/profile" ||
               pathname === "/signin" ||
@@ -464,10 +465,39 @@ const Navbar = () => {
             <span className="text-[10px] mt-1">
               {user ? "Profile" : "Login"}
             </span>
-          </button>
+          </a>
         </div>
       )}
     </>
+  );
+};
+
+const NavDropdown = ({ items, isRoot }: { items: Category[]; isRoot?: boolean }) => {
+  return (
+    <div
+      className={`absolute ${
+        isRoot ? "top-full left-0 mt-4" : "top-0 left-full ml-1"
+      } w-56 bg-white shadow-xl rounded-lg border border-gray-100 z-[9999] opacity-0 invisible group-hover/main:opacity-100 group-hover/main:visible transition-all duration-300 transform origin-top`}
+    >
+      <ul className="py-2">
+        {items.map((subItem) => (
+          <li key={subItem.id} className="relative group/sub">
+            <Link
+              href={`/category/${subItem.slug}`}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-[#FF7050] hover:bg-gray-50 flex items-center justify-between transition-colors"
+            >
+              {subItem.name}
+              {subItem.children && subItem.children.length > 0 && (
+                <FiChevronDown className="-rotate-90 text-gray-400" />
+              )}
+            </Link>
+            {subItem.children && subItem.children.length > 0 && (
+              <NavDropdown items={subItem.children} />
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 

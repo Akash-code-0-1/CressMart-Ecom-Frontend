@@ -166,8 +166,7 @@ import { fetchSettings } from "@/services-api/settingsService";
 import ChevronDownIcon from "../svg/ChevronDownIcon";
 import LocationIcon from "../svg/LocationIcon";
 import TrackIcon from "../svg/TrackIcon";
-import { useQuery } from "@tanstack/react-query";
-import { getSettings } from "@/services-api/globalSettingsService";
+
 
 const TopHeader = () => {
   const [language, setLanguage] = useState<"BAN" | "ENG">("BAN");
