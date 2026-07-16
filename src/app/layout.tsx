@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Lato, Poppins } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import { fetchSettings } from "@/services-api/settingsService";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({
@@ -16,16 +17,31 @@ const poppins = Poppins({
   subsets: ["latin"],
 });
 
-const lato = Lato({
-  variable: "--font-lato",
-  weight: ["100", "300", "400", "700", "900"],
-  subsets: ["latin"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const info = settings?.data || settings;
 
-export const metadata: Metadata = {
-  title: "Creass Mart",
-  description: "Premium E-Commerce Platform",
-};
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
+
+  // Ensure we are getting the full, correct absolute URL
+  const faviconUrl = info?.favicon
+    ? `${baseUrl}/uploads/settings/${info.favicon.replace("/uploads/settings/", "")}`
+    : "/favicon.ico";
+
+  return {
+    title: "Creass Mart",
+    description: "Premium E-Commerce Platform",
+    icons: {
+      icon: [
+        {
+          url: faviconUrl,
+          type: "image/webp", // Explicitly define the type
+        },
+      ],
+      shortcut: faviconUrl, // Added for broader browser compatibility
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -42,11 +58,7 @@ export default function RootLayout({
         className="min-h-full flex flex-col relative"
         suppressHydrationWarning
       >
-        <QueryProvider>
-          {/* This simply passes down whatever layouts are matched by routing groups */}
-          {children}
-          <Toaster position="top-right" />
-        </QueryProvider>
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

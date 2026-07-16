@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import {
   FiMenu,
   FiX,
@@ -16,88 +15,29 @@ import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
+import { FaFireAlt } from "react-icons/fa";
+import { LuUserRound as UserIcon } from "react-icons/lu";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
-import { apiFetch } from "@/utils/api";
-import { getCategoryTree, Category } from "@/services-api/categoryService";
-
-// --- Types ---
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sell_price: string;
-  images: string[] | null;
-  category_id: string;
-}
-
-interface Pagination {
-  total: number;
-  per_page: number;
-  current_page: number;
-  last_page: number;
-  from: number | null;
-  to: number | null;
-}
-
-interface SearchResponse {
-  success: boolean;
-  data: {
-    data: Product[];
-    pagination: Pagination; // Fixed 'any' type error
-  };
-}
-
-// --- Recursive Dropdown Component for Desktop ---
-const NavDropdown = ({
-  items,
-  isRoot = false,
-}: {
-  items: Category[];
-  isRoot?: boolean;
-}) => {
-  return (
-    <div
-      className={`absolute bg-white shadow-2xl py-2 border border-gray-100 z-110 min-w-[240px] 
-      ${isRoot ? "top-full left-0 rounded-b-xl" : "top-0 left-full rounded-xl ml-px"}`}
-    >
-      {items.map((item) => (
-        <div key={item.id} className="relative group/submenu">
-          <Link
-            href={`/category/${item.slug}`}
-            className="flex items-center justify-between px-5 py-3 text-[#5E5E5E] hover:text-[#FF7050] hover:bg-gray-50 transition-colors whitespace-nowrap"
-          >
-            <span className="text-[15px] font-medium">{item.name}</span>
-            {item.children && item.children.length > 0 && (
-              <FiChevronRight className="text-gray-400" />
-            )}
-          </Link>
-
-          {/* Recursively render grandchildren if they exist */}
-          {item.children && item.children.length > 0 && (
-            <div className="hidden group-hover/submenu:block">
-              <NavDropdown items={item.children} />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// --- Custom Debounce Hook ---
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  return debouncedValue;
-}
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSettings } from "@/services-api/settingsService";
 
 const Navbar = () => {
   const router = useRouter();
+  const pathname = usePathname();
 
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: fetchSettings,
+  });
+
+  const info = settings?.data || settings;
+  const logoUrl = info?.header_logo;
+
+  // 🚀 Refactored to only evaluate hydration & user metrics (dropping client token dependence)
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
@@ -196,19 +136,19 @@ const Navbar = () => {
             <FiMenu />
           </button>
 
-          <Link
-            href="/"
-            className="shrink-0 relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] lg:w-[200px] lg:h-[55px]"
-          >
-            <Image
-              src="/images/logo.png"
-              alt="Creass Mart"
-              fill
-              priority
-              sizes="200px"
-              className="object-contain"
-            />
-          </Link>
+            <Link href="/" className="shrink-0 flex items-center">
+              {/* The 'relative' class fixes the 'fill' warning */}
+              <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
+                <Image
+                  src={logoUrl ? `${baseUrl}${logoUrl}` : "/images/logo.png"}
+                  alt="Creass Mart"
+                  fill
+                  priority
+                  unoptimized // Add this to bypass 'next/image' domain restriction without config changes
+                  className="object-contain"
+                />
+              </div>
+            </Link>
 
           {/* Desktop Search Bar */}
           <form
@@ -286,10 +226,11 @@ const Navbar = () => {
               <button className="cursor-pointer">
                 <WishIcon className="w-8 md:w-10" />
               </button>
+
               <a
                 href="#"
-                onClick={handleProfileNav}
-                className="cursor-pointer relative w-8 md:w-10 h-8 md:h-10"
+                onClick={handleProfileNavigation}
+                className="cursor-pointer flex items-center justify-center"
               >
                 {avatarUrl ? (
                   <Image
@@ -452,10 +393,28 @@ const Navbar = () => {
 
       {/* Mobile Bottom Nav */}
       {isStoreReady && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t h-[70px] z-190 flex justify-around items-center text-[#FF7050]">
-          <Link href="/" className="flex flex-col items-center">
-            <FiSearch size={22} />
-            <span className="text-[10px] mt-1">Home</span>
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050]">
+          {/* Home Button - Color is constant; active scales up and bolds up */}
+          <Link
+            href="/"
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 ${
+              pathname === "/" ? "font-bold scale-110" : "font-normal"
+            }`}
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+              />
+            </svg>
+            <span className="text-[12px] mt-1 font-inter">Home</span>
           </Link>
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -464,15 +423,22 @@ const Navbar = () => {
             <FiMenu size={22} />
             <span className="text-[10px] mt-1">Category</span>
           </button>
-          <div className="relative -top-5">
-            <div className="bg-white p-2 rounded-full shadow-lg border w-14 h-14 flex items-center justify-center">
-              <Image
-                src="/images/minilogo.png"
-                alt="logo"
-                width={32}
-                height={32}
-              />
-            </div>
+
+          {/* Central Custom Floating Action Logo */}
+          <div className="relative -top-5 z-[200]">
+            <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img
+                  src="/images/minilogo.png"
+                  alt="Brand Logo"
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <span className="text-red-500 font-black text-2xl italic tracking-tighter"></span>
+              </div>
+            </button>
           </div>
           <button
             onClick={() => useAuthStore.getState().setIsChatOpen(true)}
@@ -481,9 +447,18 @@ const Navbar = () => {
             <CartIcon className="w-6" />
             <span className="text-[10px] mt-1">Chat</span>
           </button>
-          <button
-            onClick={handleProfileNav}
-            className="flex flex-col items-center"
+
+          {/* Login / Profile Button */}
+          <a
+            href="#"
+            onClick={handleProfileNavigation}
+            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
+              pathname === "/profile" ||
+              pathname === "/signin" ||
+              pathname === "/signup"
+                ? "font-bold scale-110"
+                : "font-normal"
+            }`}
           >
             <UserIcon size={22} />
             <span className="text-[10px] mt-1">
