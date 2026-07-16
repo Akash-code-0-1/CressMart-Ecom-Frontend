@@ -142,5 +142,10 @@ export const searchProducts = async (query: string) => {
 
   if (!res.ok) return [];
   const data = await res.json();
-  return data.products || data.data || [];
+  const productsList =
+    data?.data?.data ||
+    data?.products ||
+    (Array.isArray(data?.data) ? data.data : null) ||
+    (Array.isArray(data) ? data : []);
+  return productsList;
 };
