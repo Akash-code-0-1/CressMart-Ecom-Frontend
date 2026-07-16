@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 🚀 Tracks active page routes
+import { usePathname } from "next/navigation";
 import {
   FiMenu,
   FiX,
@@ -18,15 +18,27 @@ import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
 import { FaFireAlt } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 import { LuUserRound as UserIcon } from "react-icons/lu";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSettings } from "@/services-api/settingsService";
 
 const Navbar = () => {
   const router = useRouter();
-  const pathname = usePathname(); // 🚀 Active path evaluator
-  
+  const pathname = usePathname();
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
+
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: fetchSettings,
+  });
+
+  const info = settings?.data || settings;
+  const logoUrl = info?.header_logo;
+
   // 🚀 Refactored to only evaluate hydration & user metrics (dropping client token dependence)
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
@@ -141,18 +153,19 @@ const Navbar = () => {
             <FiMenu />
           </button>
 
-          <Link href="/" className="shrink-0 flex items-center">
-            <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
-              <Image
-                src="/images/logo.png"
-                alt="Creass Mart"
-                fill
-                sizes="(max-width: 640px) 120px, (max-width: 768px) 150px, (max-width: 1024px) 180px, (max-width: 1280px) 200px, 230px"
-                priority
-                className="object-contain !h-auto !w-auto"
-              />
-            </div>
-          </Link>
+            <Link href="/" className="shrink-0 flex items-center">
+              {/* The 'relative' class fixes the 'fill' warning */}
+              <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
+                <Image
+                  src={logoUrl ? `${baseUrl}${logoUrl}` : "/images/logo.png"}
+                  alt="Creass Mart"
+                  fill
+                  priority
+                  unoptimized // Add this to bypass 'next/image' domain restriction without config changes
+                  className="object-contain"
+                />
+              </div>
+            </Link>
 
           {/* Desktop Search */}
           <div className="hidden lg:flex flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center xl:p-[8px_8px_8px_24px] lg:p-[8px_8px_8px_16px] md:p-[8px_8px_8px_8px] gap-1 lg:gap-3 xl:gap-6">
@@ -175,7 +188,11 @@ const Navbar = () => {
                 <WishIcon className="w-8 md:w-10" />
               </button>
 
-              <a href="#" onClick={handleProfileNavigation} className="cursor-pointer flex items-center justify-center">
+              <a
+                href="#"
+                onClick={handleProfileNavigation}
+                className="cursor-pointer flex items-center justify-center"
+              >
                 {avatarUrl ? (
                   <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
                     <img
@@ -514,7 +531,6 @@ const Navbar = () => {
       {/* --- MOBILE BOTTOM NAVIGATION BAR --- */}
       {isStoreReady && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050]">
-          
           {/* Home Button - Color is constant; active scales up and bolds up */}
           <Link
             href="/"
@@ -573,8 +589,7 @@ const Navbar = () => {
                     e.currentTarget.style.display = "none";
                   }}
                 />
-                <span className="text-red-500 font-black text-2xl italic tracking-tighter">
-                </span>
+                <span className="text-red-500 font-black text-2xl italic tracking-tighter"></span>
               </div>
             </button>
           </div>
@@ -610,7 +625,9 @@ const Navbar = () => {
             href="#"
             onClick={handleProfileNavigation}
             className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
-              pathname === "/profile" || pathname === "/signin" || pathname === "/signup"
+              pathname === "/profile" ||
+              pathname === "/signin" ||
+              pathname === "/signup"
                 ? "font-bold scale-110"
                 : "font-normal"
             }`}

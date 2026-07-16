@@ -318,7 +318,7 @@ const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
 export default function SettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const methods = useForm({
+  const methods = useForm<any>({
     defaultValues: {
       social_links: [],
       offers: [],
@@ -581,6 +581,80 @@ export default function SettingsPage() {
           placeholder="Return and Cancellation Policy"
         />
       </form>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10 pt-10">
+        <div className="flex flex-col gap-4">
+          {[
+            {
+              t: "Footer Quick Links",
+              s: "Shown in the Quick Links column of Footer 2",
+            },
+            {
+              t: "Footer Useful Links",
+              s: "Shown in the useful Links column of Footer 3",
+            },
+          ].map((f, i) => (
+            <div
+              key={i}
+              className="bg-[#F9F9F9] p-4 rounded-[8px] flex justify-between items-center"
+            >
+              <div>
+                <p className="text-sm font-medium text-black font-poppins">
+                  {f.t}
+                </p>
+                <p className="text-[10px] text-[#B9B9B9] font-noraml font-poppins">
+                  {f.s}
+                </p>
+              </div>
+              <PrimaryButton label="Add Link" className="px-3 py-2 text-xs" />
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h4 className="text-sm font-semibold text-black font-poppins">
+            Footer Section Settings
+          </h4>
+          {[
+            "Is show new slider",
+            "Hide copyright section",
+            "Hide copyright text",
+            "Powered by System Next IT",
+          ].map((item, i) => (
+            <label key={i} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded-[4px] border-gray-300 accent-[#1DA1F2]"
+              />
+              <span className="text-xs font-medium text-[#1D1A1A] font-poppins">
+                {item}
+              </span>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h4 className="text-sm font-semibold text-black font-poppins">
+            Product Settings
+          </h4>
+          {[
+            "Show Product Sold Count",
+            "Allow Product Image Downloads",
+            "Show Email Field for Place Order",
+            "Enable Promo Code for Place Order",
+          ].map((item, i) => (
+            <label key={i} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded-[4px] border-gray-300 accent-[#1DA1F2]"
+              />
+              <span className="text-xs font-medium text-[#1D1A1A] font-poppins">
+                {item}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
     </FormProvider>
   );
 }

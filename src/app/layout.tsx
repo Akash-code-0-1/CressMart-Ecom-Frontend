@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import { fetchSettings } from "@/services-api/settingsService";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -15,10 +16,31 @@ const poppins = Poppins({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Creass Mart",
-  description: "Premium E-Commerce Platform",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSettings();
+  const info = settings?.data || settings;
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
+
+  // Ensure we are getting the full, correct absolute URL
+  const faviconUrl = info?.favicon
+    ? `${baseUrl}/uploads/settings/${info.favicon.replace("/uploads/settings/", "")}`
+    : "/favicon.ico";
+
+  return {
+    title: "Creass Mart",
+    description: "Premium E-Commerce Platform",
+    icons: {
+      icon: [
+        {
+          url: faviconUrl,
+          type: "image/webp", // Explicitly define the type
+        },
+      ],
+      shortcut: faviconUrl, // Added for broader browser compatibility
+    },
+  };
+}
 
 export default function RootLayout({
   children,
@@ -31,11 +53,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
-        <QueryProvider>
-          {/* This simply passes down whatever layouts are matched by routing groups */}
-          {children}
-        </QueryProvider>
+      <body
+        className="min-h-full flex flex-col relative"
+        suppressHydrationWarning
+      >
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
