@@ -6,23 +6,32 @@ import FeaturedCategory from "@/components/store-front/home/FeaturedCategory";
 import Features from "@/components/store-front/home/Features";
 import FlashSale from "@/components/store-front/home/FlashSale";
 import PromotionDiscountProduct from "@/components/store-front/home/PromotionDiscountProduct";
-import RecentProducts from "@/components/store-front/home/NewArrivals";
+import NewArrivals from "@/components/store-front/home/NewArrivals";
 import Suppliers from "@/components/store-front/home/Suppliers";
 import Testimonials from "@/components/store-front/home/Testimonials";
 import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";
+import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
 
-export default function page() {
+export default async function Page() {
+  const tags = await getHomeTags();
+
+  const flashSaleArray = Array.isArray(tags)
+    ? tags.filter(
+        (tag: HomeTagSection) => tag.is_flash_sale === true && tag.end_date,
+      )
+    : [];
+  const activeFlashSale = flashSaleArray[0];
   return (
     <>
       <BannerSlider />
       <Features />
       <PromotionDiscountProduct />
       <FeaturedCategory />
-      <RecentProducts />
-      <BestSalesProducts />
-      <FlashSale />
+      <NewArrivals tags={tags} />
+      <BestSalesProducts tags={tags} />
+      {activeFlashSale && <FlashSale flashSale={activeFlashSale} />}
       <Testimonials />
-      <WeeklyBestSellerProduct />
+      <WeeklyBestSellerProduct tags={tags} />
       <Brands />
       <Suppliers />
       <Blog />

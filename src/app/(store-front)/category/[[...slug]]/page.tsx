@@ -13,17 +13,18 @@ import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  const products = Array(20).fill({
-    id: 1,
-    title: "H20 Mini USB Portable Air Humidifier",
-    price: 598,
-    oldPrice: 750,
-    discount: "25%",
-    image: "/images/store-front/products/product02.png",
-    rating: 5,
-    reviews: 120,
-    inStock: true,
-  });
+  const products = Array.from({ length: 20 }, (_, i) => ({
+    id: String(i + 1),
+    name: "H20 Mini USB Portable Air Humidifier",
+    slug: `h2o-mini-usb-portable-air-humidifier-${i + 1}`,
+    sell_price: "598",
+    regular_price: "750",
+    images: ["/images/store-front/products/product02.png"],
+    avg_rating: "5.0",
+    total_reviews: 120,
+    quantity: 10,
+    discount_tag: "25%",
+  }));
 
   return (
     <div className="px-4 md:px-10 mb-20">
@@ -67,7 +68,7 @@ const CategoryPage = () => {
           <main className="flex-1">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
               {products.map((product, idx) => (
-                <ProductCard key={idx} {...product} />
+                <ProductCard key={idx} product={product} />
               ))}
             </div>
 

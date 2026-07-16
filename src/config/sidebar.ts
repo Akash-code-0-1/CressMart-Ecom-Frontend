@@ -100,6 +100,14 @@ export const sidebarMenu = [
             label: "Popups",
             href: "/admin/dashboard/popup",
           },
+          {
+            label: "Blogs",
+            href: "/admin/dashboard/blog",
+          },
+          {
+            label: "Landing Page",
+            href: "/admin/dashboard/landing-page",
+          },
         ],
       },
     ],

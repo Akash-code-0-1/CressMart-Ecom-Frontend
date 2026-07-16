@@ -8,7 +8,7 @@ export interface CategoryQuery {
   status?: string;
 }
 
-// 🚀 1. FETCH ALL GENERAL CATEGORIES 
+// 🚀 1. FETCH ALL GENERAL CATEGORIES
 export const fetchAllCategories = async (query: CategoryQuery) => {
   const queryParams = new URLSearchParams();
   if (query.page) queryParams.set("page", String(query.page));
@@ -17,7 +17,8 @@ export const fetchAllCategories = async (query: CategoryQuery) => {
   if (query.status) queryParams.set("status", query.status);
 
   const res = await apiFetch(`/categories?${queryParams.toString()}`);
-  if (!res.ok) throw new Error("Failed to retrieve categories collection array");
+  if (!res.ok)
+    throw new Error("Failed to retrieve categories collection array");
   const json = await res.json();
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
@@ -33,12 +34,17 @@ export const fetchAllSubCategories = async (query: CategoryQuery) => {
   if (query.status) queryParams.set("status", query.status);
 
   const res = await apiFetch(`/categories?${queryParams.toString()}`);
-  if (!res.ok) throw new Error("Failed to retrieve subcategories collection layout array.");
+  if (!res.ok)
+    throw new Error(
+      "Failed to retrieve subcategories collection layout array.",
+    );
   const json = await res.json();
   const rawRecords = json?.data?.data || json?.data || json || [];
-  
+
   const subCategoryRecords = Array.isArray(rawRecords)
-    ? rawRecords.filter((item: any) => item.parent_id !== null && item.parent_id !== undefined)
+    ? rawRecords.filter(
+        (item: any) => item.parent_id !== null && item.parent_id !== undefined,
+      )
     : [];
 
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
@@ -52,14 +58,17 @@ export const fetchRootCategoriesOnly = async () => {
   const json = await res.json();
   const rawRecords = json?.data?.data || json?.data || json || [];
   return Array.isArray(rawRecords)
-    ? rawRecords.filter((item: any) => item.parent_id === null || item.parent_id === undefined)
+    ? rawRecords.filter(
+        (item: any) => item.parent_id === null || item.parent_id === undefined,
+      )
     : [];
 };
 
 // 🚀 4. FETCH SINGLE CATEGORY RECORD FOR EDIT PRE-POPULATION
 export const fetchSingleCategory = async (id: string) => {
   const res = await apiFetch(`/categories/${id}`);
-  if (!res.ok) throw new Error("Could not fetch the specified category details.");
+  if (!res.ok)
+    throw new Error("Could not fetch the specified category details.");
   const json = await res.json();
   return json?.data || json;
 };
@@ -85,7 +94,8 @@ export const uploadCategoryImage = async (file: File) => {
     headers: { Authorization: `Bearer ${token || ""}` },
     body: formData,
   });
-  if (!res.ok) throw new Error("Failed to process graphic file asset stream upload.");
+  if (!res.ok)
+    throw new Error("Failed to process graphic file asset stream upload.");
   return res.json();
 };
 
@@ -94,12 +104,17 @@ export const createCategory = async (payload: any) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch("/categories", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token || ""}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize category creation.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize category creation.",
+    );
   }
   return res.json();
 };
@@ -109,12 +124,35 @@ export const updateCategory = async (id: string, payload: any) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/categories/${id}`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token || ""}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize category update execution.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize category update execution.",
+    );
   }
   return res.json();
+};
+
+// ======= Store Front Service ==============
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  image_url?: string | null;
+  children?: Category[];
+}
+
+export const getCategoryTree = async (): Promise<Category[]> => {
+  const res = await apiFetch("/categories/tree?page=1&limit=30");
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  const result = await res.json();
+  const data = result?.data?.data || result?.data || result || [];
+  return Array.isArray(data) ? data : [];
 };

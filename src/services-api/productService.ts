@@ -22,24 +22,26 @@ export const fetchAllProducts = async (query: ProductQuery) => {
   queryParams.set("bypassCache", "true");
 
   const res = await apiFetch(`/products?${queryParams.toString()}`, {
-    method: "GET"
+    method: "GET",
   });
 
-  if (!res.ok) throw new Error("Failed to sync catalog rows from backend database.");
-  
+  if (!res.ok)
+    throw new Error("Failed to sync catalog rows from backend database.");
+
   const json = await res.json();
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  
+
   return { data: Array.isArray(records) ? records : [], meta };
 };
 
 // 🚀 2. FETCH SINGLE PRODUCT BY ID FOR PRE-POPULATION
 export const fetchSingleProduct = async (id: string) => {
   const res = await apiFetch(`/products/${id}`, {
-    method: "GET"
+    method: "GET",
   });
-  if (!res.ok) throw new Error("Could not retrieve the specified product profiles.");
+  if (!res.ok)
+    throw new Error("Could not retrieve the specified product profiles.");
   const json = await res.json();
   return json?.data || json;
 };
@@ -48,7 +50,7 @@ export const fetchSingleProduct = async (id: string) => {
 export const uploadProductMedia = async (files: FileList) => {
   const token = await getAdminTokenAction();
   const formData = new FormData();
-  
+
   Array.from(files).forEach((file) => {
     formData.append("image", file);
   });
@@ -59,18 +61,19 @@ export const uploadProductMedia = async (files: FileList) => {
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Failed to upload the product image assets to server.");
+  if (!res.ok)
+    throw new Error("Failed to upload the product image assets to server.");
   const data = await res.json();
-  
+
   if (data?.image_url) return [data.image_url];
   if (data?.data?.image_url) return [data.data.image_url];
   if (Array.isArray(data?.image_urls)) return data.image_urls;
-  
+
   return [];
 };
 
 // 🚀 4. SUBMIT NEW PRODUCT
-export const createProduct = async (payload: any) => {
+export const createProduct = async (payload: Record<string, unknown>) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch("/products", {
     method: "POST",
@@ -83,13 +86,18 @@ export const createProduct = async (payload: any) => {
 
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize product creation.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize product creation.",
+    );
   }
   return res.json();
 };
 
 // 🚀 5. UPDATE EXISTING PRODUCT (PATCH OPERATION)
-export const updateProduct = async (id: string, payload: any) => {
+export const updateProduct = async (
+  id: string,
+  payload: Record<string, unknown>,
+) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/products/${id}`, {
     method: "PATCH",
@@ -102,7 +110,9 @@ export const updateProduct = async (id: string, payload: any) => {
 
   if (!res.ok) {
     const errorJson = await res.json();
-    throw new Error(errorJson?.message || "Failed to finalize product update specifications.");
+    throw new Error(
+      errorJson?.message || "Failed to finalize product update specifications.",
+    );
   }
   return res.json();
 };
@@ -116,4 +126,26 @@ export const deleteProduct = async (id: string) => {
   });
   if (!res.ok) throw new Error("Could not drop target catalog item.");
   return res.json();
+};
+
+// =========== Store Front ============
+// search product
+
+export const searchProducts = async (query: string) => {
+  if (!query) return [];
+  const res = await apiFetch(
+    `/products/search?page=1&limit=10&search=${query}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!res.ok) return [];
+  const data = await res.json();
+  const productsList =
+    data?.data?.data ||
+    data?.products ||
+    (Array.isArray(data?.data) ? data.data : null) ||
+    (Array.isArray(data) ? data : []);
+  return productsList;
 };

@@ -95,8 +95,16 @@ export const createBrand = async (payload: {
 };
 
 // 🚀 6. UPDATE EXISTING BRAND RECORD
-// Inside brandService.ts
-export const updateBrand = async (id: string, payload: any) => {
+export const updateBrand = async (
+  id: string,
+  payload: {
+    name: string;
+    slug: string;
+    priority?: number;
+    logo_url?: string; // 🚀 FIXED: Changed from image_url to match UpdateBrandDto
+    status: "active" | "draft";
+  },
+) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/brand/${id}`, {
     method: "PATCH",
@@ -107,8 +115,47 @@ export const updateBrand = async (id: string, payload: any) => {
     body: JSON.stringify(payload),
   });
 
-  if (!res.ok) throw new Error("Failed to update.");
+  if (!res.ok) {
+    const errorJson = await res.json();
+    throw new Error(
+      errorJson?.message || "Failed to execute brand record update changes.",
+    );
+  }
+  return res.json();
+};
 
-  // 🚀 IMPORTANT: The backend must return the updated brand object here
+// ================= store front  ====================
+
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_tags?: string;
+  status: "active" | "inactive" | string;
+}
+
+export interface BrandResponse {
+  success: boolean;
+  statusCode: number;
+  data: {
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+    data: Brand[];
+  };
+}
+
+export const getBrands = async (
+  page = 1,
+  limit = 20,
+): Promise<BrandResponse> => {
+  const res = await apiFetch(`/brand?page=${page}&limit=${limit}`);
+  if (!res.ok) throw new Error("Failed to fetch brands");
   return res.json();
 };

@@ -1,56 +1,42 @@
 "use client";
+
 import { useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
+import { useQuery } from "@tanstack/react-query";
+import { getFaqs } from "@/services-api/faqService";
 
 const FAQ = () => {
-  const [openIndex, setOpenIndex] = useState<number | null>(2);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
-  const faqData = [
-    {
-      question: "How do I place an order?",
-      answer:
-        "To place an order, browse our products, add your desired items to the cart, and proceed to checkout. Fill in your shipping details and choose a payment method to complete the process.",
-    },
-    {
-      question: "How long does it take to confirm an order?",
-      answer:
-        "Orders are typically confirmed within 1-2 hours during business hours. You will receive a confirmation SMS or email once your order is processed.",
-    },
-    {
-      question: "How many days does delivery take?",
-      answer:
-        "Delivery charges are [60 TK] inside Dhaka and [120 TK] outside Dhaka. (Note: Free delivery available on orders above [2000 TK]). Typically takes 1-3 business days.",
-    },
-    {
-      question: "What are the delivery charges?",
-      answer:
-        "Delivery charges are [60 TK] inside Dhaka and [120 TK] outside Dhaka. Free delivery is provided for orders over 2000 TK.",
-    },
-    {
-      question: "Which courier service do you use?",
-      answer:
-        "We partner with reliable nationwide courier services like Pathao, Steadfast, and RedX to ensure your products reach you safely and on time.",
-    },
-  ];
+  // 1. TanStack Query Fetching
+  const { data: faqResponse, isLoading } = useQuery({
+    queryKey: ["public-faqs"],
+    queryFn: () => getFaqs(),
+  });
+
+  // Extract data array safely
+  const faqData = faqResponse?.data || [];
 
   const handleToggle = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  // Skip rendering if still loading or no data found
+  if (isLoading || faqData.length === 0) return null;
+
   return (
     <section className="w-full px-4 md:px-3 bg-white font-poppins py-12">
-      {/* Restricts width on desktop (lg and up) but allows full width on mobile/tablet */}
       <div className="w-full lg:max-w-[1740px] mx-auto">
         {/* Title */}
         <h2 className="text-center text-black text-[28px] md:text-[32px] font-semibold mb-12">
-          Frequently Asking Questions
+          Frequently Asked Questions
         </h2>
 
         {/* FAQ List */}
         <div className="flex flex-col gap-5">
           {faqData.map((item, index) => (
             <div
-              key={index}
+              key={item.id || index}
               className={`
                 rounded-[8px] transition-all duration-300 ease-in-out
                 ${
@@ -63,7 +49,7 @@ const FAQ = () => {
               {/* Question Header */}
               <button
                 onClick={() => handleToggle(index)}
-                className="w-full flex justify-between items-center p-5 md:p-6 text-left cursor-pointer"
+                className="w-full flex justify-between items-center p-5 md:p-6 text-left cursor-pointer outline-none"
               >
                 <span className="text-black text-[16px] md:text-[18px] font-semibold">
                   {item.question}
@@ -75,7 +61,7 @@ const FAQ = () => {
                 />
               </button>
 
-              {/* Answer Content */}
+              {/* Answer Content - Using grid transition for smooth auto-height animation */}
               <div
                 className={`
                   grid transition-all duration-300 ease-in-out px-5 md:px-6

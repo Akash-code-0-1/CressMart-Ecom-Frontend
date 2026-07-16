@@ -9,11 +9,9 @@ import {
   FiX,
   FiSearch,
   FiChevronDown,
-  FiMinus,
-  FiPlus,
-  FiTrash2,
+  FiChevronRight,
 } from "react-icons/fi";
-import ChevronDownIcon from "../svg/ChevronDownIcon";
+import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
@@ -45,31 +43,42 @@ const Navbar = () => {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showPredictions, setShowPredictions] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [prevScrollPos, setPrevScrollPos] = useState(0);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(
     null,
   );
 
-  const [isVisible, setIsVisible] = useState(true);
-  const [prevScrollPos, setPrevScrollPos] = useState(0);
-  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const searchRef = useRef<HTMLFormElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const [cartItems] = useState([
-    {
-      id: 1,
-      name: "PlayStation 5 Console",
-      price: 65000,
-      qty: 1,
-      image: "/images/store-front/products/product02.png",
+  const { data: categories = [] as Category[] } = useQuery<Category[]>({
+    queryKey: ["categories-tree"],
+    queryFn: getCategoryTree,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const {
+    data: searchResults,
+    isLoading,
+    isFetching,
+  } = useQuery<Product[]>({
+    queryKey: ["product-search", debouncedSearch],
+    queryFn: async () => {
+      if (!debouncedSearch.trim()) return [];
+      const res = await apiFetch(
+        `/products/search?page=1&limit=10&search=${debouncedSearch}`,
+      );
+      if (!res.ok) throw new Error("Failed to fetch");
+      const result: SearchResponse = await res.json();
+      return result.data?.data || [];
     },
-    {
-      id: 2,
-      name: "Awei Y525 RGB Speaker",
-      price: 2050,
-      qty: 2,
-      image: "/images/store-front/products/product02.png",
-    },
-  ]);
+    enabled: debouncedSearch.length >= 2,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,73 +91,47 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [prevScrollPos]);
 
-  const navLinks = [
-    {
-      name: "All Categories",
-      dropdown: true,
-      subItems: ["Electronics", "Fashion", "Home Decor"],
-    },
-    {
-      name: "Gadget & Tools",
-      dropdown: true,
-      subItems: ["Smartphones", "Laptops"],
-    },
-    {
-      name: "Essentials",
-      dropdown: true,
-      subItems: ["Grocery", "Daily Needs"],
-    },
-    { name: "Kids Zone", dropdown: true, subItems: ["Toys", "Baby Care"] },
-    {
-      name: "Health, Organic & Supplements",
-      dropdown: true,
-      subItems: ["Vitamins"],
-    },
-    { name: "Safety & Security", dropdown: true, subItems: ["CCTV"] },
-    { name: "Gift Item", dropdown: true, subItems: ["Birthday"] },
-  ];
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowPredictions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
-  const toggleMobileDropdown = (index: number) => {
-    setOpenMobileDropdown(openMobileDropdown === index ? null : index);
+  const handleProfileNav = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isStoreReady && user) router.push("/profile");
+    else router.push("/signin");
   };
 
-  // Safe dynamic asset string compiler
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
-  let avatarUrl = null;
-  if (isStoreReady && user?.avatar) {
-    const cleanPath = user.avatar.replace(/^\/+/, "");
-    avatarUrl = `${backendBaseUrl}/${cleanPath}`;
-  }
-
-  // Unified click handler to ensure proper routing targets based on dynamic hydration state
-  const handleProfileNavigation = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isStoreReady && user) {
-      router.push("/profile");
-    } else {
-      router.push("/signin");
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowPredictions(false);
     }
   };
 
-  // 🚀 Safe evaluation to see if the custom chat modal context state is open
-  const isChatActive = useAuthStore((state: any) => state.isChatOpen);
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+  const avatarUrl =
+    isStoreReady && user?.avatar
+      ? `${backendBaseUrl}/${user.avatar.replace(/^\/+/, "")}`
+      : null;
 
   return (
     <>
       <header
-        className={`
-          w-full bg-white font-inter z-50 sticky top-0 left-0 px-4 md:px-6
-          transition-transform duration-500 ease-in-out
-          ${isVisible ? "translate-y-0" : "-translate-y-full"}
-          ${prevScrollPos > 50 ? "shadow-[0_4px_20px_rgba(0,0,0,0.08)]" : ""}
-        `}
+        className={`w-full bg-white font-inter z-50 sticky top-0 transition-transform duration-500 px-4 md:px-6 ${isVisible ? "translate-y-0" : "-translate-y-full"} ${prevScrollPos > 50 ? "shadow-md" : ""}`}
       >
         <div className="max-w-[1720px] mx-auto flex items-center justify-between py-4">
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className="lg:hidden p-2 text-black text-3xl shrink-0 cursor-pointer"
+            className="lg:hidden p-2 text-3xl shrink-0"
           >
             <FiMenu />
           </button>
@@ -167,21 +150,77 @@ const Navbar = () => {
               </div>
             </Link>
 
-          {/* Desktop Search */}
-          <div className="hidden lg:flex flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center xl:p-[8px_8px_8px_24px] lg:p-[8px_8px_8px_16px] md:p-[8px_8px_8px_8px] gap-1 lg:gap-3 xl:gap-6">
-            <CategoryDropdown categories={navLinks.map((item) => item.name)} />
-            <div className="h-6 w-[1.5px] bg-[#E2E2E2]" />
+          {/* Desktop Search Bar */}
+          <form
+            onSubmit={handleSearch}
+            ref={searchRef}
+            className="hidden lg:flex relative flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center p-2 px-4 gap-3"
+          >
+            <CategoryDropdown
+              categories={categories}
+              onSelect={(cat: Category) => router.push(`/category/${cat.slug}`)}
+            />
+
+            <div className="h-6 w-px bg-[#E2E2E2]" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowPredictions(true);
+              }}
+              onFocus={() => setShowPredictions(true)}
               placeholder="Search products..."
-              className="bg-transparent flex-1 outline-none text-[#727272] text-[16px]"
+              className="bg-transparent flex-1 outline-none text-[#727272]"
             />
-            <button className="cursor-pointer bg-white p-2.5 rounded-[8px]">
+            <button
+              type="submit"
+              className="bg-white p-2.5 rounded-[8px] cursor-pointer hover:bg-gray-50 transition-colors"
+            >
               <FiSearch size={22} className="text-[#FF7050]" />
             </button>
-          </div>
 
-          {/* Icons & Auth Buttons */}
+            {/* Predictions */}
+            {showPredictions && searchQuery.length >= 2 && (
+              <div className="absolute top-[110%] left-0 w-full bg-white shadow-2xl rounded-lg border border-gray-100 z-120 overflow-hidden max-h-[450px] overflow-y-auto">
+                {isLoading || isFetching ? (
+                  <div className="p-4 text-center text-sm text-gray-500 animate-pulse">
+                    Searching...
+                  </div>
+                ) : (
+                  (searchResults || []).map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        router.push(`/product/${product.slug}`);
+                        setShowPredictions(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
+                    >
+                      <div className="relative w-12 h-12 bg-gray-100 rounded overflow-hidden shrink-0">
+                        <Image
+                          src={product.images?.[0] || "/images/placeholder.png"}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-800 line-clamp-1">
+                          {product.name}
+                        </h4>
+                        <p className="text-[#FF7050] font-bold text-xs">
+                          BDT {product.sell_price}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </form>
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <button className="cursor-pointer">
@@ -194,37 +233,31 @@ const Navbar = () => {
                 className="cursor-pointer flex items-center justify-center"
               >
                 {avatarUrl ? (
-                  <div className="w-8 md:w-10 h-8 md:h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm relative">
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </div>
+                  <Image
+                    src={avatarUrl}
+                    alt="User"
+                    fill
+                    className="rounded-full object-cover border border-gray-200"
+                  />
                 ) : (
                   <UserIcon
-                    className="w-8 md:w-10 h-8 md:h-10 text-black"
+                    className="w-full h-full text-black"
                     strokeWidth={1.2}
                   />
                 )}
               </a>
             </div>
-
-            {/* Conditionally hide desktop buttons based on user presence */}
             {isStoreReady && !user && (
-              <div className="hidden lg:flex items-center gap-4">
+              <div className="hidden lg:flex items-center gap-4 uppercase font-semibold">
                 <button
                   onClick={() => router.push("/signin")}
-                  className="bg-[#F0F0F0] rounded-[8px] font-semibold xl:text-[16px] lg:text-[14px] text-[12px] uppercase xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer"
+                  className="bg-[#F0F0F0] rounded-[8px] px-8 py-4"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => router.push("/signup")}
-                  className="font-semibold uppercase text-white bg-[#FF7050] xl:text-[16px] lg:text-[14px] text-[12px] rounded-[8px] xl:px-10 lg:px-6 md:px-4 py-4 font-inter cursor-pointer"
+                  className="bg-[#FF7050] text-white rounded-[8px] px-8 py-4"
                 >
                   Signup
                 </button>
@@ -233,294 +266,124 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile & Tablet Search */}
-        <div className="lg:hidden pb-4">
-          <div className="bg-[#F2F2F2] rounded-[8px] flex items-center px-3 py-2 gap-2">
-            <CategoryDropdown
-              mobile
-              categories={navLinks.map((item) => item.name)}
-            />
-
-            <div className="h-5 w-px bg-[#E2E2E2] shrink-0" />
-
-            <input
-              type="text"
-              placeholder="Search products..."
-              className="flex-1 min-w-0 bg-transparent outline-none text-[#727272] text-[14px] sm:text-[16px] placeholder:text-[#727272]"
-            />
-
-            <button className="cursor-pointer bg-white p-2 rounded-[8px] shrink-0">
-              <FiSearch size={18} className="text-[#FF7050] sm:w-5 sm:h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* --- DESKTOP NAV --- */}
-        <nav className="hidden lg:block py-4">
-          <div className="max-w-[1720px] mx-auto">
-            <ul className="flex items-center flex-wrap justify-between gap-y-2 md:px-8 px-0">
-              {navLinks.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="relative flex items-center gap-1"
-                  onMouseEnter={() => {
-                    if (closeTimer.current) clearTimeout(closeTimer.current);
-                    setActiveDropdown(idx);
-                  }}
-                  onMouseLeave={() => {
-                    closeTimer.current = setTimeout(
-                      () => setActiveDropdown(null),
-                      120,
-                    );
-                  }}
+        {/* --- DYNAMIC DESKTOP NAVIGATION (Fixed & Nested) --- */}
+        <nav className="hidden lg:block py-4 border-t border-gray-50">
+          <ul className="max-w-[1720px] mx-auto flex items-center justify-between md:px-8">
+            {(categories || []).slice(0, 8).map((item, idx) => (
+              <li
+                key={item.id}
+                className="relative flex items-center gap-1 group/main"
+                onMouseEnter={() => {
+                  if (closeTimer.current) clearTimeout(closeTimer.current);
+                  setActiveDropdown(idx);
+                }}
+                onMouseLeave={() => {
+                  closeTimer.current = setTimeout(
+                    () => setActiveDropdown(null),
+                    120,
+                  );
+                }}
+              >
+                <span
+                  onClick={() => router.push(`/category/${item.slug}`)}
+                  className={`text-[18px] xl:text-[20px] cursor-pointer transition-colors font-medium ${activeDropdown === idx ? "text-[#FF7050]" : "text-[#5E5E5E]"}`}
                 >
-                  <span
-                    className={`xl:text-[20px] lg:text-[18px] md:text-[16px] text-[14px] cursor-pointer font-medium transition-all ${activeDropdown === idx ? "text-[#FF7050]" : "text-[#5E5E5E]"}`}
-                  >
-                    {item.name}
-                  </span>
-                  {item.dropdown && (
-                    <FiChevronDown
-                      className={
-                        activeDropdown === idx
-                          ? "text-[#FF7050]"
-                          : "text-[#5E5E5E]"
-                      }
-                    />
-                  )}
-
-                  {item.dropdown && activeDropdown === idx && (
-                    <div className="absolute top-full left-0 w-64 bg-white border border-[#F2F2F2] shadow-2xl rounded-b-xl z-[110]">
-                      <div className="py-2 flex flex-col">
-                        {item.subItems?.map((sub, sIdx) => (
-                          <Link
-                            key={sIdx}
-                            href="#"
-                            className="px-6 py-3 hover:bg-[#F9F9F9] text-[#5E5E5E] hover:text-[#FF7050] text-base cursor-pointer"
-                          >
-                            {sub}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
-              <div className="flex items-center gap-2 cursor-pointer group shrink-0">
-                <FireIcon />
-                <span className="text-black font-semibold uppercase text-[16px]">
-                  HOT DEALS
+                  {item.name}
                 </span>
-              </div>
-            </ul>
-          </div>
+                {item.children && item.children.length > 0 && (
+                  <FiChevronDown
+                    className={
+                      activeDropdown === idx
+                        ? "text-[#FF7050]"
+                        : "text-[#5E5E5E]"
+                    }
+                  />
+                )}
+
+                {/* Recursive Multi-level Dropdown */}
+                {item.children &&
+                  item.children.length > 0 &&
+                  activeDropdown === idx && (
+                    <NavDropdown items={item.children} isRoot={true} />
+                  )}
+              </li>
+            ))}
+            <li className="flex items-center gap-2 cursor-pointer font-bold text-[#FF7050]">
+              <FireIcon />
+              <span>HOT DEALS</span>
+            </li>
+          </ul>
         </nav>
       </header>
 
-      {/* BANNER SPACER */}
+      {/* --- MOBILE SIDEBAR --- */}
+      <div
+        className={`fixed top-0 left-0 h-full w-[300px] bg-white z-210 transform transition-transform duration-500 lg:hidden shadow-2xl ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-8">
+            <Image src="/images/logo.png" alt="logo" width={140} height={40} />
+            <button
+              onClick={() => setIsDrawerOpen(false)}
+              className="text-2xl cursor-pointer"
+            >
+              <FiX />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {(categories || []).map((link, idx) => (
+              <div key={link.id} className="border-b border-gray-50">
+                <div
+                  onClick={() =>
+                    setOpenMobileDropdown(
+                      openMobileDropdown === idx ? null : idx,
+                    )
+                  }
+                  className="flex justify-between py-4 text-gray-700 font-semibold cursor-pointer"
+                >
+                  <span>{link.name}</span>
+                  {link.children && link.children.length > 0 && (
+                    <FiChevronDown
+                      className={openMobileDropdown === idx ? "rotate-180" : ""}
+                    />
+                  )}
+                </div>
+                {openMobileDropdown === idx &&
+                  link.children &&
+                  link.children.length > 0 && (
+                    <div className="pl-4 pb-4 space-y-3">
+                      {link.children.map((sub) => (
+                        <Link
+                          key={sub.id}
+                          href={`/category/${sub.slug}`}
+                          onClick={() => setIsDrawerOpen(false)}
+                          className="block text-gray-500 text-sm"
+                        >
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Cart */}
       <div
         onClick={() => setIsCartOpen(true)}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-[90] flex flex-col items-center justify-center cursor-pointer transition-all hover:brightness-110 active:scale-95 shadow-2xl"
-        style={{
-          width: "clamp(75px, 10vw, 97px)",
-          height: "clamp(75px, 10vw, 97px)",
-          backgroundColor: "#ff7050",
-          borderTopLeftRadius: "12px",
-          borderBottomLeftRadius: "12px",
-        }}
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-90 flex flex-col items-center justify-center cursor-pointer bg-[#ff7050] rounded-l-xl w-[75px] md:w-[97px] h-[75px] md:h-[97px] shadow-2xl"
       >
-        <CartIcon className="w-10 text-white" />
-        <span className="text-white text-[12px] md:text-base font-semibold mt-1 text-center font-poppins">
+        <CartIcon className="w-8 md:w-10 text-white" />
+        <span className="text-white text-xs md:text-base font-semibold mt-1">
           2 Items
         </span>
       </div>
 
-      {/* --- MOBILE SIDEBAR DRAWER --- */}
-      <div
-        className={`fixed top-0 left-0 h-full w-[320px] bg-white z-[210] transform transition-transform duration-500 ease-in-out lg:hidden shadow-2xl ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <Image
-              src="/images/logo.png"
-              alt="logo"
-              width={160}
-              height={45}
-              sizes="(max-width: 768px) 120px, 160px"
-              className="w-[120px] md:w-[160px] object-contain"
-              style={{ height: "auto" }}
-            />
-            <button
-              onClick={() => setIsDrawerOpen(false)}
-              className="text-3xl text-black cursor-pointer"
-            >
-              <FiX />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
-            {isStoreReady && !user && (
-              <>
-                <div className="flex flex-col sm:flex-row gap-3 w-full">
-                  <button
-                    onClick={() => {
-                      setIsDrawerOpen(false);
-                      router.push("/signin");
-                    }}
-                    className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#F2F2F2] rounded-lg uppercase tracking-wide cursor-pointer font-inter"
-                  >
-                    LOGIN
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsDrawerOpen(false);
-                      router.push("/signup");
-                    }}
-                    className="w-full sm:flex-1 py-2 md:py-4 text-base md:text-xl font-bold bg-[#FF7050] text-white rounded-lg uppercase tracking-wide cursor-pointer font-inter"
-                  >
-                    SIGNUP
-                  </button>
-                </div>
-                <div className="h-[1px] bg-[#F2F2F2] w-full" />
-              </>
-            )}
-
-            <ul className="flex flex-col">
-              {navLinks.map((link, idx) => (
-                <li
-                  key={idx}
-                  className="flex flex-col border-b border-[#F9F9F9]"
-                >
-                  <div
-                    onClick={() => toggleMobileDropdown(idx)}
-                    className={`flex items-center justify-between py-4 cursor-pointer transition-colors ${openMobileDropdown === idx ? "text-[#FF7050]" : "text-[#727272]"}`}
-                  >
-                    <span className="font-semibold text-base md:text-lg font-inter">
-                      {link.name}
-                    </span>
-                    <FiChevronDown
-                      className={`transition-transform duration-300 ${openMobileDropdown === idx ? "rotate-180" : ""}`}
-                    />
-                  </div>
-
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${openMobileDropdown === idx ? "max-h-96 pb-4" : "max-h-0"}`}
-                  >
-                    <ul className="pl-4 space-y-3">
-                      {link.subItems?.map((sub, sIdx) => (
-                        <li key={sIdx}>
-                          <Link
-                            key={sIdx}
-                            href="#"
-                            className="text-gray-500 text-base block py-1 hover:text-[#FF7050]"
-                          >
-                            {sub}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
-              ))}
-              <li className="flex items-center gap-2 text-black font-bold uppercase py-6 font-inter">
-                <FaFireAlt color="#FF764A" /> HOT DEALS
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* --- CART DRAWER --- */}
-      <div
-        className={`font-inter fixed top-0 right-0 h-full w-[320px] md:w-[450px] bg-white z-[210] transform transition-transform duration-500 shadow-2xl ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
-        <div className="h-full flex flex-col">
-          <div className="p-6 bg-[#F9F9F9] flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CartIcon className="w-8" />
-              <span className="font-poppins font-medium text-xl text-black">
-                Shopping Cart
-              </span>
-            </div>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="text-3xl text-black hover:text-black transition-colors cursor-pointer"
-            >
-              <FiX />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {cartItems.map((item) => (
-              <div key={item.id} className="flex gap-4 pb-6 group">
-                <div className="bg-[#F2F2F2] rounded-lg relative">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={80}
-                    height={80}
-                    className="object-cover h-full"
-                    style={{ width: "auto", height: "auto" }}
-                  />
-                </div>
-                <div className="flex-1 flex flex-col">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-black font-medium text-base line-clamp-1">
-                      {item.name}
-                    </h4>
-                    <button
-                      className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer shrink-0 mt-0.5"
-                      aria-label="Remove item"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  </div>
-                  <div>
-                    <p className="text-[#FF7050] font-bold text-lg py-2">
-                      BDT {item.price}
-                    </p>
-                    <div className="flex items-center border w-fit border-gray-200 rounded-md">
-                      <button
-                        className="p-1 px-2 cursor-pointer hover:bg-gray-100 transition-colors rounded-l-md"
-                        aria-label="Decrease quantity"
-                      >
-                        <FiMinus size={14} />
-                      </button>
-                      <span className="px-3 text-sm font-bold border-x border-gray-200">
-                        {item.qty}
-                      </span>
-                      <button
-                        className="p-1 px-2 cursor-pointer hover:bg-gray-100 transition-colors rounded-r-md"
-                        aria-label="Increase quantity"
-                      >
-                        <FiPlus size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-6 bg-white space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500 font-medium">Subtotal:</span>
-              <span className="text-black font-bold text-xl">BDT 69,100</span>
-            </div>
-            <button
-              className="w-full py-4 bg-[#FF7050] text-white rounded-xl font-bold uppercase shadow-lg shadow-orange-100 hover:brightness-105 transition-all cursor-pointer"
-              onClick={() => router.push("/order")}
-            >
-              Checkout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* --- OVERLAY --- */}
       {(isDrawerOpen || isCartOpen) && (
         <div
-          className="fixed inset-0 bg-black/60 z-[200] transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 z-200"
           onClick={() => {
             setIsDrawerOpen(false);
             setIsCartOpen(false);
@@ -528,7 +391,7 @@ const Navbar = () => {
         />
       )}
 
-      {/* --- MOBILE BOTTOM NAVIGATION BAR --- */}
+      {/* Mobile Bottom Nav */}
       {isStoreReady && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050]">
           {/* Home Button - Color is constant; active scales up and bolds up */}
@@ -553,28 +416,12 @@ const Navbar = () => {
             </svg>
             <span className="text-[12px] mt-1 font-inter">Home</span>
           </Link>
-
-          {/* Category Drawer Trigger - Full strength brand color matches active scales */}
           <button
             onClick={() => setIsDrawerOpen(true)}
-            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
-              isDrawerOpen ? "font-bold scale-110" : "font-normal"
-            }`}
+            className="flex flex-col items-center"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-            <span className="text-[12px] mt-1 font-inter">Category</span>
+            <FiMenu size={22} />
+            <span className="text-[10px] mt-1">Category</span>
           </button>
 
           {/* Central Custom Floating Action Logo */}
@@ -593,31 +440,12 @@ const Navbar = () => {
               </div>
             </button>
           </div>
-
-          {/* Chat Button - Fixed color logic setup to sync with Zustand modal footprint */}
           <button
-            onClick={() => {
-              setIsDrawerOpen(false);
-              useAuthStore.getState().setIsChatOpen(true);
-            }}
-            className={`flex flex-col items-center justify-center w-16 text-center active:scale-95 transition-all duration-200 cursor-pointer ${
-              isChatActive ? "font-bold scale-110" : "font-normal"
-            }`}
+            onClick={() => useAuthStore.getState().setIsChatOpen(true)}
+            className="flex flex-col items-center"
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <span className="text-[12px] mt-1 font-inter">Chat</span>
+            <CartIcon className="w-6" />
+            <span className="text-[10px] mt-1">Chat</span>
           </button>
 
           {/* Login / Profile Button */}
@@ -632,23 +460,11 @@ const Navbar = () => {
                 : "font-normal"
             }`}
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-            <span className="text-[12px] mt-1 font-inter">
-              {isStoreReady && user ? "Profile" : "Login"}
+            <UserIcon size={22} />
+            <span className="text-[10px] mt-1">
+              {user ? "Profile" : "Login"}
             </span>
-          </a>
+          </button>
         </div>
       )}
     </>

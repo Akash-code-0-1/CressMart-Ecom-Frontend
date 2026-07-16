@@ -422,7 +422,7 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
                     <img src={src.startsWith("http") ? src : `${baseStorageUrl}${src}`} className="w-full h-full object-cover" alt="" />
                     <button
                       type="button"
-                      onClick={() => setImages(images.filter((_, idx) => idx !== i))}
+                      onClick={() => setImages(images.filter((_: string, idx: number) => idx !== i))}
                       className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <Trash2 size={14} />
