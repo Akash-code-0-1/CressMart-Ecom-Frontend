@@ -20,6 +20,12 @@ export interface Blog {
   meta_description?: string;
   product_ids?: string[];
   created_at?: string;
+  related_products?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    title?: string;
+  }[];
 }
 
 export interface BlogFormData {
@@ -31,7 +37,7 @@ export interface BlogFormData {
   meta_tag: string;
   meta_description: string;
   featured_image: string;
-  product_ids: string[];
+  product_ids?: string[];
   status?: "DRAFT" | "PUBLISHED";
   order?: number;
 }
