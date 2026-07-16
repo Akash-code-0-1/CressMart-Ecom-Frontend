@@ -20,6 +20,13 @@ interface BlogTableSectionProps {
   onPageChange: (page: number) => void;
 }
 
+type RelatedProduct = {
+  id?: string;
+  _id?: string;
+  name?: string;
+  title?: string;
+};
+
 export default function BlogTableSection({
   blogs,
   isLoading,
@@ -112,6 +119,30 @@ export default function BlogTableSection({
               </span>
               <span className="text-[10px] text-gray-400">{item.slug}</span>
             </div>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Products",
+      key: "products",
+      render: (item: Blog) => {
+        const products = item?.related_products || [];
+
+        return (
+          <div className="flex flex-col gap-1">
+            {products && products.length > 0 ? (
+              products.map((product: RelatedProduct, index: number) => (
+                <span
+                  key={product.id ?? product._id ?? index}
+                  className="font-medium text-gray-800 text-sm"
+                >
+                  {product.name || product.title}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-400 text-sm">No products</span>
+            )}
           </div>
         );
       },

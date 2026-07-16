@@ -38,7 +38,6 @@ export default function BlogManagement() {
     status: "PUBLISHED",
     order: 0,
   });
-
   // Fetch blogs query
   const {
     data: blogListData,
@@ -113,7 +112,6 @@ export default function BlogManagement() {
     });
     setShowCreateForm(true);
   };
-
   const closeForm = () => {
     setShowCreateForm(false);
     setEditingId(null);
@@ -143,6 +141,9 @@ export default function BlogManagement() {
     };
     if (!payload.youtube_link || payload.youtube_link.trim() === "") {
       delete payload.youtube_link;
+    }
+    if (!payload.product_ids || payload.product_ids.length === 0) {
+      delete payload.product_ids;
     }
     createOrUpdateMutation.mutate(payload);
   };

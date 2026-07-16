@@ -1,5 +1,6 @@
 import { apiFetch } from "@/utils/api";
 import { BlogResponse } from "@/@types/blog.type";
+import { BlogFormData } from "@/@types/blogpost.type";
 
 export const getBlogs = async (page = 1, limit = 4): Promise<BlogResponse> => {
   const res = await apiFetch(`/blogs?page=${page}&limit=${limit}`, {
@@ -57,7 +58,7 @@ export const uploadBlogImage = async (file: File) => {
 };
 
 // 3. Create Blog (Matches your Postman POST)
-export const createBlog = async (dto: any) => {
+export const createBlog = async (dto: BlogFormData) => {
   const res = await apiFetch(`/blogs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -66,7 +67,7 @@ export const createBlog = async (dto: any) => {
   return res.json();
 };
 
-export const updateBlog = async (id: string, dto: any) => {
+export const updateBlog = async (id: string, dto: BlogFormData) => {
   const res = await apiFetch(`/blogs/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
