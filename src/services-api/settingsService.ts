@@ -3,23 +3,33 @@ import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 
 export const fetchSettings = async () => {
-  const res = await apiFetch("/settings");
-  if (!res.ok) throw new Error("Failed to retrieve settings.");
-  
-  const data = await res.json();
-  
-  // Return the API data, but guarantee structure for JSON fields 
-  // so the form doesn't crash if the database returns null for these
-  return {
-    ...data,
-    social_links: data?.social_links || [],
-    offers: data?.offers || [],
-    chat_support: data?.chat_support || {},
-    site_toggles: data?.site_toggles || {},
-  };
+  try {
+    const res = await apiFetch("/settings");
+    if (!res.ok) throw new Error("Failed to retrieve settings.");
+    
+    const data = await res.json();
+    
+    // Return the API data, but guarantee structure for JSON fields 
+    // so the form doesn't crash if the database returns null for these
+    return {
+      ...data,
+      social_links: data?.social_links || [],
+      offers: data?.offers || [],
+      chat_support: data?.chat_support || {},
+      site_toggles: data?.site_toggles || {},
+    };
+  } catch (error) {
+    console.warn("Warning fetching settings:", error instanceof Error ? error.message : "Unknown error");
+    return {
+      social_links: [],
+      offers: [],
+      chat_support: {},
+      site_toggles: {},
+    };
+  }
 };
 
-export const updateSettings = async (payload: any) => {
+export const updateSettings = async (payload: Record<string, unknown>) => {
   const token = await getAdminTokenAction();
   
   // Production-grade: Strip sensitive or read-only fields before sending

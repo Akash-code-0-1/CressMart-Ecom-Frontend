@@ -25,6 +25,7 @@ export interface Blog {
     _id?: string;
     name?: string;
     title?: string;
+    images?: string[];
   }[];
 }
 

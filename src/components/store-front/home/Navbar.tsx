@@ -243,7 +243,8 @@ const Navbar = () => {
                 ) : (
                   <UserIcon
                     className="w-full h-full text-black"
-                    strokeWidth={1.2}
+                    strokeWidth={1.5}
+                    size={36}
                   />
                 )}
               </a>
@@ -382,6 +383,37 @@ const Navbar = () => {
         </span>
       </div>
 
+      {/* --- CART DRAWER --- */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[320px] md:w-[400px] bg-white z-[210] transform transition-transform duration-500 shadow-2xl ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="p-6 h-full flex flex-col">
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
+            <h2 className="text-xl font-bold text-gray-800">Your Cart</h2>
+            <button
+              onClick={() => setIsCartOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+            >
+              <FiX size={24} className="text-gray-500" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {/* Placeholder for Cart Items */}
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+              <CartIcon className="w-20 h-20 opacity-50" />
+              <p className="text-lg">Your cart is empty</p>
+              <button 
+                onClick={() => setIsCartOpen(false)}
+                className="mt-4 bg-[#FF7050] text-white px-8 py-3 rounded-[8px] font-medium hover:bg-[#e56548] transition-colors"
+              >
+                Continue Shopping
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {(isDrawerOpen || isCartOpen) && (
         <div
           className="fixed inset-0 bg-black/60 z-200"
@@ -472,7 +504,13 @@ const Navbar = () => {
   );
 };
 
-const NavDropdown = ({ items, isRoot }: { items: Category[]; isRoot?: boolean }) => {
+const NavDropdown = ({
+  items,
+  isRoot,
+}: {
+  items: Category[];
+  isRoot?: boolean;
+}) => {
   return (
     <div
       className={`absolute ${

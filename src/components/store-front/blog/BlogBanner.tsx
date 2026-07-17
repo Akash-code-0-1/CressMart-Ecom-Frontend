@@ -1,23 +1,44 @@
 "use client";
 
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+
+// Swiper CSS
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { getMainBanner } from "@/services-api/blogService";
 
 const BlogBanner = () => {
-  const blogs = [
-    {
-      id: 1,
-      title: "blog",
-      image: "/images/blog/blogbanner.png",
-      mobileImage: "/images/blog/blogbanner.png",
-    },
-  ];
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+
+  // 1. Fetch data using TanStack Query
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["mainBanner"],
+    queryFn: getMainBanner,
+  });
+
+  // ডাটা স্ট্রাকচার অনুযায়ী ব্যানার লিস্ট বের করা
+  // আপনার API যদি সরাসরি একটা অবজেক্ট দেয় তবে সেটাকে অ্যারেতে রূপান্তর করা হয়েছে স্লাইডারের জন্য
+  const banner = data?.data;
+  const banners = banner ? [banner] : [];
+
+  // লোডিং স্টেট
+  if (isLoading) {
+    return (
+      <div className="w-full h-[450px] md:h-[600px] bg-gray-200 animate-pulse rounded-[35px] container mx-auto mt-10" />
+    );
+  }
+
+  // এরর বা ডাটা না থাকলে হাইড রাখা
+  if (isError || banners.length === 0) {
+    return null;
+  }
 
   return (
     <section className="w-full py-16 px-4 md:px-10 bg-white">
@@ -27,9 +48,9 @@ const BlogBanner = () => {
           <h2 className="text-black font-poppins text-[36px] md:text-[48px] font-bold mb-4">
             Blog
           </h2>
-          <p className="text-[#585858] font-inter text-[14px] md:text-[16px] max-w-[600px] mx-auto leading-relaxed">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor incididunt ut labore e
+          <p className="text-black font-poppins text-[16px] md:text-[18px] font-normal mb-4">
+            Read more blogs for learning and exploring the world of design and
+            development.
           </p>
         </div>
 
@@ -47,52 +68,36 @@ const BlogBanner = () => {
             modules={[Navigation, Pagination, Autoplay]}
             spaceBetween={0}
             slidesPerView={1}
-            loop={true}
+            loop={banners.length > 1}
             autoplay={{ delay: 5000 }}
             navigation={{
               prevEl: ".blog-prev",
               nextEl: ".blog-next",
             }}
+            pagination={{ clickable: true }}
             className="rounded-[20px] md:rounded-[35px] overflow-hidden"
           >
-            {blogs.map((blog) => (
-              <SwiperSlide key={blog.id}>
-                <div className="relative h-[450px] md:h-[600px] w-full">
-                  {blog.mobileImage ? (
-                    <>
-                      <div className="hidden md:block w-full h-full relative">
-                        <Image
-                          src={blog.image}
-                          alt={blog.title}
-                          fill
-                          className="object-fill"
-                          priority
-                        />
-                      </div>
-                      <div className="block md:hidden w-full h-full relative">
-                        <Image
-                          src={blog.mobileImage}
-                          alt={blog.title}
-                          fill
-                          className="object-fill"
-                          priority
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="w-full h-full relative">
-                      <Image
-                        src={blog.image}
-                        alt={blog.title}
-                        fill
-                        className="md:object-fill object-cover"
-                        priority
-                      />
-                    </div>
-                  )}
-                </div>
-              </SwiperSlide>
-            ))}
+            {banners.map((item, index) => {
+              // ইমেজ ইউআরএল ফরম্যাট করা
+              const imageUrl = item.image_url?.startsWith("http")
+                ? item.image_url
+                : `${backendBaseUrl}/${item.image_url?.replace(/^\/+/, "")}`;
+
+              return (
+                <SwiperSlide key={index}>
+                  <div className="relative h-[450px] md:h-[600px] w-full">
+                    <Image
+                      src={imageUrl}
+                      alt="Blog Banner"
+                      fill
+                      className="object-cover md:object-fill"
+                      priority
+                      unoptimized
+                    />
+                  </div>
+                </SwiperSlide>
+              );
+            })}
           </Swiper>
         </div>
       </div>

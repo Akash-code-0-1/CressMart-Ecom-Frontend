@@ -91,3 +91,19 @@ export const bulkDeleteBlogs = async (ids: string[]) => {
   });
   return res.json();
 };
+
+// Fetch a single blog post by slug
+export const getBlogBySlug = async (slug: string) => {
+  const res = await apiFetch(`/blogs/post/${slug}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch the blog post");
+  }
+
+  return res.json();
+};

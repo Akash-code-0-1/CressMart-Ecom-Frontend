@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image"; // Added Next.js Image component
+import Image from "next/image";
 import { MoreVertical, Edit3, Trash2, Loader2 } from "lucide-react";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
@@ -25,6 +25,7 @@ type RelatedProduct = {
   _id?: string;
   name?: string;
   title?: string;
+  images?: string[];
 };
 
 export default function BlogTableSection({
@@ -130,16 +131,36 @@ export default function BlogTableSection({
         const products = item?.related_products || [];
 
         return (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             {products && products.length > 0 ? (
-              products.map((product: RelatedProduct, index: number) => (
-                <span
-                  key={product.id ?? product._id ?? index}
-                  className="font-medium text-gray-800 text-sm"
-                >
-                  {product.name || product.title}
-                </span>
-              ))
+              products.map((product: RelatedProduct, index: number) => {
+                const imageUrl = product.images?.[0]?.startsWith("http")
+                  ? product.images[0]
+                  : product.images?.[0]
+                    ? `${backendBaseUrl}/${product.images[0].replace(/^\/+/, "")}`
+                    : "/placeholder.png";
+
+                return (
+                  <div
+                    key={product.id ?? product._id ?? index}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="relative shrink-0 w-10 h-10 rounded-md overflow-hidden">
+                      <Image
+                        src={imageUrl}
+                        alt={product.name || "Product Image"}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+
+                    <span className="font-medium text-gray-800 text-sm">
+                      {product.name || product.title}
+                    </span>
+                  </div>
+                );
+              })
             ) : (
               <span className="text-gray-400 text-sm">No products</span>
             )}
