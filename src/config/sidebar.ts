@@ -93,8 +93,8 @@ export const sidebarMenu = [
             href: "/admin/dashboard/carousel",
           },
           {
-            label: "Banners",
-            href: "/admin/dashboard/banner",
+            label: "Faqs",
+            href: "/admin/dashboard/faq",
           },
           {
             label: "Popups",

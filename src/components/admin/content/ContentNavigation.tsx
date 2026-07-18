@@ -16,9 +16,9 @@ export default function ContentNavigation() {
       icon: Shapes,
     },
     {
-      id: "banner",
-      label: "Banners",
-      path: "/admin/dashboard/banner",
+      id: "faq",
+      label: "Faqs",
+      path: "/admin/dashboard/faq",
       icon: SubCategroyIcon,
     },
     {

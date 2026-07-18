@@ -24,14 +24,12 @@ export default function BannerSlider() {
     staleTime: 1000 * 60 * 10,
   });
 
-  // Loading State / Placeholder
   if (isLoading) {
     return (
       <div className="w-full aspect-[16/9] sm:aspect-[12/5] md:aspect-[3/1] bg-gray-100 animate-pulse" />
     );
   }
 
-  // Error State or Empty Data
   if (isError || !banners || banners.length === 0) {
     return (
       <section className="">
@@ -48,38 +46,48 @@ export default function BannerSlider() {
     );
   }
 
+  // Calculate total number of images across all banner objects
+  const allSlides = banners.flatMap((banner) => {
+    return (banner.image_url || []).map((imgUrl, imgIndex) => ({
+      ...banner,
+      currentImageUrl: imgUrl,
+      uniqueKey: `${banner.id}-${imgIndex}`,
+    }));
+  });
+
   return (
-    <section>
+    <section aria-label="Promotion Slider">
       <Swiper
         modules={[Autoplay, EffectFade]}
         effect="fade"
-        loop={banners.length > 1}
+        loop={allSlides.length > 1}
+        grabCursor={true}
         autoplay={{
-          delay: 5000,
+          delay: 3000,
           disableOnInteraction: false,
         }}
         speed={1000}
         className="w-full"
       >
-        {banners.map((banner, index) => {
-          const rawPath = banner.image_url?.[0] || "";
+        {allSlides.map((slide, index) => {
+          const rawPath = slide.currentImageUrl || "";
           const imageSrc = rawPath.startsWith("http")
             ? rawPath
             : `${backendBaseUrl}/${rawPath.replace(/^\/+/, "")}`;
 
           return (
-            <SwiperSlide key={banner.id ?? index}>
+            <SwiperSlide key={slide.uniqueKey}>
               <Link
-                href={banner.link_url || "#"}
-                className={
-                  banner.link_url ? "cursor-pointer" : "cursor-default"
-                }
+                href={slide.link_url || "#"}
+                className={slide.link_url ? "cursor-pointer" : "cursor-default"}
+                title={slide.meta_title}
               >
                 <div className="relative w-full aspect-[16/9] sm:aspect-[12/5] md:aspect-[3/1]">
                   <Image
                     src={imageSrc}
-                    alt={banner.meta_title || "Promotion Banner"}
+                    alt={`${slide.meta_title || "Banner"} | ${slide.meta_tags || ""} | ${slide.meta_description || ""}`}
                     fill
+                    // Only set priority for the very first image of the entire slider
                     priority={index === 0}
                     sizes="100vw"
                     className="md:object-cover object-fill"

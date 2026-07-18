@@ -1,6 +1,4 @@
-"use client";
-
-import MultiBannerDashboard from "@/components/admin/content/banner/MultiBannerDashboard";
+import FaqManagement from "@/components/admin/content/faq/FaqManagement";
 import ContentHead from "@/components/admin/content/ContentHead";
 import ContentNavigation from "@/components/admin/content/ContentNavigation";
 
@@ -13,7 +11,7 @@ export default function Page() {
             <ContentHead />
             <ContentNavigation />
           </div>
-          <MultiBannerDashboard />
+          <FaqManagement />
         </div>
       </main>
     </div>
