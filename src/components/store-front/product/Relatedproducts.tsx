@@ -1,4 +1,3 @@
-import React from "react";
 import Image from "next/image";
 import { FaStar } from "react-icons/fa";
 
@@ -54,7 +53,7 @@ const relatedProducts: RelatedProduct[] = [
 const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer group bg-[#F2F2F2] mb-4 last:mb-0">
     {/* Product Image */}
-    <div className="w-[94px] h-[116px] rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+    <div className="w-[94px] h-[116px] rounded-xl overflow-hidden bg-gray-200 shrink-0">
       <Image
         src={product.image}
         alt={product.name}

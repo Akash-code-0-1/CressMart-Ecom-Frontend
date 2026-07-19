@@ -1,5 +1,6 @@
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
+import { Product } from "@/@types/product.type";
 
 export interface ProductQuery {
   page?: number;
@@ -148,4 +149,20 @@ export const searchProducts = async (query: string) => {
     (Array.isArray(data?.data) ? data.data : null) ||
     (Array.isArray(data) ? data : []);
   return productsList;
+};
+
+// get product by id
+
+
+export const getProductBySlug = async (slug: string): Promise<Product | null> => {
+  if (!slug) return null;
+  
+  const res = await apiFetch(`/products/${slug}`, {
+    method: "GET",
+  });
+
+  if (!res.ok) return null;
+  const result = await res.json();
+
+  return result?.data || null;
 };

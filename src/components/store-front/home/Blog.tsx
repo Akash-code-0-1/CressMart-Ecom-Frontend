@@ -146,7 +146,6 @@ const Blog: React.FC = () => {
       const usableImage = img.startsWith("http")
         ? img
         : `${backendBaseUrl}/${img.replace(/^\/+/, "")}`;
-      console.log(usableImage);
 
       // Date Formatting (Example: 2026-01-10 -> 10th Jan 2026)
       const dateObj = new Date(blog.created_at);

@@ -1,41 +1,36 @@
 import React from "react";
+interface SpecItem {
+  type: string;
+  desc: string;
+}
 
-const specs = [
-  { feature: "Movement", details: "High-Quality Quartz Movement" },
-  { feature: "Dial Design", details: "Batman Themed Skeleton Aesthetics" },
-  {
-    feature: "Luminous Feature",
-    details: "High-Glow Radium (Glow in the Dark)",
-  },
-  {
-    feature: "Case Material",
-    details: "Durable Zinc Alloy / Stainless Steel Back",
-  },
-  {
-    feature: "Strap Material",
-    details: "Premium Quality Leather / Silicone Strap",
-  },
-  { feature: "Glass", details: "Hardened Scratch-Resistant Mineral Glass" },
-  { feature: "Water Resistance", details: "Splash Resistant (Daily Use)" },
-];
+interface SpecificationProps {
+  specs: SpecItem[] | null;
+}
 
-const SpecificationSection = () => {
+const SpecificationSection = ({ specs }: SpecificationProps) => {
+  if (!specs || specs.length === 0) {
+    return <p className="text-[#727272]">No specifications provided.</p>;
+  }
+
   return (
-    <div className="text-base md:text-lg">
+    <div className="text-base md:text-lg font-poppins">
       <div className="grid grid-cols-2 gap-y-6 gap-x-10">
-        <h3 className="md:text-[24px] text-[18px] font-medium text-black">
+        <h3 className="md:text-[24px] text-[18px] font-semibold text-black">
           Feature
         </h3>
-        <h3 className="md:text-[24px] text-[18px] font-medium text-black mb-4">
+        <h3 className="md:text-[24px] text-[18px] font-semibold text-black mb-4">
           Details
         </h3>
+
+        {/* 4. Map over the array directly */}
         {specs.map((item, idx) => (
           <React.Fragment key={idx}>
-            <span className="text-[#727272] md:text-[20px] text-base">
-              {item.feature}
+            <span className="text-[#727272] md:text-[20px] text-base border-b border-gray-100 pb-2">
+              {item.type}
             </span>
-            <span className="text-[#727272] md:text-[20px] text-base">
-              {item.details}
+            <span className="text-black md:text-[20px] text-base font-medium border-b border-gray-100 pb-2">
+              {item.desc}
             </span>
           </React.Fragment>
         ))}
