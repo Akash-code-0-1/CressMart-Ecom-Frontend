@@ -62,6 +62,10 @@ export const sidebarMenu = [
             label: "Tags",
             href: "/admin/dashboard/tag",
           },
+          {
+            label: "Units",
+            href: "/admin/dashboard/unit",
+          },
         ],
       },
       {
