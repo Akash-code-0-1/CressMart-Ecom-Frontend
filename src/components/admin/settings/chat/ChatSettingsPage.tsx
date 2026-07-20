@@ -338,7 +338,7 @@ export default function ChatSettingsPage() {
             }
             className="cursor-pointer flex items-center gap-2 px-6 py-2.5 rounded-[8px] bg-[#F9F9F9] text-[#020202] font-semibold text-sm"
           >
-            <RotateCcw size={18} /> Reset
+            {/* <RotateCcw size={18} /> Reset */}
           </button>
           <PrimaryButton label="Save Changes" onClick={handleSave} />
         </div>

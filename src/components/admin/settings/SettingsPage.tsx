@@ -274,6 +274,7 @@
 //   );
 // }
 
+
 "use client";
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -413,7 +414,7 @@ export default function SettingsPage() {
               onClick={() => reset()}
               className="flex items-center gap-2 px-6 py-3 rounded-[8px] bg-[#F9F9F9] text-sm font-semibold"
             >
-              <RotateCcw size={18} /> Reset
+              {/* <RotateCcw size={18} /> Reset */}
             </button>
             <PrimaryButton
               label={mutation.isPending ? "Saving..." : "Save Changes"}
