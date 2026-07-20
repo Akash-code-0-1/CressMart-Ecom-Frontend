@@ -78,8 +78,12 @@
 //     </div>
 //   );
 // }
+
+
+
 "use client";
 
+import PermissionGuard from "@/components/admin/common/PermissionGuard";
 import { Ban, Repeat, Star, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { reviewApi } from "@/services-api/reviewService";
@@ -146,6 +150,7 @@ export default function Page() {
   }
 
   return (
+    <PermissionGuard permission="Customer & Review">
     <div className="flex h-screen overflow-hidden">
       <main className="flex-1 overflow-y-auto">
         <div className="p-2 md:p-0">
@@ -171,5 +176,6 @@ export default function Page() {
         </div>
       </main>
     </div>
+    </PermissionGuard>
   );
 }
