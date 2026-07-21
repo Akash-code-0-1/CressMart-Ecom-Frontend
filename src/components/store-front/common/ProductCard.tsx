@@ -16,8 +16,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const router = useRouter();
 
   // Logic for dynamic values
-  const hasDiscount =
-    parseFloat(product.regular_price) > parseFloat(product.sell_price);
+  const regularPrice = parseFloat(product.regular_price) || 0;
+  const sellPrice = parseFloat(product.sell_price) || 0;
+
+  // disoucnt logic
+  const hasDiscount = regularPrice > sellPrice;
+  const discountPercentage = hasDiscount
+    ? Math.round(((regularPrice - sellPrice) / regularPrice) * 100)
+    : 0;
+
   const inStock = product.quantity > 0;
   const ratingValue = Number(product.avg_rating) || 0;
 
@@ -35,14 +42,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
     : `${backendBaseUrl}/${productImage.replace(/^\/+/, "")}`;
 
   return (
-    <div className="group flex flex-col p-2.5 md:p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-[16px] w-full md:max-w-[350px] font-poppins h-full justify-between">
+    <div className="group flex flex-col p-2.5 md:p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-2xl w-full md:max-w-[350px] font-poppins h-full justify-between">
       <div>
         {/* Product Image Section */}
-        <div className="relative bg-white rounded-[12px] p-3 md:p-4 aspect-square mb-2 md:mb-3 overflow-hidden">
+        <div className="relative rounded-[12px] aspect-square mb-2 md:mb-3 overflow-hidden">
           {/* Dynamic Discount Badge */}
           {(product.discount_tag || hasDiscount) && (
             <div className="absolute top-2 left-2 bg-[#FF7050] text-white text-[10px] md:text-[12px] font-medium px-[6px] py-[2px] rounded-[8px] z-10">
-              {product.discount_tag || "SALE"}
+              {product.discount_tag
+                ? product.discount_tag
+                : `${discountPercentage}% OFF`}
             </div>
           )}
 

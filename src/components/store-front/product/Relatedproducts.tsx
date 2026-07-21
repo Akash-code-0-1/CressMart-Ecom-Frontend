@@ -1,107 +1,52 @@
-import Image from "next/image";
-import { FaStar } from "react-icons/fa";
+"use client";
 
-interface RelatedProduct {
-  id: number;
-  name: string;
-  originalPrice: string;
-  salePrice: string;
-  rating: number;
-  reviewCount: number;
-  image: string;
-}
+import { useQuery } from "@tanstack/react-query";
+import { relatedProduct } from "@/services-api/productService";
+import RelatedProductCard, { ProductData } from "./RelatedProductCard";
 
-const relatedProducts: RelatedProduct[] = [
-  {
-    id: 1,
-    name: "Eclipse Smart Fitness Tracker",
-    originalPrice: "BDT 1200",
-    salePrice: "BDT 999",
-    rating: 4,
-    reviewCount: 10,
-    image: "/images/store-front/products/w.png",
-  },
-  {
-    id: 2,
-    name: "Eclipse Smart Fitness Tracker",
-    originalPrice: "BDT 1200",
-    salePrice: "BDT 999",
-    rating: 4,
-    reviewCount: 10,
-    image: "/images/store-front/products/w.png",
-  },
-  {
-    id: 3,
-    name: "Eclipse Smart Fitness Tracker",
-    originalPrice: "BDT 1200",
-    salePrice: "BDT 999",
-    rating: 4,
-    reviewCount: 10,
-    image: "/images/store-front/products/w.png",
-  },
-  {
-    id: 4,
-    name: "Eclipse Smart Fitness Tracker",
-    originalPrice: "BDT 1200",
-    salePrice: "BDT 999",
-    rating: 4,
-    reviewCount: 10,
-    image: "/images/store-front/products/w.png",
-  },
-];
+const RelatedProducts = ({ productId }: { productId: string }) => {
+  const limit = 4;
+  const page = 1;
 
-const RelatedProductCard = ({ product }: { product: RelatedProduct }) => (
-  <div className="flex items-center gap-3 p-3 rounded-xl cursor-pointer group bg-[#F2F2F2] mb-4 last:mb-0">
-    {/* Product Image */}
-    <div className="w-[94px] h-[116px] rounded-xl overflow-hidden bg-gray-200 shrink-0">
-      <Image
-        src={product.image}
-        alt={product.name}
-        width={70}
-        height={70}
-        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-      />
-    </div>
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["related-products", productId, page, limit],
+    queryFn: () => relatedProduct(productId, limit, page),
+    enabled: !!productId,
+  });
 
-    {/* Product Info */}
-    <div className="flex-1 min-w-0">
-      <h4 className="text-base font-semibold text-black leading-snug line-clamp-2 mb-1 max-w-[155px]">
-        {product.name}
-      </h4>
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-sm font-bold text-[#FF7050]">
-          {product.salePrice}
-        </span>
-
-        <span className="text-xs text-gray-400 line-through">
-          {product.originalPrice}
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className="flex text-[#FFB800] text-xs gap-[1px]">
-          {[...Array(5)].map((_, i) => (
-            <FaStar
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <h3 className="text-xl font-semibold font-poppins mb-4 px-1">
+          Related Product
+        </h3>
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div
               key={i}
-              className={
-                i < product.rating ? "text-[#FFB800]" : "text-gray-300"
-              }
-            />
+              className="flex items-center gap-3 p-3 rounded-xl bg-[#F2F2F2] animate-pulse"
+            >
+              <div className="w-[94px] h-[116px] rounded-xl bg-gray-300 shrink-0" />
+              <div className="flex-1">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2" />
+                <div className="h-4 bg-gray-300 rounded w-1/2" />
+              </div>
+            </div>
           ))}
         </div>
-        <span className="text-xs text-gray-500">({product.reviewCount})</span>
       </div>
-    </div>
-  </div>
-);
+    );
+  }
 
-const RelatedProducts = () => {
+  if (isError || !data || data.length === 0) return null;
+
   return (
     <div className="w-full">
       <h3 className="text-xl font-semibold font-poppins text-black mb-4 px-1">
         Related Product
       </h3>
-      <div className="bg-white rounded-2xl">
-        {relatedProducts.map((product) => (
+      <div className="bg-white rounded-2xl flex flex-col gap-y-3">
+        {data.map((product: ProductData) => (
           <RelatedProductCard key={product.id} product={product} />
         ))}
       </div>

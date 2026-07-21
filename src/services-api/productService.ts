@@ -225,3 +225,36 @@ export const getProductBySlug = async (
 
   return result?.data || null;
 };
+
+// related product
+export const relatedProduct = async (
+  id: string,
+  limit: number,
+  page: number,
+) => {
+  if (!id) return null;
+
+  const res = await apiFetch(
+    `/products/${id}/related?page=${page}&limit=${limit}`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!res.ok) return null;
+  const result = await res.json();
+
+  return result?.data || null;
+};
+
+// recent view product api
+export const recentViewProduct = async (page: number, limit: number) => {
+  const res = await apiFetch(`/products/recent?page=${page}&limit=${limit}`, {
+    method: "GET",
+  });
+
+  if (!res.ok) return null;
+  const result = await res.json();
+
+  return result?.data || null;
+};

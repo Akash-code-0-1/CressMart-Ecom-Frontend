@@ -1,17 +1,53 @@
-'use client'
+"use client";
+import { useQuery } from "@tanstack/react-query";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import { FaChevronLeft, FaChevronRight, FaStar } from "react-icons/fa";
 import Image from "next/image";
+import { recentViewProduct } from "@/services-api/productService";
+import Link from "next/link";
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  images: string | string[];
+  total_reviews: number;
+  slug?: string;
+  avg_rating: number;
+  regular_price: number;
+}
+
+interface ApiResponse {
+  data: Product[];
+}
 
 const RecentlyViewed = () => {
-  const products = [1, 2, 3, 4, 5, 6, 7, 8];
+  // 1. Fetch data using TanStack Query with Types
+  const { data: products, isLoading } = useQuery<ApiResponse | null>({
+    queryKey: ["recentlyViewed"],
+    queryFn: () => recentViewProduct(1, 12),
+  });
+
+  if (isLoading)
+    return (
+      <div className="h-[200px] flex items-center justify-center">
+        Loading...
+      </div>
+    );
+
+  const productdata = products?.data;
+
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+
+  if (!productdata || productdata.length === 0) return null;
 
   return (
     <div className="w-full bg-white">
-      {/* Main Container with 1720px max-width */}
       <div className="max-w-[1720px] mx-auto px-4">
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6">
@@ -19,7 +55,6 @@ const RecentlyViewed = () => {
             Recently viewed
           </h2>
 
-          {/* Custom Navigation Arrows */}
           <div className="flex items-center gap-4">
             <button className="recentview-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white text-black transition-colors duration-200 [&.swiper-button-disabled]:border-[#E2E2E2] [&.swiper-button-disabled]:text-[#E2E2E2] [&.swiper-button-disabled]:cursor-not-allowed">
               <FaChevronLeft className="text-xl" />
@@ -47,50 +82,63 @@ const RecentlyViewed = () => {
           }}
           className="mySwiper"
         >
-          {products.map((_, index) => (
-            <SwiperSlide key={index}>
-              {/* Product Card */}
-              <div className="bg-[#F3F3F3] rounded-[16px] p-4 flex items-center gap-4 h-[130px]">
-                {/* Product Image Box */}
-                <div className="min-w-[100px] h-[100px] bg-white rounded-[12px] flex items-center justify-center p-2">
-                  <Image
-                    src="/images/store-front/products/product02.png"
-                    alt="Smart Watch"
-                    width={100}
-                    height={100}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
+          {productdata.map((product: Product) => {
+            // FIX: Handle if images is an array or a string
+            const rawImage = Array.isArray(product?.images)
+              ? product.images[0]
+              : product?.images;
 
-                {/* Product Details */}
-                <div className="flex flex-col justify-center">
-                  <h3 className="text-black font-poppins text-[16px] font-medium leading-[1.2] mb-1.5">
-                    Eclipse Smart Fitness Tracker
-                  </h3>
+            const rowImage = rawImage || "";
 
-                  <p className="text-[#FF7050] font-poppins text-[12px] font-bold mb-1">
-                    BDT 1200
-                  </p>
+            const iconUrl = rowImage.startsWith("http")
+              ? rowImage
+              : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
-                  {/* Rating Section */}
-                  <div className="flex items-center gap-1">
-                    <div className="flex gap-[3px] text-[#FDCC0D]">
-                      {[...Array(5)].map((_, i) => (
-                        <FaStar
-                          key={i}
-                          className="text-[14px]"
-                          color="#FDCC0D"
-                        />
-                      ))}
+            return (
+              <SwiperSlide key={product?._id}>
+                <Link href={`/product/${product?.slug}`}>
+                  <div className="bg-[#F3F3F3] rounded-lg p-4 flex items-center gap-4 h-[130px]">
+                    <div className="relative min-w-[100px] h-[100px] rounded-xl flex items-center justify-center p-2">
+                      <Image
+                        src={iconUrl}
+                        alt={product?.name || "Product"}
+                        fill
+                        className="w-full h-full object-contain rounded-xl"
+                        unoptimized
+                      />
                     </div>
-                    <span className="text-[#8C8C8C] text-[12px] font-medium font-poppins">
-                      (12)
-                    </span>
+
+                    <div className="flex flex-col justify-center overflow-hidden">
+                      <h3 className="text-black font-poppins text-[16px] font-medium leading-[1.2] mb-1.5 line-clamp-2">
+                        {product?.name}
+                      </h3>
+
+                      <p className="text-[#FF7050] font-poppins text-[12px] font-bold mb-1">
+                        BDT {product?.price}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <div className="flex text-[#FFB800] text-xs gap-[1px]">
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar
+                              key={i}
+                              className={
+                                i < Math.round(product.avg_rating)
+                                  ? "text-[#FFB800]"
+                                  : "text-gray-300"
+                              }
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          ({product.total_reviews})
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </SwiperSlide>
-          ))}
+                </Link>
+              </SwiperSlide>
+            );
+          })}
         </Swiper>
       </div>
       <style jsx global>{`

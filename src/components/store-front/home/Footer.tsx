@@ -259,10 +259,8 @@
 
 // export default Footer;
 
-
 "use client";
 
-import React, { JSX } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -279,7 +277,6 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
 
 const Footer = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
   const currentYear = new Date().getFullYear();
 
   const { data: settings, isLoading } = useQuery({
@@ -288,6 +285,13 @@ const Footer = () => {
   });
 
   const info = settings?.data || settings;
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+  const rowImage = info?.footer_logo || "";
+  const iconUrl = rowImage.startsWith("http")
+    ? rowImage
+    : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
   const footerLinks = {
     company: [
@@ -329,7 +333,6 @@ const Footer = () => {
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
         {/* --- Top Section: Links & Info --- */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
-          
           <div className="col-span-2 lg:col-span-1">
             <Link
               href="/"
@@ -339,7 +342,7 @@ const Footer = () => {
                 <div className="w-[230px] h-[64px] animate-pulse bg-gray-100 rounded" />
               ) : (
                 <Image
-                  src={info?.footer_logo ? `${baseUrl}${info.footer_logo}` : "/images/logo.png"}
+                  src={iconUrl}
                   alt="Creass Mart"
                   width={230}
                   height={64}
