@@ -49,6 +49,7 @@ const CatalogHead = () => {
   const currentStatus = searchParams.get("status") || "";
   const currentLimit = searchParams.get("limit") || "10";
 
+  // 🚀 UPDATE THIS IN YOUR CatalogHead.tsx FILE:
   const currentTabConfig = (() => {
     if (pathname.includes("/sub-category")) {
       return {
@@ -56,26 +57,19 @@ const CatalogHead = () => {
         route: "/admin/dashboard/sub-category/add",
       };
     }
-
     if (pathname.includes("/child-category")) {
+      // 🚀 FIXED: Point directly to the standalone child category creation route folder path
       return {
         label: "Add Child Category",
         route: "/admin/dashboard/child-category/add",
       };
     }
-
     if (pathname.includes("/brand")) {
       return { label: "Add Brand", route: "/admin/dashboard/brand/add" };
     }
-
     if (pathname.includes("/tag")) {
       return { label: "Add Tag", route: "/admin/dashboard/tag/add" };
     }
-
-    if (pathname.includes("/unit")) {
-      return { label: "Add Unit", route: "/admin/dashboard/unit/add" };
-    }
-
     return { label: "Add Category", route: "/admin/dashboard/category/add" };
   })();
   const updateUrlParam = (key: string, value: string) => {

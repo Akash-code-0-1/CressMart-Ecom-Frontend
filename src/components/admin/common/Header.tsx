@@ -114,7 +114,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
         {/* User Profile Navigation Info */}
         <Link 
-          href="/admin/dashboard/settings/profile"
+          href="/admin/dashboard/profile" 
           className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 font-poppins cursor-pointer group"
         >
           <div className="text-right">

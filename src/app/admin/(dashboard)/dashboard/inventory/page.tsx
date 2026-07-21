@@ -1,19 +1,17 @@
 "use client";
 
 import InventoryMainSection from "@/components/admin/inventory/InventoryMainSection";
-import PermissionGuard from "@/components/admin/common/PermissionGuard";
+
 export default function Page() {
   return (
-    <PermissionGuard permission="Inventory">
-      <div className="flex h-screen overflow-hidden">
-        <main className="flex-1">
-          <div className="p-2 md:p-0">
-            <div className="">
-              <InventoryMainSection />
-            </div>
+    <div className="flex h-screen overflow-hidden">
+      <main className="flex-1">
+        <div className="p-2 md:p-0">
+          <div className="">
+            <InventoryMainSection />
           </div>
-        </main>
-      </div>
-    </PermissionGuard>
+        </div>
+      </main>
+    </div>
   );
 }
