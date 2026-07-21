@@ -14,6 +14,7 @@ import WebsiteIcon from "@/components/store-front/svg/svg/sidebar-icon/WebsiteIc
 import AwebsiteIcon from "@/components/store-front/svg/svg/AwebsiteIcon";
 import SettingsIcon from "@/components/store-front/svg/svg/sidebar-icon/SettingsIcon";
 import AdminShildIcon from "@/components/store-front/svg/svg/sidebar-icon/AdminShildIcon";
+import { permission } from "process";
 
 export const sidebarMenu = [
   {
@@ -24,23 +25,27 @@ export const sidebarMenu = [
         href: "/admin/dashboard/home",
         icon: DashboardIcon,
         activeIcon: ADashboardIcon,
+        permission: "Dashboard",
       },
       {
         label: "Orders",
         href: "/admin/dashboard/order",
         icon: OrderIcon,
         activeIcon: AOrderIcon,
+        permission: "Orders",
       },
       {
         label: "Products",
         href: "/admin/dashboard/products",
         icon: ProductIcon,
         activeIcon: AProductIcon,
+        permission: "Products",
       },
       {
         label: "Catalog",
         icon: CatalogIcon,
         activeIcon: ACalalogIcon,
+        permission: "Catalog",
         submenu: [
           {
             label: "Category",
@@ -73,11 +78,13 @@ export const sidebarMenu = [
         href: "/admin/dashboard/inventory",
         icon: Inventory,
         activeIcon: ActiveInventoryIcon,
+        permission: "Inventory",
       },
       {
         label: "Customers & Review",
         href: "/admin/dashboard/review",
         icon: CustomerIcon,
+        permission: "Customer & Review",
         activeIcon: UserCheck,
       },
     ],
@@ -91,6 +98,7 @@ export const sidebarMenu = [
         href: "/admin/dashboard/content",
         icon: WebsiteIcon,
         activeIcon: AwebsiteIcon,
+        permission: "Website Content",
         submenu: [
           {
             label: "Carousal",
@@ -124,12 +132,14 @@ export const sidebarMenu = [
         label: "Settings",
         href: "/admin/dashboard/settings/information",
         icon: SettingsIcon,
+        permission: "Settings",
         activeIcon: Settings2,
       },
       {
         label: "Admin Control",
         href: "/admin/dashboard/admin-control",
         icon: AdminShildIcon,
+        permission: "Admin Control",
         activeIcon: Lock,
       },
     ],
