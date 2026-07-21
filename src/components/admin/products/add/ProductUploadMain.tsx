@@ -417,9 +417,12 @@ function GeneralInfoSection({ images, setImages, uploading, setUploading }: any)
           <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[160px]">
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2.5 mb-4 justify-center">
-                {images.map((src: string, i: number) => (
+                {images.map((src: string, i: number) => {
+                  const cleanImg = src.trim();
+                  const finalSrc = cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`;
+                  return (
                   <div key={i} className="relative group w-20 h-20 rounded border overflow-hidden bg-white shadow-3xs">
-                    <img src={src.startsWith("http") ? src : `${baseStorageUrl}${src}`} className="w-full h-full object-cover" alt="" />
+                    <img src={finalSrc} className="w-full h-full object-cover" alt="" />
                     <button
                       type="button"
                       onClick={() => setImages(images.filter((_: string, idx: number) => idx !== i))}

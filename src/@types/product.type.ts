@@ -65,6 +65,7 @@ export interface Product {
   product_tags: TagRelation[];
   view_count: number;
   total_sold: number;
+  discount_tag?: string | null;
 }
 
 export interface SpecificationItem {

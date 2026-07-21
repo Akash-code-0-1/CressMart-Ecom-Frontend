@@ -88,7 +88,7 @@ export const LogoUploadCard = ({ title, value, onChange }: any) => {
           </label>
           <button
             type="button"
-            onClick={() => onChange("")} 
+            onClick={() => onChange("")}
             className="p-2 bg-[#FFF1F1] text-[#FF4D4D] rounded-[8px]"
           >
             <Trash2 size={16} />

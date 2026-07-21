@@ -48,7 +48,12 @@ export interface BannerUploadResponse {
 // Fields expected during creation
 export type CreateCampaignInput = Omit<
   Campaign,
-  "id" | "created_at" | "updated_at" | "campaign_products" | "description" | "background_image_url"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "campaign_products"
+  | "description"
+  | "background_image_url"
 > & {
   product_ids: string[];
   description?: string;
@@ -165,5 +170,18 @@ export const deleteCampaign = async (id: string): Promise<boolean> => {
   } catch (error) {
     console.error("Error deleting Campaign:", error);
     return false;
+  }
+};
+
+// =============store front ========================
+
+export const getActiveCampaign = async () => {
+  try {
+    const res = await apiFetch(`/campaigns/active`);
+    if (!res.ok) throw new Error("Failed to fetch active campaigns");
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching active campaigns:", error);
+    return [];
   }
 };

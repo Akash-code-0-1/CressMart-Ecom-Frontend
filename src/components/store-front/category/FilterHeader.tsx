@@ -1,4 +1,3 @@
-import React from "react";
 
 export default function FilterHeader({ onReset }: { onReset: () => void }) {
   return (

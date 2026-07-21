@@ -62,7 +62,7 @@ const ProductDetailsTabs = ({ product }: Props) => {
           </div>
 
           <aside className="w-full xl:w-[320px] shrink-0">
-            <RelatedProducts />
+            <RelatedProducts productId={product.id} />
           </aside>
         </div>
       </div>
