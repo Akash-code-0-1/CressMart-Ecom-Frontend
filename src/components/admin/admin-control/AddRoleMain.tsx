@@ -15,15 +15,9 @@ const PERMISSIONS = [
   "Catalog",
   "Inventory",
   "Customer & Review",
-  "Customization",
   "Website Content",
-  "Business Report",
   "Settings",
   "Admin Control",
-  "Activity Log",
-  "Billing & Subscription",
-  "Support",
-  "Tutorial",
 ];
 
 export default function AddRoleMain() {
@@ -54,7 +48,6 @@ export default function AddRoleMain() {
       const res = await apiFetch(`/users/${adminId}`);
       if (!res.ok) throw new Error("Failed to fetch user");
       const json = await res.json();
-      // Handle the nested 'data' property from your API
       return json.data || json; 
     },
     enabled: isEdit && !!adminId,
