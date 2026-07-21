@@ -56,9 +56,12 @@ const PromotionDiscountProduct = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5 lg:gap-6 xl:gap-8 2xl:gap-[35px]">
           {campaigns.map((item: Campaign) => {
             const rowImage = item?.banner_url || "";
-            const iconUrl = rowImage.startsWith("http")
-              ? rowImage
-              : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+            const isValidImg = rowImage.trim().length > 1;
+            const iconUrl = isValidImg
+              ? rowImage.startsWith("http") || rowImage.startsWith("/images/")
+                ? rowImage
+                : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`
+              : "/images/placeholder.png";
             return (
               <div
                 key={item.id}

@@ -20,9 +20,13 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const productImage = product.images?.[0]
-    ? `${backendBaseUrl}/${product.images[0].replace(/^\/+/, "")}`
-    : "/placeholder.png";
+  const rawFirstImg = product.images?.[0];
+  const isValidImg = typeof rawFirstImg === "string" && rawFirstImg.trim().length > 1;
+  const productImage = isValidImg
+    ? rawFirstImg.startsWith("http") || rawFirstImg.startsWith("/images/") 
+      ? rawFirstImg 
+      : `${backendBaseUrl}/${rawFirstImg.replace(/^\/+/, "")}`
+    : "/images/placeholder.png";
 
   return (
     <Link href={`/product/${product.slug}`}>

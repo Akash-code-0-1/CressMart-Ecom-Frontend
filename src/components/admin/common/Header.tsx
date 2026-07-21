@@ -33,7 +33,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
   const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
   
   let finalAvatarUrl = null;
-  if (rawUser?.avatar) {
+  if (rawUser?.avatar && rawUser.avatar.trim().length > 1) {
     finalAvatarUrl = rawUser.avatar.startsWith("data:") || rawUser.avatar.startsWith("http")
       ? rawUser.avatar
       : `${backendBaseUrl}/${rawUser.avatar.replace(/^\/+/, "")}`;

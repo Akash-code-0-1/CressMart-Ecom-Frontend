@@ -34,10 +34,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     "http://localhost:8082";
   const firstImage =
     product.images && product.images.length > 0 ? product.images[0] : null;
-  const productImage =
-    typeof firstImage === "string" ? firstImage : "/images/placeholder.png";
+  const cleanImg = typeof firstImage === "string" ? firstImage.trim() : "";
+  const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
+  
+  const productImage = isValidImg ? cleanImg : "/images/placeholder.png";
 
-  const usableImage = productImage.startsWith("http")
+  const usableImage = productImage.startsWith("http") || productImage.startsWith("/images/")
     ? productImage
     : `${backendBaseUrl}/${productImage.replace(/^\/+/, "")}`;
 

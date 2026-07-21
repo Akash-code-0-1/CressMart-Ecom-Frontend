@@ -273,7 +273,11 @@ export default function CategoryTable() {
       key: "image",
       render: (category) => {
         const rawImg = category.image_url || category.image;
-        const srcUrl = rawImg ? (rawImg.startsWith("http") ? rawImg : `${baseStorageUrl}${rawImg}`) : "/images/products/product2.png";
+        const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+        const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
+        const srcUrl = isValidImg 
+          ? (cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`) 
+          : "/images/products/product2.png";
         return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border" />;
       },
     },

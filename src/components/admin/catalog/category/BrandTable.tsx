@@ -36,7 +36,6 @@ export default function BrandTable() {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-
   const { data: serverPayload, isLoading } = useQuery({
     queryKey: ["catalog-brands-list", page, limit, search, status],
     queryFn: () => {
@@ -46,8 +45,8 @@ export default function BrandTable() {
       return fetchAllBrands({ page, limit, search, status: mappedStatus });
     },
 
-    staleTime: 0, 
-    refetchOnMount: true, 
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const brandList = serverPayload?.data || [];
@@ -127,14 +126,16 @@ export default function BrandTable() {
       key: "image",
       render: (item) => {
         const rawImg = item.logo_url;
-        // 🚀 FIX: Append timestamp ?t=... to force browser to refresh the image
-        const baseUrl = rawImg
-          ? rawImg.startsWith("http")
-            ? rawImg
-            : `${baseStorageUrl}${rawImg}`
+        const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+        const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
+
+        const baseUrl = isValidImg
+          ? cleanImg.startsWith("http")
+            ? cleanImg
+            : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
           : "/images/products/product2.png";
 
-        const srcUrl = rawImg ? `${baseUrl}?t=${Date.now()}` : baseUrl;
+        const srcUrl = isValidImg ? `${baseUrl}?t=${Date.now()}` : baseUrl;
 
         return (
           <img

@@ -588,7 +588,6 @@ const Navbar = () => {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
   const info = settings?.data || settings;
-  const logoUrl = info?.header_logo;
   const rowImage = info?.header_logo || "";
   const usableImageUrl = rowImage.startsWith("http")
     ? rowImage

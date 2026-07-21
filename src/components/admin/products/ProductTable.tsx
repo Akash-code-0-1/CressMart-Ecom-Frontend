@@ -158,8 +158,10 @@ export default function ProductTable() {
       className: "px-4 py-3 align-middle",
       render: (product) => {
         const rawImg = Array.isArray(product.images) ? product.images[0] : null;
-        const srcUrl = rawImg && rawImg !== "undefined"
-          ? rawImg.startsWith("http") ? rawImg : `${baseStorageUrl}${rawImg}`
+        const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+        const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
+        const srcUrl = isValidImg
+          ? cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
           : "/images/products/product2.png";
         return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border" />;
       },
