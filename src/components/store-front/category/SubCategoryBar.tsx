@@ -3,30 +3,29 @@ import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 
 // Import Swiper styles
 import "swiper/css";
 import "swiper/css/navigation";
 
-export default function SubCategoryBar() {
-  const subs = [
-    "Computer Accessories",
-    "Power Bank",
-    "Microphone",
-    "Telephone",
-    "Smart Watch",
-    "Router & Internet",
-    "Mobile Accessories",
-    "Laptops",
-    "Computer Accessories",
-    "Power Bank",
-    "Microphone",
-    "Telephone",
-    "Smart Watch",
-    "Router & Internet",
-    "Mobile Accessories",
-    "Laptops",
-  ];
+interface SubCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface SubCategoryBarProps {
+  subcategory?: SubCategory[];
+}
+
+export default function SubCategoryBar({ subcategory = [] }: SubCategoryBarProps) {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const activeCategoryId = searchParams.get("category_id") || "";
+
+  if (!subcategory || subcategory.length === 0) return null;
 
   return (
     <div className="flex items-center w-full gap-4 mt-2">
@@ -43,17 +42,26 @@ export default function SubCategoryBar() {
           }}
           className="mySwiper"
         >
-          {subs.map((item, index) => (
-            <SwiperSlide key={index} className="!w-auto">
-              <button
-                className="flex py-3 px-4 justify-center items-center gap-[10px] 
-                           bg-[#F5F5F5] text-black font-poppins xl:text-2xl lg:text-xl md:text-lg text-sm 
-                           font-medium leading-normal rounded-xl whitespace-nowrap"
-              >
-                {item}
-              </button>
-            </SwiperSlide>
-          ))}
+          {subcategory.map((item) => {
+            const isActive = activeCategoryId === item.id;
+            return (
+              <SwiperSlide key={item.id} className="!w-auto">
+                <Link
+                  href={`/category/${params.slug}?category_id=${item.id}`}
+                  className={`flex py-3 px-4 justify-center items-center gap-[10px] 
+                             font-poppins xl:text-2xl lg:text-xl md:text-lg text-sm 
+                             font-medium leading-normal rounded-xl whitespace-nowrap transition-colors
+                             ${
+                               isActive
+                                 ? "bg-[#FF7050] text-white"
+                                 : "bg-[#F5F5F5] text-black hover:bg-[#FF7050] hover:text-white"
+                             }`}
+                >
+                  {item.name}
+                </Link>
+              </SwiperSlide>
+            );
+          })}
         </Swiper>
       </div>
 

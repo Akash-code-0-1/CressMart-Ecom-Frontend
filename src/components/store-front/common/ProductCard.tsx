@@ -6,19 +6,7 @@ import { useRouter } from "next/navigation";
 import { FaStar } from "react-icons/fa";
 import WishIcon from "../svg/WishIcon";
 
-// 1. Define the Interface based on your API response
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sell_price: string;
-  regular_price: string;
-  images: string[] | null;
-  avg_rating: string;
-  total_reviews: number;
-  quantity: number;
-  discount_tag: string | null;
-}
+import { Product } from "@/@types/product.type";
 
 interface ProductCardProps {
   product: Product;
@@ -31,7 +19,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const hasDiscount =
     parseFloat(product.regular_price) > parseFloat(product.sell_price);
   const inStock = product.quantity > 0;
-  const ratingValue = parseFloat(product.avg_rating) || 0;
+  const ratingValue = Number(product.avg_rating) || 0;
 
   // Use first image from array or a placeholder
   const backendBaseUrl =

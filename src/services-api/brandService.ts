@@ -135,6 +135,7 @@ export interface Brand {
   meta_description?: string;
   meta_tags?: string;
   status: "active" | "inactive" | string;
+  _count?: { products: number };
 }
 
 export interface BrandResponse {

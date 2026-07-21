@@ -14,6 +14,8 @@ import WebsiteIcon from "@/components/store-front/svg/svg/sidebar-icon/WebsiteIc
 import AwebsiteIcon from "@/components/store-front/svg/svg/AwebsiteIcon";
 import SettingsIcon from "@/components/store-front/svg/svg/sidebar-icon/SettingsIcon";
 import AdminShildIcon from "@/components/store-front/svg/svg/sidebar-icon/AdminShildIcon";
+import ActiveCampaign from "@/components/store-front/svg/svg/sidebar-icon/ActiveCampaign";
+import InactiveCampaign from "@/components/store-front/svg/svg/sidebar-icon/InactiveCampaign";
 
 export const sidebarMenu = [
   {
@@ -109,6 +111,17 @@ export const sidebarMenu = [
             href: "/admin/dashboard/landing-page",
           },
         ],
+      },
+    ],
+  },
+  {
+    section: "Promotion",
+    items: [
+      {
+        label: "Campaign",
+        href: "/admin/dashboard/campaign",
+        icon: InactiveCampaign,
+        activeIcon: ActiveCampaign,
       },
     ],
   },

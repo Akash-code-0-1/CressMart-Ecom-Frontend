@@ -130,6 +130,65 @@ export const deleteProduct = async (id: string) => {
 };
 
 // =========== Store Front ============
+
+// 🚀 Filter products for storefront category/brand pages
+export interface FilterProductsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  min_price?: number;
+  max_price?: number;
+  category_id?: string;
+  brand_id?: string;
+  sort?: string;
+}
+
+export interface FilterProductsResponse {
+  data: Product[];
+  pagination: {
+    current_page: number;
+    total_pages: number;
+    total_items: number;
+    limit: number;
+  };
+}
+
+export const filterProducts = async (
+  query: FilterProductsQuery,
+): Promise<FilterProductsResponse> => {
+  const queryParams = new URLSearchParams();
+  if (query.page) queryParams.set("page", String(query.page));
+  if (query.limit) queryParams.set("limit", String(query.limit));
+  if (query.search) queryParams.set("search", query.search);
+  if (query.min_price !== undefined)
+    queryParams.set("min_price", String(query.min_price));
+  if (query.max_price !== undefined)
+    queryParams.set("max_price", String(query.max_price));
+  if (query.category_id) queryParams.set("category_id", query.category_id);
+  if (query.brand_id) queryParams.set("brand_id", query.brand_id);
+  if (query.sort) queryParams.set("sort", query.sort);
+
+  const res = await apiFetch(`/products?${queryParams.toString()}`, {
+    method: "GET",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch filtered products.");
+
+  const json = await res.json();
+  const data = json?.data?.data || json?.data || [];
+  const meta = json?.data?.meta || json?.meta || {};
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: {
+      current_page: meta.current_page ?? meta.page ?? query.page ?? 1,
+      total_pages: meta.total_pages ?? meta.totalPages ?? 1,
+      total_items: meta.total_items ?? meta.total ?? 0,
+      limit: meta.limit ?? query.limit ?? 16,
+    },
+  };
+};
+
 // search product
 
 export const searchProducts = async (query: string) => {
@@ -152,11 +211,11 @@ export const searchProducts = async (query: string) => {
 };
 
 // get product by id
-
-
-export const getProductBySlug = async (slug: string): Promise<Product | null> => {
+export const getProductBySlug = async (
+  slug: string,
+): Promise<Product | null> => {
   if (!slug) return null;
-  
+
   const res = await apiFetch(`/products/${slug}`, {
     method: "GET",
   });

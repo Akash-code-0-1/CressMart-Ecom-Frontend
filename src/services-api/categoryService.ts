@@ -145,9 +145,33 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  parent_id?: string | null;
   image_url?: string | null;
   children?: Category[];
 }
+
+export interface CategoryDetail extends Category {
+  description?: string | null;
+  background_image_url?: string | null;
+  children?: CategoryDetail[];
+  _count?: { products: number };
+}
+
+export const getCategory = async (slug: string): Promise<CategoryDetail> => {
+  const res = await apiFetch(`/categories/${slug}`);
+  if (!res.ok) throw new Error("Failed to fetch category");
+  const result = await res.json();
+  return result?.data || result;
+};
+
+// Flat list of all categories for filter sidebar
+export const getAllcategoryFlatList = async (): Promise<{ data: Category[] }> => {
+  const res = await apiFetch("/categories?limit=200");
+  if (!res.ok) throw new Error("Failed to fetch category list");
+  const json = await res.json();
+  const records = json?.data?.data || json?.data || json || [];
+  return { data: Array.isArray(records) ? records : [] };
+};
 
 export const getCategoryTree = async (): Promise<Category[]> => {
   const res = await apiFetch("/categories/tree?page=1&limit=30");
