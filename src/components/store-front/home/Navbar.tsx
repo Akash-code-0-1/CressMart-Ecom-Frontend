@@ -576,9 +576,6 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "";
-
   const { data: settings } = useQuery({
     queryKey: ["settings"],
     queryFn: fetchSettings,
@@ -780,10 +777,12 @@ const Navbar = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
+             <Link href={'/profile/wishlist'}>
               <button className="cursor-pointer">
                 <WishIcon className="w-8 md:w-10" />
               </button>
 
+             </Link>
               {/* Fixed profile container to prevent layout breaking */}
               <div
                 onClick={handleProfileNav}

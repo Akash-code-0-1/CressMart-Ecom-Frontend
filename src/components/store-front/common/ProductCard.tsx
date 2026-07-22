@@ -3,10 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FaStar } from "react-icons/fa";
+import { FaHeart, FaStar } from "react-icons/fa";
 import WishIcon from "../svg/WishIcon";
 
 import { Product } from "@/@types/product.type";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createWishlist,
+  deleteWishlist,
+  getWishlist,
+} from "@/services-api/wishlistService";
+import toast from "react-hot-toast";
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +21,50 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // get wislist
+  const { data: wishlistItems = [] } = useQuery({
+    queryKey: ["wishlist"],
+    queryFn: getWishlist,
+  });
+
+  // check wishli if have ?
+  const isWishlisted =
+    Array.isArray(wishlistItems) &&
+    wishlistItems.some((item) => item.productId === product.id);
+
+  // wishlist mutation
+  const { mutate: addToWishlist, isPending: isAdding } = useMutation({
+    mutationFn: () => createWishlist(product.id.toString()),
+    onSuccess: () => {
+      toast.success("Added to wishlist!");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  // revimove from wishlist
+  const { mutate: removeFromWishlist, isPending: isRemoving } = useMutation({
+    mutationFn: () => deleteWishlist(product.id.toString()),
+    onSuccess: () => {
+      toast.success("Removed from wishlist!");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  // handle wishlist toggle
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAdding || isRemoving) return;
+
+    if (isWishlisted) {
+      removeFromWishlist();
+    } else {
+      addToWishlist();
+    }
+  };
 
   // Logic for dynamic values
   const regularPrice = parseFloat(product.regular_price) || 0;
@@ -36,12 +87,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
     product.images && product.images.length > 0 ? product.images[0] : null;
   const cleanImg = typeof firstImage === "string" ? firstImage.trim() : "";
   const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
-  
+
   const productImage = isValidImg ? cleanImg : "/images/placeholder.png";
 
-  const usableImage = productImage.startsWith("http") || productImage.startsWith("/images/")
-    ? productImage
-    : `${backendBaseUrl}/${productImage.replace(/^\/+/, "")}`;
+  const usableImage =
+    productImage.startsWith("http") || productImage.startsWith("/images/")
+      ? productImage
+      : `${backendBaseUrl}/${productImage.replace(/^\/+/, "")}`;
 
   return (
     <div className="group flex flex-col p-2.5 md:p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-2xl w-full md:max-w-[350px] font-poppins h-full justify-between">
@@ -57,11 +109,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           )}
 
-          {/* Wishlist Icon */}
-          <button className="cursor-pointer absolute top-2 right-2 z-10 hover:scale-110 transition-transform">
-            <WishIcon className="w-6 md:w-7" />
+          {/* Wishlist Button */}
+          <button
+            onClick={handleWishlistToggle}
+            disabled={isAdding || isRemoving}
+            className="cursor-pointer absolute top-2 right-2 z-20 hover:scale-110 transition-transform bg-white/90 p-1.5 rounded-full shadow-md"
+          >
+            {isWishlisted ? (
+              <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
+            ) : (
+              <WishIcon className="w-6 md:w-7 text-gray-500" />
+            )}
           </button>
-
           {/* Clickable Image Area */}
           <Link
             href={`/product/${product.slug}`}
