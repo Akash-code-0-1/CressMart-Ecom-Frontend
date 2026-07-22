@@ -8,7 +8,16 @@ import {
 } from "react-icons/ai";
 import { Product, ProductVariant } from "@/@types/product.type";
 import Image from "next/image";
-import { FaCheck, FaRegEye } from "react-icons/fa";
+import { FaCheck, FaHeart, FaRegEye } from "react-icons/fa";
+import toast from "react-hot-toast";
+import {
+  createWishlist,
+  deleteWishlist,
+  getWishlist,
+} from "@/services-api/wishlistService";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createCart } from "@/services-api/cartService";
+import { useAuthStore } from "@/store/useAuthStore";
 interface ProductInfoProps {
   product: Product;
 }
@@ -22,11 +31,75 @@ interface Attribute {
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const [qty, setQty] = useState(1);
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants && product.variants.length > 0
       ? product.variants[0]
       : null,
   );
+
+  // get wislist
+  const { data: wishlistItems = [] } = useQuery({
+    queryKey: ["wishlist"],
+    queryFn: getWishlist,
+  });
+
+  // check wishli if have ?
+  const isWishlisted =
+    Array.isArray(wishlistItems) &&
+    wishlistItems.some((item) => item.productId === product.id);
+  // wishlist mutation
+  const { mutate: addToWishlist, isPending: isAdding } = useMutation({
+    mutationFn: () => createWishlist(product.id.toString()),
+    onSuccess: () => {
+      toast.success("Added to wishlist!");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  // revimove from wishlist
+  const { mutate: removeFromWishlist, isPending: isRemoving } = useMutation({
+    mutationFn: () => deleteWishlist(product.id.toString()),
+    onSuccess: () => {
+      toast.success("Removed from wishlist!");
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  // handle wishlist toggle
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAdding || isRemoving) return;
+
+    if (isWishlisted) {
+      removeFromWishlist();
+    } else {
+      addToWishlist();
+    }
+  };
+
+  // Add to cart mutation
+  const { mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
+    mutationFn: async () => {
+      const guestId = localStorage.getItem("guestId") || "";
+      return createCart(
+        product.id.toString(),
+        qty,
+        selectedVariant?.id || null,
+        user ? null : guestId,
+      );
+    },
+    onSuccess: () => {
+      toast.success("Added to cart!");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add to cart");
+    },
+  });
 
   const currentPrice = selectedVariant
     ? parseFloat(selectedVariant.price)
@@ -246,14 +319,27 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full sm:flex-1">
-          <button className="w-[52px] h-[52px] border border-[#FF7050] rounded-lg text-[#FF7050] text-2xl flex items-center justify-center hover:bg-[#FF7050]/5 transition-all">
-            <AiOutlineHeart />
+          <button
+            className="cursor-pointer w-[52px] h-[52px] border border-[#FF7050] rounded-lg text-[#FF7050] text-2xl flex items-center justify-center hover:bg-[#FF7050]/5 transition-all"
+            onClick={handleWishlistToggle}
+            disabled={isAdding || isRemoving}
+          >
+            {isWishlisted ? (
+              <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
+            ) : (
+              <AiOutlineHeart />
+            )}
+            {/* <AiOutlineHeart /> */}
           </button>
           <button
             disabled={currentStock <= 0}
-            className="flex-1 h-[52px] border-[1.5px] border-[#FF7050] text-[#FF7050] font-semibold rounded-[8px] hover:bg-[#FF7050]/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="cursor-pointer flex-1 h-[52px] border-[1.5px] border-[#FF7050] text-[#FF7050] font-semibold rounded-[8px] hover:bg-[#FF7050]/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              handleAddToCart();
+            }}
           >
-            ADD TO CART
+            {isAddingToCart ? "Adding..." : "Add To Cart"}
           </button>
           <button
             disabled={currentStock <= 0}

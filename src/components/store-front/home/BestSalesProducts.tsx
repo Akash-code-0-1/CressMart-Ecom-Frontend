@@ -49,7 +49,7 @@ const BestSalesProducts = ({ tags }: BestSalesProductsProps) => {
     slug: product.slug,
     sell_price: product.price.toString(),
     regular_price: product.old_price > 0 ? product.old_price.toString() : "0",
-    images: product.image ? [product.image] : ["/images/placeholder.png"],
+    images: product.image ? [product.image] : ["/images/placeholder.svg"],
     avg_rating: product.rating,
     total_reviews: product.review_count,
     quantity: product.quantity_left,

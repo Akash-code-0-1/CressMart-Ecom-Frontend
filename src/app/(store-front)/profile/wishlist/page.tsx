@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import WishlistItem from "./WishlistItem";
 import { getWishlist } from "@/services-api/wishlistService";
 import { Loader2 } from "lucide-react";
+import { WishlistProduct } from "@/@types/wishlist.type";
 const WishlistPage = () => {
 
   const { data: wishlistItems = [], isLoading } = useQuery({
     queryKey: ["wishlist"],
     queryFn: getWishlist,
   });
-  
 
   if (isLoading) {
     return (
@@ -27,7 +27,7 @@ const WishlistPage = () => {
 
       {/* Grid Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {wishlistItems?.map((item) => (
+        {wishlistItems?.map((item:WishlistProduct) => (
           <WishlistItem key={item.id} item={item} />
         ))}
       </div>

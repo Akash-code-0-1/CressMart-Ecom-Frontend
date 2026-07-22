@@ -26,7 +26,7 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
     ? rawFirstImg.startsWith("http") || rawFirstImg.startsWith("/images/") 
       ? rawFirstImg 
       : `${backendBaseUrl}/${rawFirstImg.replace(/^\/+/, "")}`
-    : "/images/placeholder.png";
+    : "/images/placeholder.svg";
 
   return (
     <Link href={`/product/${product.slug}`}>

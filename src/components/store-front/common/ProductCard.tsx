@@ -14,6 +14,8 @@ import {
   getWishlist,
 } from "@/services-api/wishlistService";
 import toast from "react-hot-toast";
+import { createCart } from "@/services-api/cartService";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface ProductCardProps {
   product: Product;
@@ -22,6 +24,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
 
   // get wislist
   const { data: wishlistItems = [] } = useQuery({
@@ -66,6 +69,23 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
+
+  // Add to cart mutation 
+  const { mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
+    mutationFn: async () => {
+      const guestId = localStorage.getItem("guestId") || "";
+
+      return createCart(product.id.toString(), 1, user ? null : guestId);
+    },
+    onSuccess: () => {
+      toast.success("Added to cart!");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to add to cart");
+    },
+  });
+
   // Logic for dynamic values
   const regularPrice = parseFloat(product.regular_price) || 0;
   const sellPrice = parseFloat(product.sell_price) || 0;
@@ -88,7 +108,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const cleanImg = typeof firstImage === "string" ? firstImage.trim() : "";
   const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
 
-  const productImage = isValidImg ? cleanImg : "/images/placeholder.png";
+  const productImage = isValidImg ? cleanImg : "/images/placeholder.svg";
 
   const usableImage =
     productImage.startsWith("http") || productImage.startsWith("/images/")
@@ -198,19 +218,24 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col gap-1.5 mt-3 w-full">
+      <div className="flex gap-1.5 mt-3 w-full md:flex-row flex-col">
         <button
-          className="w-full cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[16px] text-xs font-medium py-[6px] md:py-[8px] rounded-[8px] transition-all hover:shadow-[0_4px_7.8px_0_rgba(255,112,80,0.56)] border border-[#E2E2E2] hover:border-transparent"
+          className="w-full cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[16px] text-xs font-medium py-1.5 md:py-2 rounded-[8px] transition-all border border-[#E2E2E2]"
           onClick={() => router.push(`/order?id=${product.id}`)}
           disabled={!inStock}
         >
           {inStock ? "Order Now" : "Out of Stock"}
         </button>
+
         <button
-          className="w-full cursor-pointer bg-white font-poppins md:text-[16px] text-xs font-medium py-[6px] md:py-[8px] rounded-[8px] border border-[#E2E2E2] hover:bg-gray-50 transition-colors disabled:opacity-50"
-          disabled={!inStock}
+          onClick={(e) => {
+            e.preventDefault();
+            handleAddToCart();
+          }}
+          disabled={isAddingToCart}
+          className="w-full bg-white border border-[#E2E2E2] md:py-2 py-1.5 rounded-lg cursor-pointer md:text-[16px] text-xs " 
         >
-          Add To Cart
+          {isAddingToCart ? "Adding..." : "Add To Cart"}
         </button>
       </div>
     </div>

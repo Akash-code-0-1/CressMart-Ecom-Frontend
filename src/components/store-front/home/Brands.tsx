@@ -33,7 +33,7 @@ const Brands = () => {
 
       return {
         ...brand,
-        usableImage: usableImage || "/images/placeholder.png",
+        usableImage: usableImage || "/images/placeholder.svg",
       };
     });
 

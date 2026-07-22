@@ -199,7 +199,7 @@ const Blog: React.FC = () => {
               {/* Image Container */}
               <div className="relative aspect-4/3 mb-4 overflow-hidden rounded-[20px] bg-gray-100">
                 <Image
-                  src={blog.displayImage || "/images/placeholder.png"}
+                  src={blog.displayImage || "/images/placeholder.svg"}
                   alt={blog.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-105"

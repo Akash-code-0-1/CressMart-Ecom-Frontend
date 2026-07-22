@@ -5,22 +5,15 @@ import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteWishlist } from "@/services-api/wishlistService";
 import toast from "react-hot-toast";
-interface ItemType {
-  id: number;
-  title: string;
-  price: number;
-  oldPrice: number;
-  image: string;
-}
+import { WishlistProduct } from "@/@types/wishlist.type";
 
-export default function WishlistItem({ item }: { item: ItemType }) {
+export default function WishlistItem({ item }: { item: WishlistProduct }) {
    const queryClient = useQueryClient();
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
   const rowImage = item?.product?.images?.[0] || "";
-  console.log("tor nam",rowImage);
   const useableImage = rowImage.startsWith("http")
     ? rowImage
     : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
