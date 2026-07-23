@@ -138,3 +138,13 @@ input[type=range].price-slider::-webkit-slider-thumb {
   color: #2563eb;
   text-decoration: underline;
 }
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}

@@ -1,10 +1,12 @@
+
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { sidebarMenu } from "@/config/sidebar";
 import { SidebarHeader } from "./SidebarHeader";
 import { NavMenuGroup } from "./NavMenuGroup";
 import { NavSingleItem } from "./NavSingleItem";
+import { useAdminProfileData } from "@/hooks/useProfile"; 
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -20,20 +22,47 @@ const activeItemStyle: React.CSSProperties = {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+  
+  // Update this line inside the component:
+  const { data: userData } = useAdminProfileData(); 
+
+  // The rest of the logic remains the same...
+  const user = userData?.data || userData;
+
+  const filteredMenu = useMemo(() => {
+    if (!user) return [];
+    return sidebarMenu
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item: any) => {
+          // if (user.role === "ADMIN") return true;
+          return user.permissions?.includes(item.permission);
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [user]);
+
+  // State for handling submenu expansion
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  // 2. Initialize open menus based on the current pathname and filtered menu
+  useEffect(() => {
     const initialStates: Record<string, boolean> = {};
-    sidebarMenu.forEach((section) => {
-      section.items.forEach((item) => {
+    filteredMenu.forEach((section) => {
+      section.items.forEach((item: any) => {
         if (item.submenu) {
-          initialStates[item.label] = item.submenu.some(
-            (sub) =>
+          const isActive = item.submenu.some(
+            (sub: any) =>
               pathname === sub.href || pathname.startsWith(`${sub.href}/`),
           );
+          if (isActive) {
+            initialStates[item.label] = true;
+          }
         }
       });
     });
-    return initialStates;
-  });
+    setOpenMenus(initialStates);
+  }, [pathname, filteredMenu]);
 
   useEffect(() => {
     if (onClose) onClose();
@@ -55,13 +84,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       <SidebarHeader onClose={onClose} />
 
       <nav className="flex-1 mt-2 font-poppins">
-        {sidebarMenu.map((section) => (
+        {/* 3. Render the filteredMenu instead of the raw sidebarMenu */}
+        {filteredMenu.map((section) => (
           <div key={section.section}>
             <p className="px-6 mt-6 mb-2 text-base font-normal text-[#777]">
               {section.section}
             </p>
 
-            {section.items.map((item) => {
+            {section.items.map((item: any) => {
               if (item.submenu) {
                 return (
                   <NavMenuGroup
@@ -91,10 +121,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Desktop persistent navigation view block layout */}
       <div className="hidden md:block h-screen">{sidebarContent}</div>
 
-      {/* Mobile interactive target responsive window slide overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div

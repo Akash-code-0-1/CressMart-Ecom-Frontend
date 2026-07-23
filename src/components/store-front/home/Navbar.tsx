@@ -594,6 +594,7 @@ const Navbar = () => {
     : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
   const user = useAuthStore((state) => state.user);
+
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -656,10 +657,26 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // const handleProfileNav = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   if (isStoreReady && user) router.push("/profile");
+  //   else router.push("/signin");
+  // };
+
   const handleProfileNav = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isStoreReady && user) router.push("/profile");
-    else router.push("/signin");
+
+    if (!isStoreReady || !user) {
+      router.push("/signin");
+      return;
+    }
+
+    if (user.role === "ADMIN") {
+      router.push("/settings/profile");
+    } else {
+      // MANAGER (or CUSTOMER if applicable)
+      router.push("/profile");
+    }
   };
 
   const handleSearch = (e?: React.FormEvent) => {
