@@ -791,6 +791,9 @@ const getImageUrl = useCallback((path: string | undefined | null) => {
       </div>
     );
 
+// console.log("productList", productList);
+// console.log("selectedProduct", selectedProduct);
+
   const embedVideoUrl = getEmbedVideoUrl(liveData.videoLink);
 
   return (

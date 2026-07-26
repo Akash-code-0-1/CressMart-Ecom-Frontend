@@ -166,10 +166,13 @@ import { fetchSettings } from "@/services-api/settingsService";
 import ChevronDownIcon from "../svg/ChevronDownIcon";
 import LocationIcon from "../svg/LocationIcon";
 import TrackIcon from "../svg/TrackIcon";
-
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const TopHeader = () => {
-  const [language, setLanguage] = useState<"BAN" | "ENG">("BAN");
+  // const [language, setLanguage] = useState<"BAN" | "ENG">("BAN");
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
   const [openLanguage, setOpenLanguage] = useState(false);
   const languageRef = useRef<HTMLDivElement>(null);
 
@@ -203,7 +206,7 @@ const TopHeader = () => {
           <div className="flex items-center gap-2 cursor-pointer">
             <LocationIcon />
             <span className="text-black text-[12px] font-medium whitespace-nowrap">
-              {language === "BAN" ? "স্টোর লোকেশন" : "Store Locations"}
+              {t.storeLocation}
             </span>
           </div>
 
@@ -213,7 +216,7 @@ const TopHeader = () => {
           >
             <TrackIcon />
             <span className="text-black text-[12px] font-medium whitespace-nowrap">
-              {language === "BAN" ? "অর্ডার ট্র্যাক করুন" : "Track Your Order"}
+              {t.trackOrder}
             </span>
           </Link>
         </div>
