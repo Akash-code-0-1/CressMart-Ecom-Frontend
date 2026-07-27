@@ -9,12 +9,16 @@ import { FiArrowRight, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import "swiper/css";
 import "swiper/css/navigation";
 import { FlashSaleData } from "@/@types/flashSale.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface FlashSaleProps {
   flashSale: FlashSaleData;
 }
 
 const FlashSale = ({ flashSale }: FlashSaleProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [timeLeft, setTimeLeft] = useState({
     days: "00",
     hours: "00",
@@ -123,7 +127,7 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
             href={`/flash-sale/${flashSale.slug}`}
             className="flex items-center gap-4 text-[#FF7050] font-poppins text-[16px] md:text-[20px] font-semibold group hover:opacity-80 transition-all"
           >
-            Go to Flash Sale Page
+            {t.flashSale.goToFlashSale}
             <FiArrowRight className="text-xl md:text-2xl transition-transform group-hover:translate-x-2" />
           </Link>
         </div>
