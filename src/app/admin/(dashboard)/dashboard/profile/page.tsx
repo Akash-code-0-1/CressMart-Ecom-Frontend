@@ -100,6 +100,7 @@ const AdminProfilePage = () => {
   const isPendingState = updateProfile.isPending || uploadAvatar.isPending;
 
   return (
+    
     <div className="w-full min-h-[calc(100vh-80px)] bg-gray-50 p-4 md:p-6 font-poppins text-black">
       <div className="max-w-3xl mx-auto bg-white rounded-[12px] border border-[#D2D2D2] overflow-hidden relative shadow-xs">
         <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-[#FF6A00] to-[#FF9F1C]"></div>

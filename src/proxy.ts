@@ -54,7 +54,6 @@
 //   matcher: ["/admin/:path*", "/profile"],
 // };
 
-
 import { NextRequest, NextResponse } from "next/server";
 
 function getUserRole(token: string): string |null {
@@ -62,7 +61,6 @@ function getUserRole(token: string): string |null {
     const [, payload] = token.split(".");
     if (!payload) return null;
 
-    // Decode Base64URL safely
     const normalized = payload
       .replace(/-/g, "+")
       .replace(/_/g, "/")
@@ -79,12 +77,14 @@ function getUserRole(token: string): string |null {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow admin login page
+  // Allow admin signin page
   if (pathname === "/admin/dashboard/signin") {
     return NextResponse.next();
   }
 
-  // Protect admin routes
+  // ==========================
+  // ADMIN PANEL PROTECTION
+  // ==========================
   if (pathname.startsWith("/admin")) {
     const adminToken = request.cookies.get("admin_token")?.value;
 
@@ -96,7 +96,8 @@ export function proxy(request: NextRequest) {
 
     const role = getUserRole(adminToken);
 
-    if (role !== "ADMIN") {
+    // Allow both ADMIN and MANAGER
+    if (!role || !["ADMIN", "MANAGER"].includes(role)) {
       return NextResponse.redirect(
         new URL("/admin/dashboard/signin", request.url)
       );
@@ -105,12 +106,16 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protect customer profile
+  // ==========================
+  // CUSTOMER PROFILE PROTECTION
+  // ==========================
   if (pathname.startsWith("/profile")) {
     const customerToken = request.cookies.get("auth_token")?.value;
 
     if (!customerToken) {
-      return NextResponse.redirect(new URL("/signin", request.url));
+      return NextResponse.redirect(
+        new URL("/signin", request.url)
+      );
     }
   }
 
@@ -118,5 +123,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/profile"],
+  matcher: [
+    "/admin/:path*",
+    "/profile",
+  ],
 };
