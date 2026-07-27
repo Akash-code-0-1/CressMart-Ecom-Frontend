@@ -6,6 +6,8 @@ import { FaEnvelope, FaLock, FaUser, FaPhone, FaEye, FaEyeSlash } from "react-ic
 import { useAuthStore } from "@/store/useAuthStore";
 import { apiFetch } from "@/utils/api";
 import { setSessionToken } from "@/app/actions/auth";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const SignUpPage = () => {
   const router = useRouter();
@@ -70,12 +72,15 @@ const SignUpPage = () => {
     }
   };
 
+  const { language } = useLanguage();
+const t = translations[language].auth;
+
   return (
     <div className="w-full min-h-screen bg-[#F9F9F9] flex items-center justify-center p-4 font-poppins">
       <div className="w-full max-w-[480px] bg-white rounded-[12px] border border-[#D2D2D2] p-8 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-black">Create Account</h2>
-          <p className="text-sm text-gray-400 mt-1">Register below to get started</p>
+          <h2 className="text-2xl font-bold text-black">{t.signUp.title}</h2>
+          <p className="text-sm text-gray-400 mt-1">{t.signUp.subtitle}</p>
         </div>
         
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
@@ -86,7 +91,7 @@ const SignUpPage = () => {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-[#727272]">Full Name</label>
+            <label className="text-sm font-semibold text-[#727272]">{t.fields.fullName}</label>
             <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white transition-all">
               <div className="bg-[#F9F9F9] px-4 flex items-center justify-center border-r border-[#D2D2D2] w-[55px]">
                 <FaUser className="text-[#FF7050]" size={16} />
@@ -94,7 +99,7 @@ const SignUpPage = () => {
               <input
                 name="name"
                 type="text"
-                placeholder="John Doe"
+                placeholder={t.placeholders.fullName}
                 className="w-full px-4 py-3.5 text-sm text-gray-700 outline-none"
                 required
               />
@@ -102,7 +107,7 @@ const SignUpPage = () => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-[#727272]">Phone Number</label>
+            <label className="text-sm font-semibold text-[#727272]">{t.fields.phone}</label>
             <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white transition-all">
               <div className="bg-[#F9F9F9] px-4 flex items-center justify-center border-r border-[#D2D2D2] w-[55px]">
                 <FaPhone className="text-[#FF7050] rotate-[90deg]" size={16} />
@@ -110,7 +115,7 @@ const SignUpPage = () => {
               <input
                 name="phone"
                 type="tel"
-                placeholder="017XXXXXXXX"
+                placeholder={t.placeholders.phone}
                 className="w-full px-4 py-3.5 text-sm text-gray-700 outline-none"
                 required
               />
@@ -119,8 +124,8 @@ const SignUpPage = () => {
 
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-semibold text-[#727272]">Email Address</label>
-              <span className="text-[10px] text-gray-400 font-medium">Optional</span>
+              <label className="text-sm font-semibold text-[#727272]">{t.fields.email}</label>
+              <span className="text-[10px] text-gray-400 font-medium">{t.fields.optional}</span>
             </div>
             <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white transition-all">
               <div className="bg-[#F9F9F9] px-4 flex items-center justify-center border-r border-[#D2D2D2] w-[55px]">
@@ -129,14 +134,14 @@ const SignUpPage = () => {
               <input
                 name="email"
                 type="email"
-                placeholder="example@domain.com"
+                placeholder={t.placeholders.email}
                 className="w-full px-4 py-3.5 text-sm text-gray-700 outline-none"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-[#727272]">Password</label>
+            <label className="text-sm font-semibold text-[#727272]">{t.fields.password}</label>
             <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white relative transition-all">
               <div className="bg-[#F9F9F9] px-4 flex items-center justify-center border-r border-[#D2D2D2] w-[55px]">
                 <FaLock className="text-[#FF7050]" size={16} />
@@ -144,7 +149,7 @@ const SignUpPage = () => {
               <input
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Minimum 6 characters"
+                placeholder={t.placeholders.password}
                 className="w-full px-4 py-3.5 text-sm text-gray-700 outline-none pr-12"
                 required
               />
@@ -163,13 +168,13 @@ const SignUpPage = () => {
             disabled={loading}
             className="w-full bg-[#FF7050] text-white py-3.5 rounded-[10px] text-base font-semibold transition-all hover:bg-[#e66345] cursor-pointer mt-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
-            {loading ? "Creating Account..." : "Create Account"}
+            {loading ? t.signUp.loading : t.signUp.button}
           </button>
 
           <div className="text-center mt-2 text-sm text-gray-500">
-            Already have an account?{" "}
+            {t.signUp.haveAccount}{" "}
             <a href="/signin" className="text-[#FF7050] font-semibold hover:underline">
-              Sign In
+              {t.signUp.signIn}
             </a>
           </div>
         </form>

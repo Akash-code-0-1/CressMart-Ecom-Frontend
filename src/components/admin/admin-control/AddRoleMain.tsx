@@ -16,6 +16,7 @@ const PERMISSIONS = [
   "Inventory",
   "Customer & Review",
   "Website Content",
+  "Campaign",
   "Settings",
   "Admin Control",
 ];

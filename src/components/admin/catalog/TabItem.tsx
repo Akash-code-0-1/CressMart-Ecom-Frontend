@@ -13,6 +13,7 @@ export default function TabItem({
 }: TabItemProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`cursor-pointer font-poppins flex items-center justify-center gap-1.5 md:gap-2 px-3 sm:px-4 md:px-5 pb-2 transition-all duration-300 relative antialiased flex-1 sm:flex-initial min-w-max ${
         isActive

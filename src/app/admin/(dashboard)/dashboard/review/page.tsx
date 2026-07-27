@@ -87,6 +87,7 @@ import { reviewApi } from "@/services-api/reviewService";
 import ReviewHead from "@/components/admin/review/ReviewHead";
 import { StatCard } from "@/components/admin/common/StatCard";
 import CustomersReviewsMainSection from "@/components/admin/review/CustomersReviewsMainSection";
+import PermissionGuard from "@/components/admin/common/PermissionGuard";
 
 export default function Page() {
   // 🚀 Fetch live dashboard metric summaries securely via service-api layer
@@ -96,7 +97,7 @@ export default function Page() {
       const res = await reviewApi.getMetrics();
       console.log("📊 Stats Data Payload Check:", res); // Debug log to see exactly what comes back
       return res;
-    }
+    },
   });
 
   // 🛡️ Safe Extraction: Accommodate direct return values or a nested .data envelope shape
@@ -146,30 +147,32 @@ export default function Page() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-2 md:p-0">
-          <div className="bg-white">
-            <ReviewHead />
+    <PermissionGuard permission="Customer & Review">
+      <div className="flex h-screen overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-2 md:p-0">
+            <div className="bg-white">
+              <ReviewHead />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full p-4 bg-white mb-4">
-              {statsData.map((stat, index) => (
-                <StatCard
-                  key={index}
-                  title={stat.title}
-                  val={stat.val}
-                  sub={stat.sub}
-                  icon={stat.icon}
-                  iconBgColor={stat.iconBgColor}
-                  bgColor={stat.bgColor}
-                  textColor={stat.textColor}
-                />
-              ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full p-4 bg-white mb-4">
+                {statsData.map((stat, index) => (
+                  <StatCard
+                    key={index}
+                    title={stat.title}
+                    val={stat.val}
+                    sub={stat.sub}
+                    icon={stat.icon}
+                    iconBgColor={stat.iconBgColor}
+                    bgColor={stat.bgColor}
+                    textColor={stat.textColor}
+                  />
+                ))}
+              </div>
+              <CustomersReviewsMainSection />
             </div>
-            <CustomersReviewsMainSection />
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </PermissionGuard>
   );
 }

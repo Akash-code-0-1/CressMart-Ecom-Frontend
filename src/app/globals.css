@@ -1,11 +1,26 @@
 
 @import "tailwindcss";
 
-@theme {
+/* @theme {
   --font-inter: 'Inter', sans-serif;
   --font-poppins: 'Poppins', sans-serif;
   --font-lato: 'Lato', sans-serif;
   
+  --animate-marquee-normal: marquee 15s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+} */
+
+@theme {
+  --font-inter: var(--font-inter);
+  --font-poppins: var(--font-poppins);
+  --font-lato: var(--font-lato);
+  --font-syne: var(--font-syne);
+  --font-montserrat: var(--font-montserrat);
+
   --animate-marquee-normal: marquee 15s linear infinite;
 
   @keyframes marquee {
@@ -137,4 +152,35 @@ input[type=range].price-slider::-webkit-slider-thumb {
 .blog-rich-text a {
   color: #2563eb;
   text-decoration: underline;
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+
+.reviewSwiper {
+  padding-bottom: 55px;
+}
+
+.reviewSwiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background: #d1d5db;
+  opacity: 1;
+}
+
+.reviewSwiper .swiper-pagination-bullet-active {
+  background: #111827;
+}
+
+.reviewSwiper .swiper-button-next,
+.reviewSwiper .swiper-button-prev {
+  display: none;
 }
