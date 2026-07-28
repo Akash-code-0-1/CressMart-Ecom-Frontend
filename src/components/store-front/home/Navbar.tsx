@@ -17,6 +17,7 @@ import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
+import ChatIcon from "../svg/ChatIcon";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,8 @@ import {
   updateCartItem,
 } from "@/services-api/cartService";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface SearchResponse {
   data: {
@@ -53,6 +56,8 @@ type CartItem = {
 };
 
 const Navbar = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const router = useRouter();
   const pathname = usePathname();
 
@@ -266,7 +271,7 @@ const Navbar = () => {
                 setShowPredictions(true);
               }}
               onFocus={() => setShowPredictions(true)}
-              placeholder="Search products..."
+              placeholder={t.search.searchPlaceholder}
               className="bg-transparent flex-1 outline-none text-[#727272]"
             />
             <button
@@ -280,7 +285,7 @@ const Navbar = () => {
               <div className="absolute top-[110%] left-0 w-full bg-white shadow-2xl rounded-lg border border-gray-100 z-120 overflow-hidden max-h-[450px] overflow-y-auto">
                 {isLoading || isFetching ? (
                   <div className="p-4 text-center text-sm text-gray-500 animate-pulse">
-                    Searching...
+                    {t.search.searching}
                   </div>
                 ) : (
                   (searchResults || []).map((product) => {
@@ -357,13 +362,13 @@ const Navbar = () => {
                   onClick={() => router.push("/signin")}
                   className="bg-[#F0F0F0] rounded-[8px] px-8 py-4"
                 >
-                  Login
+                  {t.navbar.signIn}
                 </button>
                 <button
                   onClick={() => router.push("/signup")}
                   className="bg-[#FF7050] text-white rounded-[8px] px-8 py-4"
                 >
-                  Signup
+                  {t.navbar.signUp}
                 </button>
               </div>
             )}
@@ -411,7 +416,7 @@ const Navbar = () => {
             ))}
             <li className="flex items-center gap-2 cursor-pointer font-bold text-[#FF7050]">
               <FireIcon />
-              <span>HOT DEALS</span>
+              <span>{t.search.hotDeals}</span>
             </li>
           </ul>
         </nav>
@@ -478,7 +483,7 @@ const Navbar = () => {
       >
         <CartIcon className="w-8 md:w-10 text-white" />
         <span className="text-white text-xs md:text-base font-semibold mt-1">
-          {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}
+          {cartItems.length} {cartItems.length === 1 ? "Item" : t.navbar.items}
         </span>
       </div>
 
@@ -493,7 +498,7 @@ const Navbar = () => {
           {/* Header */}
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
             <h2 className="text-xl font-bold text-gray-800">
-              Your Cart ({cartItems.length})
+              {t.navbar.yourCart} ({cartItems.length})
             </h2>
             <button
               onClick={() => setIsCartOpen(false)}
@@ -502,7 +507,6 @@ const Navbar = () => {
               <FiX size={24} className="text-gray-500" />
             </button>
           </div>
-
           {/* Body - Cart Items List */}
           <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {cartItems.length > 0 ? (
@@ -611,12 +615,12 @@ const Navbar = () => {
               /* Empty State */
               <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
                 <CartIcon className="w-20 h-20 opacity-50" />
-                <p className="text-lg">Your cart is empty</p>
+                <p className="text-lg">{t.navbar.yourCartEmpty}</p>
                 <button
                   onClick={() => setIsCartOpen(false)}
                   className="mt-4 bg-[#FF7050] text-white px-8 py-3 rounded-[8px] font-medium hover:bg-[#e56548]"
                 >
-                  Continue Shopping
+                  {t.navbar.continueShopping}
                 </button>
               </div>
             )}
@@ -678,7 +682,7 @@ const Navbar = () => {
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
-            <span className="text-[12px] mt-1 font-inter">Home</span>
+            <span className="text-[12px] mt-1 font-inter">{t.navbar.home}</span>
           </Link>
 
           {/* Category Button */}
@@ -687,7 +691,7 @@ const Navbar = () => {
             className="flex flex-col items-center"
           >
             <FiMenu size={22} />
-            <span className="text-[10px] mt-1">Category</span>
+            <span className="text-[10px] mt-1">{t.navbar.categories}</span>
           </button>
 
           {/* Central Custom Floating Logo */}
@@ -710,7 +714,7 @@ const Navbar = () => {
             onClick={() => useAuthStore.getState().setIsChatOpen?.(true)}
             className="flex flex-col items-center"
           >
-            <CartIcon className="w-6" />
+            <ChatIcon className="w-6" />
             <span className="text-[10px] mt-1">Chat</span>
           </button>
 
@@ -728,7 +732,7 @@ const Navbar = () => {
           >
             <UserIcon size={22} />
             <span className="text-[10px] mt-1">
-              {user ? "Profile" : "Login"}
+              {user ? t.navbar.profile : t.navbar.login}
             </span>
           </a>
         </div>

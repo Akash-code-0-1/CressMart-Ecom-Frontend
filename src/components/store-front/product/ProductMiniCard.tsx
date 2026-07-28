@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
 import { Product } from "@/@types/product.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const backendBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -14,6 +16,8 @@ interface ProductMiniCardProps {
 }
 
 const ProductMiniCard = ({ product }: ProductMiniCardProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const rowImage = product?.images[0] || "";
   const imageUrl = rowImage.startsWith("http")
     ? rowImage
@@ -41,11 +45,11 @@ const ProductMiniCard = ({ product }: ProductMiniCardProps) => {
           </h4>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-bold text-[#FF7050]">
-              BDT {product.sell_price}
+              {t.product.bdt} {product.sell_price}
             </span>
             {Number(product.regular_price) > Number(product.sell_price) && (
               <span className="text-xs text-gray-400 line-through">
-                BDT {product.regular_price}
+                {t.product.bdt} {product.regular_price}
               </span>
             )}
           </div>

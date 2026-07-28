@@ -1,5 +1,8 @@
-// components/SectionHeader.tsx
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface SectionHeaderProps {
   title: string;
@@ -7,6 +10,8 @@ interface SectionHeaderProps {
 }
 
 export const SectionHeader = ({ title, link }: SectionHeaderProps) => {
+  const {language} = useLanguage();
+  const t= translations[language];
   return (
     <div className="flex justify-between items-center w-full mb-8">
       <h2 className="text-[#000] font-poppins text-[24px] md:text-[32px] font-semibold leading-normal">
@@ -16,7 +21,7 @@ export const SectionHeader = ({ title, link }: SectionHeaderProps) => {
         href={link}
         className="flex items-center gap-1 text-[#FF7050] font-inter text-[18px] md:text-[24px] font-medium leading-normal hover:opacity-80 transition-opacity"
       >
-        View More
+        {t.common.viewMore}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"

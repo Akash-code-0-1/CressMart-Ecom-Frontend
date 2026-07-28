@@ -6,6 +6,8 @@ import FAQsSection from "./Faqssection";
 import ReviewSection from "./Reviewsection";
 import RelatedProducts from "./Relatedproducts";
 import { Product } from "@/@types/product.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 type TabType = "Specification" | "Description" | "FAQs" | "Review";
 
@@ -14,13 +16,15 @@ interface Props {
 }
 
 const ProductDetailsTabs = ({ product }: Props) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [activeTab, setActiveTab] = useState<TabType>("Description");
 
   const tabs: { label: string; id: TabType; count?: number }[] = [
-    { label: "Description", id: "Description" },
-    { label: "Specification", id: "Specification" },
-    { label: "FAQs", id: "FAQs" },
-    { label: "Review", id: "Review", count: product.total_reviews },
+    { label: t.productDetails.description, id: "Description" },
+    { label:  t.productDetails.specification, id: "Specification" },
+    { label:  t.productDetails.faqs, id: "FAQs" },
+    { label:  t.productDetails.review, id: "Review", count: product.total_reviews },
   ];
 
   return (

@@ -13,8 +13,12 @@ import {
 } from "@/services-api/testimonialService";
 import "swiper/css";
 import "swiper/css/pagination";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const Testimonials = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   // 1. TanStack Queries for both types
@@ -80,14 +84,14 @@ const Testimonials = () => {
     <section className="w-full py-10 md:py-20 px-4 md:px-6 lg:px-10 bg-white overflow-x-hidden">
       <div className="max-w-[1720px] mx-auto">
         <h2 className="text-black text-center font-poppins text-2xl md:text-[36px] font-semibold mb-8 md:mb-12">
-          Customer Testimonial
+          {t.testimonials.title}
         </h2>
 
         <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch">
           {/* --- FACEBOOK REVIEWS --- */}
           <div className="w-full xl:w-[50%] min-w-0 bg-[#F9F9F9] rounded-[24px] p-6 md:p-8 flex flex-col items-center">
             <h3 className="text-black font-poppins text-2xl md:text-[32px] font-semibold mb-8 md:mb-10">
-              Facebook Reviews
+              {t.testimonials.facebookReviews}
             </h3>
 
             <div className="w-full">
@@ -117,7 +121,7 @@ const Testimonials = () => {
                         <div className="relative w-14 h-14 md:w-18 md:h-18 rounded-full overflow-hidden mb-3 border-10 border-[#F9F9F9]">
                           <Image
                             src={processImage(item.author_avatar)}
-                            alt={item.author_name || "Customer avatar"}
+                            alt={item.author_name || t.testimonials.customerAvatar}
                             fill
                             className="object-cover"
                           />
@@ -141,7 +145,7 @@ const Testimonials = () => {
           {/* --- YOUTUBE REVIEWS --- */}
           <div className="w-full xl:flex-1 min-w-0 bg-[#F9F9F9] rounded-[24px] p-6 md:p-8 flex flex-col items-center">
             <h3 className="text-black font-poppins text-2xl md:text-[32px] font-semibold mb-8 md:mb-10 text-center">
-              Youtube Reviews
+              {t.testimonials.youtubeReviews}
             </h3>
 
             <div className="w-full">
@@ -165,7 +169,7 @@ const Testimonials = () => {
                     >
                       <Image
                         src={processImage(video.thumbnail)}
-                        alt={video.author_name || "Testimonial video thumbnail"}
+                        alt={video.author_name || t.testimonials.videoThumbnail}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                       />

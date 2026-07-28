@@ -31,10 +31,14 @@ import { fetchSingleProduct } from "@/services-api/productService";
 import { CartItem, OrderPayload } from "@/@types/order.type";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Product } from "@/@types/product.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
@@ -330,62 +334,64 @@ const MainCheckoutSection: React.FC = () => {
     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         {/* Form Section */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <h2 className="text-xl font-semibold">Shopping Details</h2>
+        <div className="lg:col-span-7 flex flex-col gap-5 md:gap-6">
+          <h2 className="text-lg md:text-xl font-semibold font-poppins mb-2 md:mb-4">
+            {t.checkout.shoppingDetails}
+          </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField
-              label="Name"
+              label={t.checkout.name}
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="Type your Name Here"
+              placeholder={t.checkout.namePlaceholder}
               required
             />
             <InputField
-              label="Number"
+              label={t.checkout.number}
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="Phone Number"
+              placeholder={t.checkout.phonePlaceholder}
               required
             />
           </div>
 
           <InputField
-            label="Address"
+            label={t.checkout.address}
             name="address"
             value={formData.address}
             onChange={handleInputChange}
-            placeholder="House No, Road No, Area, City, District"
+            placeholder={t.checkout.addressPlaceholder}
             required
           />
           <InputField
-            label="Note"
+            label={t.checkout.note}
             name="note"
             value={formData.note}
             onChange={handleInputChange}
-            placeholder="Write your instruction here..."
+            placeholder={t.checkout.notePlaceholder}
             isTextArea
           />
 
-          <div className="flex items-center gap-6 flex-col md:flex-row w-full">
-            <div className="flex flex-col gap-2 md:w-1/2 w-full">
-              <label className="text-[#727272] font-semibold">
-                Select Delivery Charge *
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2 w-full">
+              <label className="text-[#727272] font-semibold text-base md:text-lg">
+                {t.checkout.deliveryCharge} <span className="text-[#FF7050]">*</span>
               </label>
-              <div className="relative">
+              <div className="relative w-full">
                 <select
                   name="shippingArea"
                   value={formData.shippingArea}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-6 pr-12 py-4 rounded-[12px] outline-none border border-transparent appearance-none cursor-pointer"
+                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base md:text-lg border border-transparent appearance-none cursor-pointer"
                 >
                   <option value="outside">
-                    Out Side Dhaka BDT {outsideFeeCalculated}
+                    {t.checkout.outsideDhaka} BDT {outsideFeeCalculated}
                   </option>
                   <option value="inside">
-                    In Side Dhaka BDT {insideFeeCalculated}
+                    {t.checkout.insideDhaka} BDT {insideFeeCalculated}
                   </option>
                   {isSubCityAvailable && (
                     <option value="sub_city">
@@ -399,19 +405,19 @@ const MainCheckoutSection: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 md:w-1/2 w-full">
-              <label className="text-[#727272] font-semibold">
-                Payment Method *
+            <div className="flex flex-col gap-2 w-full relative">
+              <label className="text-[#727272] font-semibold text-base md:text-lg">
+                {t.checkout.paymentMethod} <span className="text-[#FF7050]">*</span>
               </label>
-              <div className="relative">
+              <div className="relative w-full">
                 <select
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-6 pr-12 py-4 rounded-[12px] outline-none border border-transparent appearance-none cursor-pointer"
+                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base md:text-lg border border-transparent appearance-none cursor-pointer"
                 >
-                  <option value="COD">Cash On Delivery</option>
-                  <option value="Online">Online Payment</option>
+                  <option value="COD">{t.checkout.cashOnDelivery}</option>
+                  <option value="Online">{t.checkout.onlinePayment}</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <FaCaretDown />
@@ -422,63 +428,63 @@ const MainCheckoutSection: React.FC = () => {
 
           {/* Coupon Code Input */}
           <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-[#727272] font-semibold text-base md:text-lg">
-                Coupon
-              </label>
-              <div className="flex gap-2 md:flex-row flex-col">
-                <input
-                  placeholder="abc-xyz-123"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && couponInput.trim()) {
-                      applyCouponMutation.mutate(couponInput.trim());
-                    }
-                  }}
-                  className="bg-[#F9F9F9] py-4 md:py-5 px-4 md:px-6 rounded-[10px] outline-none text-base md:text-lg border border-transparent w-full font-poppins"
-                />
-                <button
-                  onClick={() => {
-                    if (!couponInput.trim()) return;
+            <label className="text-[#727272] font-semibold text-base md:text-lg">
+              {t.checkout.coupon}
+            </label>
+            <div className="flex gap-2 md:flex-row flex-col">
+              <input
+                placeholder={t.checkout.couponPlaceholder}
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && couponInput.trim()) {
                     applyCouponMutation.mutate(couponInput.trim());
-                  }}
-                  disabled={
-                    applyCouponMutation.isPending || !couponInput.trim()
                   }
-                  className="bg-[#9E9E9E] text-base md:text-lg cursor-pointer hover:bg-gray-500 transition-colors text-white px-10 py-3.5 md:py-4 rounded-[12px] font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {applyCouponMutation.isPending
-                    ? "Applying..."
-                    : appliedCoupon
-                      ? "Applied"
-                      : "Apply"}
-                </button>
-              </div>
+                }}
+                className="bg-[#F9F9F9] py-4 md:py-5 px-4 md:px-6 rounded-[10px] outline-none text-base md:text-lg border border-transparent w-full font-poppins"
+              />
+              <button
+                onClick={() => {
+                  if (!couponInput.trim()) return;
+                  applyCouponMutation.mutate(couponInput.trim());
+                }}
+                disabled={
+                  applyCouponMutation.isPending || !couponInput.trim()
+                }
+                className="bg-[#9E9E9E] text-base md:text-lg cursor-pointer hover:bg-gray-500 transition-colors text-white px-10 py-3.5 md:py-4 rounded-[12px] font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {applyCouponMutation.isPending
+                  ? "Applying..."
+                  : appliedCoupon
+                    ? "Applied"
+                    : t.checkout.apply}
+              </button>
             </div>
+          </div>
 
-            {/* Success Score Warning Banner */}
-            <div className="mt-6 bg-[#FFFF00] p-3 md:p-4 rounded-[12px] flex items-start sm:items-center gap-2 text-sm md:text-[16px] font-normal text-left sm:text-center text-black justify-center">
-              <span className="text-base leading-none shrink-0">⚠️</span>
-              <span>
-                Delivery Charge or 10% advance is required if the delivery ratio
-                is below 70% or spans multiple products.
-              </span>
-            </div>
+          {/* Warning Banner */}
+          <div className="bg-[#FFFF00] p-3 md:p-4 rounded-[12px] flex items-start sm:items-center gap-2 text-sm md:text-[16px] font-normal text-left sm:text-center text-black justify-center">
+            <span className="text-base leading-none shrink-0">⚠️</span>
+            <span>{t.checkout.deliveryWarning}</span>
           </div>
 
           <button
             onClick={handlePlaceOrder}
             disabled={placeOrderMutation.isPending}
-            className="cursor-pointer bg-[#FF7050] text-white py-4 rounded-[12px] text-xl font-bold hover:bg-[#ff6b48] transition-all w-full disabled:opacity-70"
+            className="bg-[#FF7050] text-white py-3.5 md:py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] active:scale-[0.99] transition-all w-full cursor-pointer disabled:opacity-70"
           >
-            {placeOrderMutation.isPending ? "Placing Order..." : "Place Order"}
+            {placeOrderMutation.isPending ? "Placing Order..." : t.checkout.placeOrder}
           </button>
+          <p className="text-center text-[#727272] text-sm md:text-base font-normal">
+            {t.checkout.secureCheckout}
+          </p>
         </div>
 
         {/* Cart Summary Section */}
         <div className="lg:col-span-5">
-          <h2 className="text-xl font-semibold mb-6">My Orders</h2>
+          <h2 className="text-lg md:text-xl font-semibold mb-6 md:mb-10">
+            {t.checkout.myOrders}
+          </h2>
           <div className="flex flex-col max-h-[400px] overflow-y-auto no-scrollbar">
             {cartItems.map((item) => (
               <OrderItemComponent

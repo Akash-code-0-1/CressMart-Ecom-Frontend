@@ -118,8 +118,13 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import ViewButton from "../common/ViewButton";
 import { getBlogs } from "@/services-api/blogService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const Blog: React.FC = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const router = useRouter();
 
   // 1. TanStack Query fetching
@@ -183,7 +188,7 @@ const Blog: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl md:text-3xl font-medium text-black">
-            Our Blogs
+            {t.blog.title}
           </h2>
           <ViewButton onClick={() => router.push("/blog")} />
         </div>
@@ -222,7 +227,7 @@ const Blog: React.FC = () => {
                   href={`/blog/${blog.slug}`}
                   className="flex items-center gap-1 text-[12px] font-normal text-[#5E5E5E] hover:text-black transition-colors border-b border-gray-400 hover:border-black"
                 >
-                  Read More
+                  {t.blog.readMore}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="21"

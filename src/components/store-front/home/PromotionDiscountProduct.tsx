@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getActiveCampaign } from "@/services-api/campaignService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 // 1. Define the Campaign Interface based on your JSON
 interface Campaign {
@@ -26,6 +28,8 @@ interface CampaignResponse {
 }
 
 const PromotionDiscountProduct = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   // 3. Apply the type to useQuery
   const {
     data: apiResponse,
@@ -41,7 +45,9 @@ const PromotionDiscountProduct = () => {
     "http://localhost:8082";
 
   if (isLoading) {
-    return <div className="w-full py-10 text-center">Loading...</div>;
+    return (
+      <div className="w-full py-10 text-center">{t.promotion.loading}</div>
+    );
   }
 
   if (isError || !apiResponse?.success) {
@@ -83,7 +89,8 @@ const PromotionDiscountProduct = () => {
                   </h2>
 
                   <p className="mt-1 font-poppins text-[8px] sm:text-[10px] md:text-[13px] lg:text-[16px] xl:text-[20px] 2xl:text-[24px] font-normal text-black uppercase">
-                    MIN {item.discount_value}% OFF
+                    {t.promotion.minOff} {item.discount_value}
+                    {t.promotion.off}
                   </p>
                 </div>
 
@@ -130,7 +137,7 @@ const PromotionDiscountProduct = () => {
                     lg:py-3
                   "
                   >
-                    Shop Now
+                    {t.promotion.shopNow}
                   </button>
                 </Link>
               </div>

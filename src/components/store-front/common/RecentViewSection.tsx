@@ -8,6 +8,8 @@ import { FaChevronLeft, FaChevronRight, FaStar } from "react-icons/fa";
 import Image from "next/image";
 import { recentViewProduct } from "@/services-api/productService";
 import Link from "next/link";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface Product {
   _id: string;
@@ -25,6 +27,8 @@ interface ApiResponse {
 }
 
 const RecentlyViewed = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   // 1. Fetch data using TanStack Query with Types
   const { data: products, isLoading } = useQuery<ApiResponse | null>({
     queryKey: ["recentlyViewed"],
@@ -34,7 +38,7 @@ const RecentlyViewed = () => {
   if (isLoading)
     return (
       <div className="h-[200px] flex items-center justify-center">
-        Loading...
+        {t.recentlyViewed.loading}
       </div>
     );
 
@@ -52,7 +56,7 @@ const RecentlyViewed = () => {
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="md:text-[32px] text-[20px] font-semibold text-black font-poppins">
-            Recently viewed
+            {t.recentlyViewed.title}
           </h2>
 
           <div className="flex items-center gap-4">
@@ -114,7 +118,7 @@ const RecentlyViewed = () => {
                       </h3>
 
                       <p className="text-[#FF7050] font-poppins text-[12px] font-bold mb-1">
-                        BDT {product?.price}
+                        {t.product.bdt} {product?.price}
                       </p>
                       <div className="flex items-center gap-1">
                         <div className="flex text-[#FFB800] text-xs gap-[1px]">

@@ -27,12 +27,14 @@ export const LanguageProvider = ({
   const [language, setLanguageState] = useState<Language>("ENG");
   const [mounted, setMounted] = useState(false);
 
-  // Load saved language
   useEffect(() => {
-    const saved = localStorage.getItem("language");
+    const saved = localStorage.getItem("language") as Language | null;
 
-    if (saved === "BAN" || saved === "ENG") {
+    if (saved === "ENG" || saved === "BAN") {
       setLanguageState(saved);
+
+      // Keep cookie in sync
+      document.cookie = `language=${saved}; path=/; max-age=31536000`;
     }
 
     setMounted(true);
@@ -40,7 +42,11 @@ export const LanguageProvider = ({
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
+
     localStorage.setItem("language", lang);
+
+    // Save for Server Components
+    document.cookie = `language=${lang}; path=/; max-age=31536000`;
   };
 
   if (!mounted) return null;

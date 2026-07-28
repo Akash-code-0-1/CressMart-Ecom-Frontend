@@ -1,5 +1,7 @@
 "use client";
 
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
 import Image from "next/image";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
@@ -16,15 +18,18 @@ export interface ProductData {
 }
 
 const RelatedProductCard = ({ product }: { product: ProductData }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
   const rawFirstImg = product.images?.[0];
-  const isValidImg = typeof rawFirstImg === "string" && rawFirstImg.trim().length > 1;
+  const isValidImg =
+    typeof rawFirstImg === "string" && rawFirstImg.trim().length > 1;
   const productImage = isValidImg
-    ? rawFirstImg.startsWith("http") || rawFirstImg.startsWith("/images/") 
-      ? rawFirstImg 
+    ? rawFirstImg.startsWith("http") || rawFirstImg.startsWith("/images/")
+      ? rawFirstImg
       : `${backendBaseUrl}/${rawFirstImg.replace(/^\/+/, "")}`
     : "/images/placeholder.svg";
 
@@ -50,12 +55,12 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
           </h4>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-bold text-[#FF7050]">
-              BDT {product.sell_price}
+              {t.product.bdt} {product.sell_price}
             </span>
 
             {product.regular_price !== product.sell_price && (
               <span className="text-xs text-gray-400 line-through">
-                BDT {product.regular_price}
+                {t.product.bdt} {product.regular_price}
               </span>
             )}
           </div>

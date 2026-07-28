@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { SectionHeader } from "../common/SectionHeader";
 import { getBrands, Brand, BrandResponse } from "@/services-api/brandService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const Brands = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const { data: brandResponse, isLoading } = useQuery<BrandResponse>({
     queryKey: ["public-brands"],
     queryFn: () => getBrands(1, 20),
@@ -60,7 +64,7 @@ const Brands = () => {
 
       <section className="w-full md:py-20 py-10 px-4 md:px-10 bg-white overflow-hidden">
         <div className="max-w-[1720px] mx-auto">
-          <SectionHeader title="Brands" link="/brands" />
+          <SectionHeader title={t.brands} link="/brands" />
 
           <div className="relative flex flex-col gap-6 md:gap-10 mt-8">
             <div

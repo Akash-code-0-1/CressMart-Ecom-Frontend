@@ -5,6 +5,8 @@ import { SectionHeader } from "../common/SectionHeader";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getCategoryTree, Category } from "@/services-api/categoryService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 export default function FeaturedCategory() {
   const router = useRouter();
@@ -20,10 +22,13 @@ export default function FeaturedCategory() {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
+    const { language } = useLanguage();
+    const t = translations[language];
+
   return (
     <section className="w-full pb-[40px] md:pb-[80px] px-4 md:px-10">
       <div className="max-w-[1720px] mx-auto">
-        <SectionHeader title="Featured Category" link="/category" />
+        <SectionHeader title={t.featuredCategory} link="/category" />
 
         <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-2 sm:gap-x-3 md:gap-x-5 xl:gap-x-[35px] gap-y-3 md:gap-y-6">
           {isLoading
