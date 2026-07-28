@@ -179,11 +179,11 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
                       </h3>
                       <div className="flex items-center gap-2 sm:gap-3">
                         <span className="text-[#32CD32] font-poppins text-[18px] sm:text-[24px] font-semibold">
-                          BDT {item.price}
+                          {t.product.bdt} {item.price}
                         </span>
                         {item.old_price > item.price && (
                           <span className="text-white font-poppins text-[13px] sm:text-[16px] font-semibold line-through">
-                            BDT {item.old_price}
+                            {t.product.bdt} {item.old_price}
                           </span>
                         )}
                       </div>
@@ -191,7 +191,7 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
                       <div className="pt-1 sm:pt-2">
                         <div className="flex justify-end mb-1">
                           <span className="text-white font-poppins text-[12px] sm:text-[14px]">
-                            {item.quantity_left} left
+                            {item.quantity_left} {t.product.itemsLeft}
                           </span>
                         </div>
                         <div className="w-full h-[5px] sm:h-[6px] bg-white/20 rounded-full overflow-hidden">

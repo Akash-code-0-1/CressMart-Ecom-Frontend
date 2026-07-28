@@ -1,4 +1,6 @@
 "use client";
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
 import { useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 
@@ -13,12 +15,15 @@ interface FAQProps {
 }
 
 const Faqssection = ({ faqs }: FAQProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   if (!faqs || faqs.length === 0) {
     return (
       <p className="text-[#727272] text-center">
-        No FAQs available for this product.
+        {t.faq.noFaq}
       </p>
     );
   }
@@ -27,7 +32,7 @@ const Faqssection = ({ faqs }: FAQProps) => {
     <section className="w-full font-poppins">
       <div className="mx-auto">
         <h2 className="text-center text-black text-[28px] md:text-[32px] font-semibold mb-12">
-          Frequently Asked Questions
+          {t.faq.title}
         </h2>
 
         <div className="flex flex-col gap-5">

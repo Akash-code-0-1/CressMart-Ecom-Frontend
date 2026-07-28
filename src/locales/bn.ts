@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "জনপ্রিয় ক্যাটাগরি",
   brands: "ব্র্যান্ডস",
+  categories: "ক্যাটাগরি",
 
   ////////////////////////
   // Top Header
@@ -254,14 +255,6 @@ export default {
   },
 
   ////////////////////////
-  // Blog
-  ///////////////////////
-  blog: {
-    title: "আমাদের ব্লগ",
-    readMore: "বিস্তারিত পড়ুন",
-  },
-
-  ////////////////////////
   // Product Details page
   ///////////////////////
   product: {
@@ -280,5 +273,250 @@ export default {
     bdt: "৳",
 
     warrantyPrefix: "*",
+    itemsLeft: "টি বাকি",
   },
+
+  productDetails: {
+    description: "বিস্তারিত",
+    specification: "স্পেসিফিকেশন",
+    faqs: "প্রশ্নোত্তর",
+    review: "রিভিউ",
+  },
+
+  review: {
+    loading: "লোড হচ্ছে...",
+
+    customerReview: "গ্রাহকদের রিভিউ",
+    customerReviewDesc: "এই পণ্য সম্পর্কে গ্রাহকদের মতামত দেখুন।",
+
+    reviews: "রিভিউ",
+    noReviews: "এখনও কোনো রিভিউ নেই। প্রথম রিভিউটি আপনিই দিন!",
+
+    submitReview: "আপনার রিভিউ দিন",
+    submitReviewDesc: "এই পণ্য সম্পর্কে আপনার অভিজ্ঞতা শেয়ার করুন।",
+
+    rating: "রেটিং",
+
+    name: "নাম",
+    yourName: "আপনার নাম",
+
+    phone: "মোবাইল নম্বর",
+    phonePlaceholder: "০১XXXXXXXXX",
+
+    email: "ইমেইল",
+    yourEmail: "আপনার ইমেইল",
+
+    review: "রিভিউ",
+    reviewPlaceholder: "আপনার মতামত লিখুন",
+
+    processing: "প্রক্রিয়াধীন...",
+    submit: "জমা দিন",
+
+    validation: {
+      enterName: "আপনার নাম লিখুন",
+      enterPhone: "মোবাইল নম্বর লিখুন",
+      invalidPhone: "সঠিক বাংলাদেশি মোবাইল নম্বর লিখুন",
+      enterReview: "আপনার রিভিউ লিখুন",
+      submitSuccess: "রিভিউ সফলভাবে জমা হয়েছে!",
+      submitFailed: "রিভিউ জমা দেওয়া যায়নি",
+      processFailed: "প্রক্রিয়া সম্পন্ন হয়নি, আবার চেষ্টা করুন",
+    },
+  },
+
+  specification: {
+    noSpecification: "কোনো স্পেসিফিকেশন দেওয়া হয়নি।",
+    feature: "বৈশিষ্ট্য",
+    details: "বিস্তারিত",
+  },
+
+  description: {
+    noDescription: "এই পণ্যের কোনো বিবরণ পাওয়া যায়নি।",
+  },
+
+  faq: {
+    title: "প্রায়শই জিজ্ঞাসিত প্রশ্ন",
+    noFaq: "এই পণ্যের জন্য কোনো প্রশ্নোত্তর পাওয়া যায়নি।",
+  },
+
+  relatedProducts: {
+    title: "সম্পর্কিত পণ্য",
+    loading: "সম্পর্কিত পণ্য লোড হচ্ছে...",
+  },
+
+  recentlyViewed: {
+    title: "সম্প্রতি দেখা পণ্যসমূহ",
+    loading: "লোড হচ্ছে...",
+  },
+
+  ////////////////////////
+  // Blog
+  ///////////////////////
+  blog: {
+    title: "আমাদের ব্লগ",
+    readMore: "বিস্তারিত পড়ুন",
+    ago: "আগে",
+  },
+
+  blogBanner: {
+    title: "ব্লগ",
+    subtitle:
+      "ডিজাইন, প্রযুক্তি ও বিভিন্ন বিষয় সম্পর্কে জানতে আমাদের ব্লগগুলো পড়ুন।",
+    loading: "লোড হচ্ছে...",
+  },
+
+  blogComments: {
+    title: "মন্তব্য করুন",
+    subtitle: "আপনার মতামত আমাদের সঙ্গে শেয়ার করতে নিচে মন্তব্য লিখুন।",
+    nickname: "নাম",
+    nicknamePlaceholder: "আপনার নাম লিখুন",
+    email: "ইমেইল",
+    emailPlaceholder: "আপনার ইমেইল লিখুন",
+    comment: "মন্তব্য",
+    commentPlaceholder: "আপনার মন্তব্য লিখুন",
+    submit: "মন্তব্য পাঠান",
+  },
+
+  ////////////
+  // Filter
+  ///////////
+
+  filter: {
+    title: "ফিল্টার",
+    reset: "রিসেট",
+  },
+
+  price: {
+    title: "দাম",
+    range: "দামের পরিসর",
+    popularRange: "জনপ্রিয় দামের পরিসর",
+    currency: "টাকা",
+  },
+
+  productListing: {
+    products: "পণ্য",
+    productCount: "টি পণ্য",
+    sortBy: "সাজান",
+    popularity: "জনপ্রিয়",
+    newest: "নতুন",
+    trending: "ট্রেন্ডিং",
+  },
+
+  chat: {
+    helpDesk: "Creass Mart হেল্প ডেস্ক",
+    instantReply: "আমরা সাধারণত দ্রুত উত্তর দিই",
+  },
+
+  landingPage: {
+    about: "পরিচিতি",
+    gallery: "গ্যালারি",
+    features: "বৈশিষ্ট্য",
+    reviews: "গ্রাহক মতামত",
+    video: "ভিডিও",
+    faqs: "সাধারণ প্রশ্ন",
+    order: "অর্ডার করুন",
+    buyNow: "এখনই কিনুন",
+
+    defaultHeadline: "পণ্যের নাম",
+    defaultSubHeadline: "পণ্যের সংক্ষিপ্ত বিবরণ।",
+    purchaseNow: "এখনই অর্ডার করুন",
+
+    productImage: "পণ্যের ছবি",
+    galleryDescription: "পণ্যের বিভিন্ন দিকের ছবি দেখুন।",
+    heroImage: "পণ্যের ছবি",
+    image: "ছবি",
+
+    whyUse: "কেন এই পণ্যটি বেছে নেবেন",
+    featureDescription: "পণ্যের প্রধান বৈশিষ্ট্য ও সুবিধাসমূহ।",
+    feature: "বৈশিষ্ট্য",
+    featurePlaceholder: "বৈশিষ্ট্যের বিবরণ।",
+
+    customerReviews: "গ্রাহকদের মতামত",
+    testimonial: "গ্রাহকের অভিজ্ঞতা",
+    noReview: "এখনো কোনো মতামত নেই।",
+    customer: "গ্রাহক",
+    verifiedCustomer: "যাচাইকৃত ক্রেতা",
+    next: "পরবর্তী",
+
+    faqTitle: "সাধারণ প্রশ্ন",
+    faqSubtitle: "প্রায় জিজ্ঞাসিত প্রশ্নসমূহ",
+    defaultQuestion: "প্রশ্ন",
+    defaultAnswer: "উত্তর।",
+
+    orderTitle: "এখনই অর্ডার করুন",
+    limitedOffer: "সীমিত সময়ের অফার",
+    description: "বিস্তারিত",
+    productReviews: "রিভিউ",
+    productName: "পণ্যের নাম",
+    detailedDescription: "পণ্যের বিস্তারিত বিবরণ।",
+  },
+
+  navbar: {
+    searchPlaceholder: "পণ্য খুঁজুন...",
+    searching: "খোঁজা হচ্ছে...",
+    hotDeals: "হট ডিল",
+
+    signIn: "সাইন ইন",
+    signUp: "সাইন আপ",
+
+    home: "হোম",
+    categories: "ক্যাটাগরি",
+    chat: "চ্যাট",
+    profile: "প্রোফাইল",
+    login: "লগইন",
+
+    items: "টি পণ্য",
+
+    yourCart: "আপনার কার্ট",
+    yourCartEmpty: "আপনার কার্ট খালি",
+    continueShopping: "কেনাকাটা চালিয়ে যান",
+
+    user: "ব্যবহারকারী",
+    brand: "ব্র্যান্ড",
+  },
+
+  checkout: {
+  shoppingDetails: "ডেলিভারির তথ্য",
+
+  name: "নাম",
+  number: "মোবাইল নম্বর",
+  address: "ঠিকানা",
+  note: "নোট",
+
+  namePlaceholder: "আপনার নাম লিখুন",
+  phonePlaceholder: "মোবাইল নম্বর লিখুন",
+  addressPlaceholder: "বাসা, রোড, এলাকা, শহর, জেলা লিখুন",
+  notePlaceholder: "বিশেষ নির্দেশনা লিখুন...",
+
+  deliveryCharge: "ডেলিভারি চার্জ নির্বাচন করুন",
+  outsideDhaka: "ঢাকার বাইরে ১৩০ টাকা",
+  insideDhaka: "ঢাকার ভিতরে ৭০ টাকা",
+
+  paymentMethod: "পেমেন্ট পদ্ধতি",
+  cashOnDelivery: "ক্যাশ অন ডেলিভারি",
+  onlinePayment: "অনলাইন পেমেন্ট",
+
+  coupon: "কুপন",
+  couponPlaceholder: "কুপন কোড লিখুন",
+  apply: "প্রয়োগ করুন",
+
+  deliveryWarning:
+    "ডেলিভারি রেশিও ৮০% এর কম হলে অথবা একাধিক পণ্যের অর্ডারের ক্ষেত্রে ডেলিভারি চার্জ বা ১০% অগ্রিম প্রয়োজন।",
+
+  placeOrder: "অর্ডার করুন",
+  secureCheckout: "১০০% নিরাপদ চেকআউট ও নিশ্চিন্ত লেনদেন",
+
+  myOrders: "আমার অর্ডার",
+},
+
+pricing: {
+  pricingList: "মূল্য তালিকা",
+  totalProductCost: "মোট পণ্যের মূল্য",
+  discountAmount: "ছাড়ের পরিমাণ",
+  coupon: "কুপন",
+  subtotal: "সাবটোটাল",
+  shippingFee: "ডেলিভারি চার্জ",
+  payableAmount: "পরিশোধযোগ্য মোট",
+  currency: "টাকা",
+},
+
 };

@@ -1,3 +1,5 @@
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
 import Image from "next/image";
 
 export interface RelatedProduct {
@@ -13,7 +15,9 @@ interface BlogBodyProps {
 }
 
 export default function BlogBody({ content, relatedProducts }: BlogBodyProps) {
-  // console.log(relatedProducts)
+  const { language } = useLanguage();
+  const t = translations[language];
+
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
@@ -39,7 +43,7 @@ export default function BlogBody({ content, relatedProducts }: BlogBodyProps) {
       {relatedProducts && relatedProducts.length > 0 && (
         <div className="mt-12">
           <h4 className="text-black font-bold text-xl mb-6 uppercase tracking-wide">
-            Related Products
+           {t.relatedProducts.title}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {relatedProducts.map((product: RelatedProduct) => {

@@ -9,6 +9,7 @@ import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
 import CartIcon from "../svg/CartIcon";
+import ChatIcon from "../svg/ChatIcon";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
 import { useQuery } from "@tanstack/react-query";
@@ -289,13 +290,13 @@ const Navbar = () => {
                   onClick={() => router.push("/signin")}
                   className="bg-[#F0F0F0] rounded-[8px] px-8 py-4"
                 >
-                  Signin
+                  {t.navbar.signIn}
                 </button>
                 <button
                   onClick={() => router.push("/signup")}
                   className="bg-[#FF7050] text-white rounded-[8px] px-8 py-4"
                 >
-                  Signup
+                  {t.navbar.signUp}
                 </button>
               </div>
             )}
@@ -410,7 +411,7 @@ const Navbar = () => {
       >
         <CartIcon className="w-8 md:w-10 text-white" />
         <span className="text-white text-xs md:text-base font-semibold mt-1">
-          2 Items
+          2 {t.navbar.items}
         </span>
       </div>
 
@@ -420,7 +421,7 @@ const Navbar = () => {
       >
         <div className="p-6 h-full flex flex-col">
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Your Cart</h2>
+            <h2 className="text-xl font-bold text-gray-800">{t.navbar.yourCart}</h2>
             <button
               onClick={() => setIsCartOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
@@ -430,12 +431,12 @@ const Navbar = () => {
           </div>
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
             <CartIcon className="w-20 h-20 opacity-50" />
-            <p className="text-lg">Your cart is empty</p>
+            <p className="text-lg">{t.navbar.yourCartEmpty}</p>
             <button
               onClick={() => setIsCartOpen(false)}
               className="mt-4 bg-[#FF7050] text-white px-8 py-3 rounded-[8px] font-medium hover:bg-[#e56548]"
             >
-              Continue Shopping
+             {t.navbar.continueShopping}
             </button>
           </div>
         </div>
@@ -474,7 +475,7 @@ const Navbar = () => {
                 d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
               />
             </svg>
-            <span className="text-[12px] mt-1 font-inter">Home</span>
+            <span className="text-[12px] mt-1 font-inter">{t.navbar.home}</span>
           </Link>
 
           {/* Category Button */}
@@ -483,7 +484,7 @@ const Navbar = () => {
             className="flex flex-col items-center"
           >
             <FiMenu size={22} />
-            <span className="text-[10px] mt-1">Category</span>
+            <span className="text-[10px] mt-1">{t.navbar.categories}</span>
           </button>
 
           {/* Central Custom Floating Logo */}
@@ -504,7 +505,7 @@ const Navbar = () => {
             onClick={() => useAuthStore.getState().setIsChatOpen?.(true)}
             className="flex flex-col items-center"
           >
-            <CartIcon className="w-6" />
+            <ChatIcon className="w-6" />
             <span className="text-[10px] mt-1">Chat</span>
           </button>
 
@@ -522,7 +523,7 @@ const Navbar = () => {
           >
             <UserIcon size={22} />
             <span className="text-[10px] mt-1">
-              {user ? "Profile" : "Login"}
+              {user ? t.navbar.profile : t.navbar.login}
             </span>
           </a>
         </div>

@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "Featured Category",
   brands: "Brands",
+  categories: "Categories",
 
   ////////////////////////
   // Top Header
@@ -248,14 +249,6 @@ export default {
   },
 
   ////////////////////////
-  // Blog
-  ///////////////////////
-  blog: {
-    title: "Our Blogs",
-    readMore: "Read More",
-  },
-
-  ////////////////////////
   // Product Details page
   ///////////////////////
   product: {
@@ -274,5 +267,246 @@ export default {
     bdt: "BDT",
 
     warrantyPrefix: "*",
+    itemsLeft: "Items Left",
   },
+
+  productDetails: {
+    description: "Description",
+    specification: "Specification",
+    faqs: "FAQs",
+    review: "Review",
+  },
+
+  review: {
+    loading: "Loading...",
+
+    customerReview: "Customer Review",
+    customerReviewDesc: "See what customers say about this product.",
+
+    reviews: "Reviews",
+    noReviews: "No reviews yet. Be the first to review!",
+
+    submitReview: "Submit Your Review",
+    submitReviewDesc: "Share your experience with this product!",
+
+    rating: "Rating",
+
+    name: "Name",
+    yourName: "Your Name",
+
+    phone: "Phone Number",
+    phonePlaceholder: "01XXXXXXXXX",
+
+    email: "Email",
+    yourEmail: "Your Email",
+
+    review: "Review",
+    reviewPlaceholder: "Write your review here",
+
+    processing: "Processing...",
+    submit: "Submit",
+
+    validation: {
+      enterName: "Please enter your name",
+      enterPhone: "Please enter your phone number",
+      invalidPhone: "Please enter a valid Bangladeshi phone number",
+      enterReview: "Please write a review",
+      submitSuccess: "Review submitted successfully!",
+      submitFailed: "Failed to submit review",
+      processFailed: "Process failed, please try again",
+    },
+  },
+
+  specification: {
+    noSpecification: "No specifications provided.",
+    feature: "Feature",
+    details: "Details",
+  },
+
+  description: {
+    noDescription: "No description available.",
+  },
+
+  faq: {
+    title: "Frequently Asked Questions",
+    noFaq: "No FAQs available for this product.",
+  },
+
+  relatedProducts: {
+    title: "Related Products",
+    loading: "Loading related products...",
+  },
+
+  recentlyViewed: {
+    title: "Recently Viewed",
+    loading: "Loading...",
+  },
+
+  ////////////////////////
+  // Blog
+  ///////////////////////
+
+  blog: {
+    title: "Our Blogs",
+    readMore: "Read More",
+    ago: "ago",
+  },
+
+  blogBanner: {
+    title: "Blog",
+    subtitle:
+      "Read more blogs for learning and exploring the world of design and development.",
+    loading: "Loading...",
+  },
+
+  blogComments: {
+    title: "Comment",
+    subtitle: "Share your thoughts with us by leaving a comment below.",
+    nickname: "Nickname",
+    nicknamePlaceholder: "Type your nickname here",
+    email: "Email",
+    emailPlaceholder: "Type your email here",
+    comment: "Comment",
+    commentPlaceholder: "Write your comment here",
+    submit: "Submit Comment",
+  },
+
+  //////////
+  // Filter
+  //////////
+  filter: {
+    title: "Filter",
+    reset: "Reset Filter",
+  },
+
+  price: {
+    title: "Price",
+    popularRange: "Popular Price Range",
+  },
+
+  productListing: {
+    products: "Products",
+    productCount: "Products",
+    sortBy: "Sort by",
+    popularity: "Popularity",
+    newest: "Newest",
+    trending: "Trending",
+  },
+
+  chat: {
+    helpDesk: "Creass Mart Help Desk",
+    instantReply: "We typically reply instantly",
+  },
+
+  landingPage: {
+    about: "About",
+    gallery: "Gallery",
+    features: "Features",
+    reviews: "Reviews",
+    video: "Video",
+    faqs: "FAQs",
+    order: "Order",
+    buyNow: "Buy Now",
+
+    defaultHeadline: "Product Title",
+    defaultSubHeadline: "Product short description.",
+    purchaseNow: "Purchase Now",
+
+    productImage: "Product Images",
+    galleryDescription: "Explore product images from different angles.",
+    heroImage: "Product Image",
+    image: "Image",
+
+    whyUse: "Why Choose This Product",
+    featureDescription: "Key features and benefits of this product.",
+    feature: "Feature",
+    featurePlaceholder: "Feature description.",
+
+    customerReviews: "Customer Reviews",
+    testimonial: "Testimonial",
+    noReview: "No review available.",
+    customer: "Customer",
+    verifiedCustomer: "Verified Customer",
+    next: "Next",
+
+    faqTitle: "FAQs",
+    faqSubtitle: "Frequently Asked Questions",
+    defaultQuestion: "Question",
+    defaultAnswer: "Answer.",
+
+    orderTitle: "Order This Product",
+    limitedOffer: "Limited-time offer",
+    description: "Description",
+    productReviews: "Reviews",
+    productName: "Product Name",
+    detailedDescription: "Product description.",
+  },
+
+  navbar: {
+    searchPlaceholder: "Search products...",
+    searching: "Searching...",
+    hotDeals: "Hot Deals",
+
+    signIn: "Sign In",
+    signUp: "Sign Up",
+
+    home: "Home",
+    categories: "Categories",
+    chat: "Chat",
+    profile: "Profile",
+    login: "Login",
+
+    items: "Items",
+
+    yourCart: "Your Cart",
+    yourCartEmpty: "Your cart is empty",
+    continueShopping: "Continue Shopping",
+
+    user: "User",
+    brand: "Brand",
+  },
+
+  checkout: {
+    shoppingDetails: "Shopping Details",
+    name: "Name",
+    number: "Number",
+    address: "Address",
+    note: "Note",
+
+    namePlaceholder: "Type your name here",
+    phonePlaceholder: "Phone number",
+    addressPlaceholder: "House No, Road No, Area, City, District",
+    notePlaceholder: "Write your instruction here...",
+
+    deliveryCharge: "Select Delivery Charge",
+    outsideDhaka: "Outside Dhaka BDT 130",
+    insideDhaka: "Inside Dhaka BDT 70",
+
+    paymentMethod: "Payment Method",
+    cashOnDelivery: "Cash on Delivery",
+    onlinePayment: "Online Payment",
+
+    coupon: "Coupon",
+    couponPlaceholder: "Enter coupon code",
+    apply: "Apply",
+
+    deliveryWarning:
+      "Delivery charge or 10% advance is required if the delivery ratio is below 80% or the order contains multiple products.",
+
+    placeOrder: "Place Order",
+    secureCheckout: "100% Secure Checkout & Guaranteed Safety",
+
+    myOrders: "My Orders",
+  },
+
+  pricing: {
+  pricingList: "Pricing List",
+  totalProductCost: "Total Product Cost",
+  discountAmount: "Discount Amount",
+  coupon: "Coupon",
+  subtotal: "Subtotal",
+  shippingFee: "Shipping Fee",
+  payableAmount: "Payable Amount",
+  currency: "BDT",
+},
 };

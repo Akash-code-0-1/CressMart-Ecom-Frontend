@@ -46,6 +46,8 @@
 // export default BlogHeader;
 
 "use client";
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
 import { formatDistanceToNow } from "date-fns";
 
 const BlogHeader = ({
@@ -57,11 +59,13 @@ const BlogHeader = ({
   author: string;
   date: string;
 }) => {
+    const { language } = useLanguage();
+    const t = translations[language];
   return (
     <section className="w-full bg-white pt-10 pb-8 px-4 md:px-10">
       <div className="container mx-auto">
         <p className="text-[#8C8C8C] font-inter text-[14px] md:text-[16px] mb-4 font-medium">
-          {author} - {date ? formatDistanceToNow(new Date(date)) : ""} ago
+          {author} - {date ? formatDistanceToNow(new Date(date)) : ""} {t.blog.ago}
         </p>
         <h1 className="text-[#000000] font-poppins text-[18px] md:text-[32px] lg:text-[36px] font-bold leading-[1.2] mb-8">
           {title}

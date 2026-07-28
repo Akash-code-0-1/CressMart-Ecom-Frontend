@@ -1,11 +1,15 @@
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
+
 interface MainButtonProps {
   label?: string;
   onClick?: () => void;
   className?: string;
 }
-
+const { language } = useLanguage();
+const t = translations[language];
 const ViewButton: React.FC<MainButtonProps> = ({
-  label = "Show More",
+  label = t.common.viewMore,
   onClick,
   className = "",
 }) => {

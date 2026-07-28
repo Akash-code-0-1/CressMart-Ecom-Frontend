@@ -11,8 +11,12 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { getMainBanner } from "@/services-api/blogService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const BlogBanner = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
@@ -23,15 +27,15 @@ const BlogBanner = () => {
     queryFn: getMainBanner,
   });
 
-  // ডাটা স্ট্রাকচার অনুযায়ী ব্যানার লিস্ট বের করা
-  // আপনার API যদি সরাসরি একটা অবজেক্ট দেয় তবে সেটাকে অ্যারেতে রূপান্তর করা হয়েছে স্লাইডারের জন্য
   const banner = data?.data;
   const banners = banner ? [banner] : [];
 
   // লোডিং স্টেট
   if (isLoading) {
     return (
-      <div className="w-full h-[450px] md:h-[600px] bg-gray-200 animate-pulse rounded-[35px] container mx-auto mt-10" />
+      <div className="w-full h-[450px] md:h-[600px] bg-gray-200 animate-pulse rounded-[35px] container mx-auto mt-10">
+      <span className="text-gray-500">{t.blogBanner.loading}</span>
+      </div>
     );
   }
 
@@ -46,11 +50,10 @@ const BlogBanner = () => {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-black font-poppins text-[36px] md:text-[48px] font-bold mb-4">
-            Blog
+            {t.blogBanner.title}
           </h2>
           <p className="text-black font-poppins text-[16px] md:text-[18px] font-normal mb-4">
-            Read more blogs for learning and exploring the world of design and
-            development.
+            {t.blogBanner.subtitle}
           </p>
         </div>
 
