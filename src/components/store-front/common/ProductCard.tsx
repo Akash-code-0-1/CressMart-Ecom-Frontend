@@ -62,6 +62,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
     e.preventDefault();
     if (isAdding || isRemoving) return;
 
+    if (!user) {
+      toast.error("Please login to add items to wishlist!");
+      return;
+    }
+
     if (isWishlisted) {
       removeFromWishlist();
     } else {
@@ -71,7 +76,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
 
   // Add to cart mutation 
-  const { mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
+  const { mutateAsync: handleAddToCartAsync, mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
     mutationFn: async () => {
       const guestId = localStorage.getItem("guestId") || "";
 
@@ -85,6 +90,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
       toast.error(error.message || "Failed to add to cart");
     },
   });
+
+  const handleOrderNow = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await handleAddToCartAsync();
+      router.push("/order");
+    } catch {
+      // handled in onError
+    }
+  };
 
   // Logic for dynamic values
   const regularPrice = parseFloat(product.regular_price) || 0;
@@ -220,9 +235,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
       {/* Action Buttons */}
       <div className="flex gap-1.5 mt-3 w-full md:flex-row flex-col">
         <button
-          className="w-full cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[16px] text-xs font-medium py-1.5 md:py-2 rounded-[8px] transition-all border border-[#E2E2E2]"
-          onClick={() => router.push(`/order?id=${product.id}`)}
-          disabled={!inStock}
+          className="w-full cursor-pointer bg-[#FF7050] text-white font-poppins md:text-[16px] text-xs font-medium py-1.5 md:py-2 rounded-[8px] transition-all border border-[#E2E2E2] disabled:opacity-50"
+          onClick={handleOrderNow}
+          disabled={!inStock || isAddingToCart}
         >
           {inStock ? "Order Now" : "Out of Stock"}
         </button>

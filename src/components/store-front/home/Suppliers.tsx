@@ -32,8 +32,6 @@ const Suppliers = () => {
         ? img
         : `${backendBaseUrl}/${img.replace(/^\/+/, "")}`;
 
-      console.log(usableImage);
-
       return {
         ...supplier,
         usableImage,

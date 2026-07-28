@@ -188,7 +188,6 @@ const Navbar = () => {
   });
 
   const cartItems = cartData?.items || ([] as CartItem[]);
-  console.log("Cart Items:", cartItems);
   const subTotal = cartData?.sub_total || 0;
   const queryClient = useQueryClient();
 
@@ -635,7 +634,7 @@ const Navbar = () => {
               <button
                 onClick={() => {
                   setIsCartOpen(false);
-                  router.push("/checkout");
+                  router.push("/order");
                 }}
                 className="w-full bg-[#FF7050] text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all active:scale-95 cursor-pointer"
               >

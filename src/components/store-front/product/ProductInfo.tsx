@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   AiFillStar,
   AiOutlineHeart,
@@ -18,6 +18,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createCart } from "@/services-api/cartService";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
+
 interface ProductInfoProps {
   product: Product;
 }
@@ -29,6 +31,70 @@ interface Attribute {
   hex?: string;
 }
 
+const parseAttributes = (rawAttributes: unknown): Attribute[] => {
+  if (!rawAttributes) return [];
+
+  let data = rawAttributes;
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  const result: Attribute[] = [];
+
+  if (Array.isArray(data)) {
+    data.forEach((item) => {
+      if (item && typeof item === "object") {
+        const label =
+          item.label ||
+          item.name ||
+          item.type ||
+          item.key ||
+          item.attributeName;
+        const value = item.value || item.val || item.attributeValue;
+        if (label && value) {
+          result.push({
+            label: String(label).trim(),
+            value: String(value).trim(),
+            type: item.type ? String(item.type) : undefined,
+            hex: item.hex ? String(item.hex) : undefined,
+          });
+        }
+      }
+    });
+  } else if (data && typeof data === "object") {
+    Object.entries(data).forEach(([key, val]) => {
+      if (key && val) {
+        if (typeof val === "object" && val !== null) {
+          const vObj = val as unknown as {
+            value: string;
+            val: string;
+            name: string;
+            type: string;
+            hex: string;
+          };
+          result.push({
+            label: String(key).trim(),
+            value: String(vObj.value || vObj.val || vObj.name || "").trim(),
+            type: vObj.type ? String(vObj.type) : undefined,
+            hex: vObj.hex ? String(vObj.hex) : undefined,
+          });
+        } else {
+          result.push({
+            label: String(key).trim(),
+            value: String(val).trim(),
+          });
+        }
+      }
+    });
+  }
+
+  return result;
+};
+
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const [qty, setQty] = useState(1);
   const queryClient = useQueryClient();
@@ -39,16 +105,88 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       : null,
   );
 
-  // get wislist
+  const router = useRouter();
+
+  // Extract unique attribute categories (e.g. ["Color", "Size"])
+  const attributeCategories = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) return [];
+    const labelsSet = new Set<string>();
+    product.variants.forEach((v) => {
+      const attrs = parseAttributes(v.attributes);
+      attrs.forEach((attr) => {
+        if (attr.label) labelsSet.add(attr.label);
+      });
+    });
+    return Array.from(labelsSet);
+  }, [product.variants]);
+
+  // Selected attribute value for each category { Color: "Black", Size: "M" }
+  const [selectedAttributes, setSelectedAttributes] = useState<
+    Record<string, string>
+  >({});
+
+  // Sync selected attributes with selectedVariant
+  useEffect(() => {
+    if (selectedVariant) {
+      const attrs = parseAttributes(selectedVariant.attributes);
+      const initial: Record<string, string> = {};
+      attrs.forEach((attr) => {
+        if (attr.label) initial[attr.label] = attr.value;
+      });
+      const timer = setTimeout(() => {
+        setSelectedAttributes(initial);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedVariant]);
+
+  // Handle selecting an attribute (e.g. category = "Color", val = "White")
+  const handleSelectAttribute = (category: string, val: string) => {
+    const updatedAttrs = { ...selectedAttributes, [category]: val };
+    setSelectedAttributes(updatedAttrs);
+
+    if (product.variants && product.variants.length > 0) {
+      // 1. Try finding exact matching variant with all selected attributes
+      let match = product.variants.find((v) => {
+        const attrs = parseAttributes(v.attributes);
+        return Object.entries(updatedAttrs).every(([catKey, catVal]) =>
+          attrs.some(
+            (a) =>
+              a.label.toLowerCase() === catKey.toLowerCase() &&
+              a.value.toLowerCase() === catVal.toLowerCase(),
+          ),
+        );
+      });
+
+      // 2. Fallback: find any variant containing the newly clicked attribute value
+      if (!match) {
+        match = product.variants.find((v) => {
+          const attrs = parseAttributes(v.attributes);
+          return attrs.some(
+            (a) =>
+              a.label.toLowerCase() === category.toLowerCase() &&
+              a.value.toLowerCase() === val.toLowerCase(),
+          );
+        });
+      }
+
+      if (match) {
+        setSelectedVariant(match);
+      }
+    }
+  };
+
+  // get wishlist
   const { data: wishlistItems = [] } = useQuery({
     queryKey: ["wishlist"],
     queryFn: getWishlist,
   });
 
-  // check wishli if have ?
+  // check wishlist
   const isWishlisted =
     Array.isArray(wishlistItems) &&
     wishlistItems.some((item) => item.productId === product.id);
+
   // wishlist mutation
   const { mutate: addToWishlist, isPending: isAdding } = useMutation({
     mutationFn: () => createWishlist(product.id.toString()),
@@ -59,7 +197,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     onError: (error) => toast.error(error.message),
   });
 
-  // revimove from wishlist
+  // remove from wishlist
   const { mutate: removeFromWishlist, isPending: isRemoving } = useMutation({
     mutationFn: () => deleteWishlist(product.id.toString()),
     onSuccess: () => {
@@ -74,6 +212,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     e.preventDefault();
     if (isAdding || isRemoving) return;
 
+    if (!user) {
+      toast.error("Please login to add items to wishlist!");
+      return;
+    }
+
     if (isWishlisted) {
       removeFromWishlist();
     } else {
@@ -82,7 +225,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   };
 
   // Add to cart mutation
-  const { mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
+  const {
+    mutateAsync: handleAddToCartAsync,
+    mutate: handleAddToCart,
+    isPending: isAddingToCart,
+  } = useMutation({
     mutationFn: async () => {
       const guestId = localStorage.getItem("guestId") || "";
       return createCart(
@@ -101,6 +248,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     },
   });
 
+  const handleOrderNow = async () => {
+    try {
+      await handleAddToCartAsync();
+      router.push("/order");
+    } catch {
+      // handled by onError
+    }
+  };
+
   const currentPrice = selectedVariant
     ? parseFloat(selectedVariant.price)
     : parseFloat(product.sell_price);
@@ -118,8 +274,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       : 0;
 
   // helper function to create variant name
-  const getVariantDisplayLabel = (attributes: Attribute[]) => {
-    return attributes.map((attr) => attr.value).join(" / ");
+  const getVariantDisplayLabel = (rawAttributes: unknown) => {
+    const attrs = parseAttributes(rawAttributes);
+    if (attrs.length === 0) return "Variant";
+    return attrs.map((attr) => attr.value).join(" / ");
   };
 
   // brand image
@@ -137,21 +295,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       {/* SKU and Unit */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {/* brand */}
-        <div className="relative w-12 h-12">
-          <Image
-            src={iconUrl}
-            alt={product.brand?.name || ""}
-            unoptimized
-            fill
-            className="object-contain"
-          />
-        </div>
+        {product.brand?.logo_url && (
+          <div className="relative w-12 h-12">
+            <Image
+              src={iconUrl}
+              alt={product.brand?.name || ""}
+              unoptimized
+              fill
+              className="object-contain"
+            />
+          </div>
+        )}
         <span className="text-[#727272] text-sm sm:text-[16px] font-medium">
           SKU: {currentSku}
         </span>
-        {/* <span className="text-[#727272] text-sm sm:text-[16px] font-medium">
-          Unit: {product.unit_name}
-        </span> */}
       </div>
 
       {/* Product Title */}
@@ -248,28 +405,85 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         {product.short_description}
       </p>
 
-      {/* Dynamic variant selection */}
-      {product.variants && product.variants.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <span className="text-black text-lg font-semibold">
-            {Array.from(
-              new Set(
-                product.variants.flatMap((v) =>
-                  (v.attributes as Attribute[]).map((a) => a.label),
-                ),
-              ),
-            ).join(" / ")}
-            :
-          </span>
+      {/* Dynamic separated variant selection (Color, Size, etc.) */}
+      {attributeCategories.length > 0 ? (
+        <div className="flex flex-col gap-4 my-1">
+          {attributeCategories.map((category) => {
+            const valuesMap = new Map<
+              string,
+              { value: string; hex?: string; type?: string }
+            >();
+            product.variants.forEach((v) => {
+              const attrs = parseAttributes(v.attributes);
+              const attr = attrs.find(
+                (a) => a.label.toLowerCase() === category.toLowerCase(),
+              );
+              if (attr && !valuesMap.has(attr.value)) {
+                valuesMap.set(attr.value, {
+                  value: attr.value,
+                  hex: attr.hex,
+                  type: attr.type,
+                });
+              }
+            });
 
+            const uniqueValues = Array.from(valuesMap.values());
+            const currentSelectedVal = selectedAttributes[category];
+
+            return (
+              <div key={category} className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-black text-base font-semibold">
+                    {category}:
+                  </span>
+                  {currentSelectedVal && (
+                    <span className="text-[#FF7050] text-sm font-medium">
+                      {currentSelectedVal}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {uniqueValues.map((item) => {
+                    const isSelected = currentSelectedVal === item.value;
+
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() =>
+                          handleSelectAttribute(category, item.value)
+                        }
+                        className={`flex items-center gap-2 px-4 py-2 border rounded-[8px] text-sm font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-[#FF7050] bg-[#FF7050] text-white shadow-sm font-semibold"
+                            : "border-[#E2E2E2] text-[#4D4D4D] hover:border-[#FF7050] bg-white"
+                        }`}
+                      >
+                        {item.hex && (
+                          <span
+                            className="w-4 h-4 rounded-full border border-gray-200 shrink-0"
+                            style={{ backgroundColor: item.hex }}
+                          />
+                        )}
+                        {item.value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : product.variants && product.variants.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <span className="text-black text-lg font-semibold">Variants:</span>
           <div className="flex flex-wrap gap-2">
             {product.variants.map((variant) => {
               const isSelected = selectedVariant?.id === variant.id;
 
-              // check if there is a color hex
-              const colorAttr = (variant.attributes as Attribute[]).find(
-                (a) => a.type === "color",
-              );
+              const attrs = parseAttributes(variant.attributes);
+              const colorAttr = attrs.find((a) => a.type === "color" || a.hex);
 
               return (
                 <button
@@ -281,7 +495,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                       : "border-gray-300 text-gray-700 hover:border-[#FF7050]"
                   }`}
                 >
-                  {/* show a small circle if there is a color hex */}
                   {colorAttr && colorAttr.hex && (
                     <span
                       className="w-4 h-4 rounded-full border border-gray-200"
@@ -294,15 +507,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             })}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Quantity & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-2 w-full">
         {/* Quantity Counter */}
         <div className="flex items-center justify-between border border-[#E2E2E2] rounded-lg h-[52px] w-full sm:w-auto">
           <button
             onClick={() => setQty(Math.max(1, qty - 1))}
-            className="px-5 h-full hover:text-[#FF7050] transition-colors"
+            className="cursor-pointer px-5 h-full hover:text-[#FF7050] transition-colors"
           >
             <AiOutlineMinus />
           </button>
@@ -311,7 +524,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           </span>
           <button
             onClick={() => setQty(qty + 1)}
-            className="px-5 h-full hover:text-[#FF7050] transition-colors"
+            className="cursor-pointer px-5 h-full hover:text-[#FF7050] transition-colors"
           >
             <AiOutlinePlus />
           </button>
@@ -329,7 +542,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             ) : (
               <AiOutlineHeart />
             )}
-            {/* <AiOutlineHeart /> */}
           </button>
           <button
             disabled={currentStock <= 0}
@@ -342,8 +554,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             {isAddingToCart ? "Adding..." : "Add To Cart"}
           </button>
           <button
-            disabled={currentStock <= 0}
-            className="flex-1 h-[52px] bg-[#32CD32] text-white font-semibold rounded-[8px] hover:bg-[#28a728] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            disabled={currentStock <= 0 || isAddingToCart}
+            onClick={(e) => {
+              e.preventDefault();
+              handleOrderNow();
+            }}
+            className="cursor-pointer flex-1 h-[52px] bg-[#32CD32] text-white font-semibold rounded-[8px] hover:bg-[#28a728] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             ORDER NOW
           </button>

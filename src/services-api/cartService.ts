@@ -62,3 +62,13 @@ export const deleteCartItem = async (cartItemId: string) => {
   if (!response.ok) throw new Error("Failed to remove item from cart");
   return await response.json();
 };
+
+// clear all cart items (called after order is placed)
+export const clearCart = async (guestId?: string | null) => {
+  const url = guestId ? `cart/clear?guestId=${guestId}` : `cart/clear`;
+  const response = await apiFetch(url, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Failed to clear cart");
+  return await response.json();
+};

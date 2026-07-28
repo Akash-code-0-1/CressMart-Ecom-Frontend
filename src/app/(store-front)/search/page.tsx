@@ -5,19 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
 import ProductCard from "@/components/store-front/common/ProductCard";
 
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  sell_price: string;
-  regular_price: string;
-  images: string[] | null;
-  avg_rating: string;
-  total_reviews: number;
-  quantity: number;
-  discount_tag: string | null;
-  category_id: string;
-}
+import { Product } from "@/@types/product.type";
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
