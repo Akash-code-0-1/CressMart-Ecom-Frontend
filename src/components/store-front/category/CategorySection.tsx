@@ -2,6 +2,8 @@ import { IoCheckmarkCircleSharp } from "react-icons/io5";
 import { HiMiniMinusSmall } from "react-icons/hi2";
 import { MdChevronRight } from "react-icons/md";
 import { CategoryTreeNode } from "@/@types/filter.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface Props {
   tree: CategoryTreeNode[];
@@ -16,11 +18,13 @@ export default function CategorySection({
   activePath,
   onUpdate,
 }: Props) {
+  const { language } = useLanguage();
+  const t = translations[language];
   return (
     <div className="py-4 border-b border-[#D9D9D9]">
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-black md:text-[24px] text-xl font-medium">
-          Categories
+          {t.categories}
         </h4>
         <HiMiniMinusSmall className="md:text-2xl text-xl text-gray-400" />
       </div>

@@ -3,8 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { relatedProduct } from "@/services-api/productService";
 import RelatedProductCard, { ProductData } from "./RelatedProductCard";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const RelatedProducts = ({ productId }: { productId: string }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const limit = 4;
   const page = 1;
 
@@ -18,8 +22,13 @@ const RelatedProducts = ({ productId }: { productId: string }) => {
     return (
       <div className="w-full">
         <h3 className="text-xl font-semibold font-poppins mb-4 px-1">
-          Related Product
+          {t.relatedProducts.title}
         </h3>
+
+        <p className="text-sm text-[#727272] mb-3 px-1">
+          {t.relatedProducts.loading}
+        </p>
+
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
             <div
@@ -43,7 +52,7 @@ const RelatedProducts = ({ productId }: { productId: string }) => {
   return (
     <div className="w-full">
       <h3 className="text-xl font-semibold font-poppins text-black mb-4 px-1">
-        Related Product
+        {t.relatedProducts.title}
       </h3>
       <div className="bg-white rounded-2xl flex flex-col gap-y-3">
         {data.map((product: ProductData) => (

@@ -1,6 +1,8 @@
 import { IoCheckmarkCircleSharp } from "react-icons/io5";
 import { HiMiniMinusSmall } from "react-icons/hi2";
 import { Brand } from "@/services-api/brandService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface Props {
   brands: Brand[];
@@ -13,11 +15,13 @@ export default function BrandSection({
   activeBrandId,
   onUpdate,
 }: Props) {
+      const { language } = useLanguage();
+      const t = translations[language];
   return (
     <div className="py-4">
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-black md:text-[24px] text-xl font-medium">
-          Brands
+          {t.brands}
         </h4>
         <HiMiniMinusSmall className="text-2xl text-gray-400" />
       </div>

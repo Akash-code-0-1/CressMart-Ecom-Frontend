@@ -9,6 +9,8 @@ import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 // ==========================================
 // 1. TYPES & INTERFACES
@@ -126,6 +128,8 @@ export default function LandingPageRenderer({
   liveData,
   productList = [],
 }: LandingPageRendererProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
   const offers = parseJsonArray<OfferItem>(liveData.offers);
   const features = parseJsonArray<FeatureItem>(liveData.features);
   const productImages = parseJsonArray<string>(liveData.productImages);
@@ -169,7 +173,7 @@ export default function LandingPageRenderer({
               className="text-3xl md:text-4xl font-syne font-bold tracking-tight"
               style={{ color: liveData.textColor || "#111827" }}
             >
-              {selectedProduct?.name || liveData.title || "Supple"}
+              {selectedProduct?.name || liveData.title || "N/A"}
             </span>
 
             <span
@@ -183,34 +187,34 @@ export default function LandingPageRenderer({
           {/* Navigation */}
           <nav className="hidden lg:flex items-center gap-8 text-sm font-syne font-medium uppercase tracking-wider">
             <a href="#about" className="hover:text-sky-500 transition-colors">
-              About
+              {t.landingPage.about}
             </a>
 
             <a href="#gallery" className="hover:text-sky-500 transition-colors">
-              Gallery
+              {t.landingPage.gallery}
             </a>
 
             <a
               href="#features"
               className="hover:text-sky-500 transition-colors"
             >
-              Features
+              {t.landingPage.features}
             </a>
 
             <a href="#reviews" className="hover:text-sky-500 transition-colors">
-              Reviews
+              {t.landingPage.reviews}
             </a>
 
             <a href="#video" className="hover:text-sky-500 transition-colors">
-              Video
+              {t.landingPage.video}
             </a>
 
             <a href="#faqs" className="hover:text-sky-500 transition-colors">
-              FAQs
+              {t.landingPage.faqs}
             </a>
 
             <a href="#order" className="hover:text-sky-500 transition-colors">
-              Order
+              {t.landingPage.order}
             </a>
           </nav>
 
@@ -222,7 +226,7 @@ export default function LandingPageRenderer({
             }}
             className="hidden lg:flex items-center justify-center px-6 py-3 rounded-full text-white text-sm font-bold uppercase tracking-wider shadow-lg hover:scale-105 transition-transform"
           >
-            Buy Now
+            {t.landingPage.buyNow}
           </a>
         </div>
       </header>
@@ -236,11 +240,11 @@ export default function LandingPageRenderer({
                 ? liveData.headline.endsWith(".")
                   ? liveData.headline
                   : `${liveData.headline}.`
-                : "Pre Workout Supplements."}
+                : t.landingPage.defaultHeadline}
             </h1>
             <p className="text-sm md:text-base text-zinc-500 font-montserrat leading-relaxed max-w-md">
               {liveData.subHeadline ||
-                "Write here about your product short description."}
+                t.landingPage.defaultSubHeadline}
             </p>
             <button
               style={{
@@ -249,7 +253,7 @@ export default function LandingPageRenderer({
               }}
               className="px-8 py-3.5 rounded-full text-white font-extrabold text-xs md:text-sm uppercase tracking-widest transition-transform active:scale-95 hover:opacity-90"
             >
-              PURCHASE NOW
+              {t.landingPage.purchaseNow}
             </button>
           </div>
           <div className="w-full aspect-[4/4] rounded-[2rem] overflow-hidden bg-slate-100 shadow-xl border border-slate-200/60">
@@ -261,7 +265,7 @@ export default function LandingPageRenderer({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-400 font-semibold">
-                Hero Image
+                {t.landingPage.heroImage}
               </div>
             )}
           </div>
@@ -308,10 +312,10 @@ export default function LandingPageRenderer({
         <div className="text-center space-y-8 max-w-5xl mx-auto w-full">
           <div className="space-y-2">
             <h2 className="text-2xl md:text-4xl font-syne font-bold tracking-tight">
-              Product Image
+              {t.landingPage.productImage}
             </h2>
             <p className="text-xs md:text-sm text-slate-500 font-montserrat font-normal">
-              Explore our high quality gallery photos and product angles.
+              {t.landingPage.galleryDescription}
             </p>
           </div>
           {/* Changed to 2 columns in desktop to fit height better */}
@@ -343,11 +347,11 @@ export default function LandingPageRenderer({
         <div className="text-center space-y-14 max-w-6xl mx-auto w-full">
           <div className="space-y-3">
             <h2 className="text-3xl md:text-4xl font-syne font-bold tracking-tight">
-              Why To Use Supple
+              {t.landingPage.whyUse}
             </h2>
 
             <p className="text-sm md:text-base font-montserrat text-slate-500">
-              High quality features and advantages.
+              {t.landingPage.featureDescription}
             </p>
           </div>
 
@@ -440,7 +444,7 @@ export default function LandingPageRenderer({
       <section id="reviews" className="min-h-[70vh] flex items-center px-6 py-12 scroll-mt-28">
         <div className="text-center space-y-10 max-w-5xl mx-auto w-full">
           <h2 className="text-2xl md:text-4xl font-syne font-bold tracking-tight">
-            Customer Reviews
+            {t.landingPage.customerReviews}
           </h2>
 
           <Swiper
@@ -472,24 +476,24 @@ export default function LandingPageRenderer({
                         </div>
 
                         <span className="text-xs font-black uppercase tracking-wider">
-                          Testimonial
+                          {t.landingPage.testimonial}
                         </span>
                       </div>
 
                       {/* Quote */}
                       <p className="text-base md:text-lg text-slate-600 italic leading-8 pr-10">
-                        {review?.quote || "No review available."}
+                        {review?.quote || t.landingPage.noReview}
                       </p>
 
                       {/* Footer */}
                       <div className="flex justify-between items-end mt-8">
                         <div>
                           <h4 className="text-lg font-bold">
-                            {review?.name || "Customer"}
+                            {review?.name || t.landingPage.customer}
                           </h4>
 
                           <span className="text-sm text-slate-400">
-                            Verified Customer
+                            {t.landingPage.verifiedCustomer}
                           </span>
                         </div>
 
@@ -513,7 +517,7 @@ export default function LandingPageRenderer({
                         onClick={() => swiperRef.current?.slideNext()}
                         className="absolute bottom-5 right-5 bg-black text-white px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-2 hover:bg-slate-800 transition cursor-pointer"
                       >
-                        Next
+                        {t.landingPage.next}
                         <span className="text-lg">›</span>
                       </button>
                     </div>
@@ -530,11 +534,11 @@ export default function LandingPageRenderer({
         <div className="max-w-5xl mx-auto w-full text-center space-y-8">
           <div className="space-y-1">
             <h2 className="text-2xl md:text-4xl font-syne font-bold tracking-tight">
-              FAQs
+              {t.landingPage.faqTitle}
             </h2>
 
             <p className="text-xs text-slate-500">
-              Frequently asked questions.
+             {t.landingPage.faqSubtitle}
             </p>
           </div>
 
@@ -543,8 +547,8 @@ export default function LandingPageRenderer({
               ? faqs
               : [
                   {
-                    question: "Supplement FAQ?",
-                    answer: "Answer here.",
+                    question: t.landingPage.defaultQuestion,
+                    answer: t.landingPage.defaultAnswer,
                   },
                 ]
             ).map((faq, i) => {
@@ -642,10 +646,10 @@ export default function LandingPageRenderer({
         <div className="max-w-6xl mx-auto w-full text-center space-y-10">
           <div className="space-y-2">
             <h2 className="text-2xl md:text-4xl font-syne font-bold tracking-tight">
-              Order Our Product
+              {t.landingPage.orderTitle}
             </h2>
             <p className="text-xs text-slate-500 font-montserrat">
-              Limited time discount.
+              {t.landingPage.limitedOffer}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start text-left max-w-5xl mx-auto">
@@ -702,7 +706,7 @@ export default function LandingPageRenderer({
 
               {/* Product Name */}
               <h3 className="text-2xl md:text-3xl font-syne font-bold tracking-tight leading-tight">
-                {selectedProduct?.name || liveData.title || "Product Name"}
+                {selectedProduct?.name || liveData.title || t.landingPage.productName}
               </h3>
 
               {/* Price */}
@@ -739,7 +743,7 @@ export default function LandingPageRenderer({
                 }}
                 className="w-full py-3.5 rounded-full text-white font-black text-sm uppercase tracking-wider shadow-xl"
               >
-                PURCHASE NOW
+                {t.landingPage.purchaseNow}
               </button>
 
               {/* Description */}
@@ -750,16 +754,16 @@ export default function LandingPageRenderer({
                       color: liveData.buttonColor || "#38bdf8",
                     }}
                   >
-                    Description
+                    {t.landingPage.description}
                   </span>
 
                   <span className="text-slate-400">
-                    Reviews ({selectedProduct?.total_reviews || 0})
+                    {t.landingPage.productReviews} ({selectedProduct?.total_reviews || 0})
                   </span>
                 </div>
 
                 <p className="text-sm text-slate-500 leading-7 font-montserrat">
-                  {selectedProduct?.description || "Detailed description."}
+                  {selectedProduct?.description || t.landingPage.detailedDescription}
                 </p>
               </div>
             </div>

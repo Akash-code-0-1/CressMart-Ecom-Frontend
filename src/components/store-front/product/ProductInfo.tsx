@@ -9,6 +9,8 @@ import {
 import { Product, ProductVariant } from "@/@types/product.type";
 import Image from "next/image";
 import { FaCheck, FaRegEye } from "react-icons/fa";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 interface ProductInfoProps {
   product: Product;
 }
@@ -21,6 +23,8 @@ interface Attribute {
 }
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [qty, setQty] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     product.variants && product.variants.length > 0
@@ -74,7 +78,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           />
         </div>
         <span className="text-[#727272] text-sm sm:text-[16px] font-medium">
-          SKU: {currentSku}
+          {t.product.sku}: {currentSku}
         </span>
         {/* <span className="text-[#727272] text-sm sm:text-[16px] font-medium">
           Unit: {product.unit_name}
@@ -104,14 +108,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             />
           ))}
           <span className="text-[#727272] font-medium ml-1">
-            ({product.total_reviews || 0} Review)
+            ({product.total_reviews || 0} {t.product.review})
           </span>
         </div>
         <div className="hidden sm:block h-5 w-[1px] bg-[#D2D2D2]"></div>
 
         <span className="text-[#727272] font-medium flex items-center">
           <FaCheck className="mr-1 flex-shrink-0" />
-          <span className="font-bold mr-1">{product.total_sold || 0}</span> sold
+          <span className="font-bold mr-1">{product.total_sold || 0}</span> {t.product.sold}
         </span>
 
         <div className="hidden sm:block h-5 w-[1px] bg-[#D2D2D2]"></div>
@@ -119,7 +123,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         <span className="text-[#727272] font-medium flex items-center">
           <FaRegEye className="mr-1 flex-shrink-0" />
           <span className="font-bold mr-1">{product.view_count || 0}</span>{" "}
-          Viewed
+          {t.product.viewed}
         </span>
 
         <div className="hidden sm:block h-5 w-[1px] bg-[#D2D2D2]"></div>
@@ -127,7 +131,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         <span
           className={`${currentStock > 0 ? "bg-[#32CD32]" : "bg-red-500"} text-white text-xs sm:text-[14px] font-semibold px-3 py-1 rounded-[8px]`}
         >
-          {currentStock > 0 ? `${currentStock} In Stock` : "Out of Stock"}
+          {currentStock > 0 ? `${currentStock} ${t.product.inStock}` : t.product.outOfStock}
         </span>
       </div>
 
@@ -135,15 +139,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       <div className="flex justify-between md:flex-row flex-col md:items-center items-start gap-3 border-b-2 border-[#D2D2D2] py-4">
         <div className="flex items-center gap-3">
           <span className="text-[#FF7050] text-2xl sm:text-[32px] font-bold">
-            BDT {currentPrice.toLocaleString()}
+            {t.product.bdt} {currentPrice.toLocaleString()}
           </span>
           {discount > 0 && regularPrice > currentPrice && (
             <>
               <span className="text-[#727272] text-lg sm:text-[24px] font-medium line-through">
-                BDT {regularPrice.toLocaleString()}
+                {t.product.bdt} {regularPrice.toLocaleString()}
               </span>
               <span className="bg-[#32CD32] text-white text-[11px] px-2 py-0.5 rounded-md">
-                {discount}% OFF
+                {discount}% {t.product.off}
               </span>
             </>
           )}
@@ -253,13 +257,13 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
             disabled={currentStock <= 0}
             className="flex-1 h-[52px] border-[1.5px] border-[#FF7050] text-[#FF7050] font-semibold rounded-[8px] hover:bg-[#FF7050]/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            ADD TO CART
+            {t.product.addToCart}
           </button>
           <button
             disabled={currentStock <= 0}
             className="flex-1 h-[52px] bg-[#32CD32] text-white font-semibold rounded-[8px] hover:bg-[#28a728] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            ORDER NOW
+            {t.product.orderNow}
           </button>
         </div>
       </div>
@@ -267,7 +271,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       {/* Warranty Info */}
       {product.warranty && (
         <p className="mt-2 text-sm text-gray-500 font-medium">
-          * {product.warranty}
+          {t.product.warrantyPrefix} {product.warranty}
         </p>
       )}
     </div>

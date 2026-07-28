@@ -1,30 +1,16 @@
-// interface DescriptionProps {
-//   content: string | null;
-// }
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
 
-// const DescriptionSection = ({ content }: DescriptionProps) => {
-//   if (!content)
-//     return <p className="text-[#727272]">No description available.</p>;
-
-//   return (
-//     <div className="text-[#727272] leading-[1.8] text-base md:text-lg font-poppins">
-//       <div
-//         className="prose max-w-none prose-p:mb-4 prose-li:list-disc"
-//         dangerouslySetInnerHTML={{ __html: content }}
-//       />
-//     </div>
-//   );
-// };
-
-// export default DescriptionSection;
 
 interface DescriptionProps {
   content: string | null;
 }
 
 const DescriptionSection = ({ content }: DescriptionProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   if (!content)
-    return <p className="text-[#727272]">No description available.</p>;
+    return <p className="text-[#727272]">{t.description.noDescription}</p>;
 
   return (
     <div className="w-full font-poppins">

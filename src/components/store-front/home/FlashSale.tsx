@@ -9,12 +9,16 @@ import { FiArrowRight, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import "swiper/css";
 import "swiper/css/navigation";
 import { FlashSaleData } from "@/@types/flashSale.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface FlashSaleProps {
   flashSale: FlashSaleData;
 }
 
 const FlashSale = ({ flashSale }: FlashSaleProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [timeLeft, setTimeLeft] = useState({
     days: "00",
     hours: "00",
@@ -123,7 +127,7 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
             href={`/flash-sale/${flashSale.slug}`}
             className="flex items-center gap-4 text-[#FF7050] font-poppins text-[16px] md:text-[20px] font-semibold group hover:opacity-80 transition-all"
           >
-            Go to Flash Sale Page
+            {t.flashSale.goToFlashSale}
             <FiArrowRight className="text-xl md:text-2xl transition-transform group-hover:translate-x-2" />
           </Link>
         </div>
@@ -175,11 +179,11 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
                       </h3>
                       <div className="flex items-center gap-2 sm:gap-3">
                         <span className="text-[#32CD32] font-poppins text-[18px] sm:text-[24px] font-semibold">
-                          BDT {item.price}
+                          {t.product.bdt} {item.price}
                         </span>
                         {item.old_price > item.price && (
                           <span className="text-white font-poppins text-[13px] sm:text-[16px] font-semibold line-through">
-                            BDT {item.old_price}
+                            {t.product.bdt} {item.old_price}
                           </span>
                         )}
                       </div>
@@ -187,7 +191,7 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
                       <div className="pt-1 sm:pt-2">
                         <div className="flex justify-end mb-1">
                           <span className="text-white font-poppins text-[12px] sm:text-[14px]">
-                            {item.quantity_left} left
+                            {item.quantity_left} {t.product.itemsLeft}
                           </span>
                         </div>
                         <div className="w-full h-[5px] sm:h-[6px] bg-white/20 rounded-full overflow-hidden">

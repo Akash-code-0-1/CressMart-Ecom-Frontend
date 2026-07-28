@@ -13,6 +13,8 @@ import {
   createReview,
   uploadReviewImages,
 } from "@/services-api/reviewService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface ReviewUser {
   name: string;
@@ -47,6 +49,8 @@ interface ReviewApiResponse {
 }
 
 const ReviewSection = ({ productId }: { productId: string }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [rating, setRating] = useState<number>(5);
@@ -69,7 +73,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
     mutationFn: createReview,
     onSuccess: (res) => {
       if (res.success) {
-        toast.success("Review submitted successfully!");
+        toast.success(t.review.validation.submitSuccess);
         setComment("");
         setName("");
         setPhoneNumber("");
@@ -79,7 +83,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
         queryClient.invalidateQueries({ queryKey: ["reviews", productId] });
       }
     },
-    onError: (err: Error) => toast.error(err.message || "Failed to submit"),
+    onError: (err: Error) => toast.error(err.message || t.review.validation.submitFailed),
   });
 
   // --- Handle File Selection ---
@@ -91,17 +95,17 @@ const ReviewSection = ({ productId }: { productId: string }) => {
 
   // --- Submit Function with Validation ---
   const handleSubmit = async () => {
-    if (!name.trim()) return toast.error("Please enter your name");
+    if (!name.trim()) return toast.error(t.review.validation.enterName);
     if (!phoneNumber.trim())
-      return toast.error("Please enter your phone number");
+      return toast.error(t.review.validation.enterPhone);
     const bdPhoneRegex = /^(?:\+88|88)?(01[3-9]\d{8})$/;
     const sanitizedPhone = phoneNumber.replace(/\s/g, "");
 
     if (!bdPhoneRegex.test(sanitizedPhone)) {
-      return toast.error("Please enter a valid Bangladeshi phone number");
+      return toast.error(t.review.validation.invalidPhone);
     }
 
-    if (!comment.trim()) return toast.error("Please write a comment");
+    if (!comment.trim()) return toast.error(t.review.validation.enterReview);
 
     setIsSubmitting(true);
     try {
@@ -131,7 +135,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
       });
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : "Process failed, try again";
+        error instanceof Error ? error.message : t.review.validation.processFailed;
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -163,7 +167,8 @@ const ReviewSection = ({ productId }: { productId: string }) => {
     ratingCounts[s.rating] = s._count.rating;
   });
 
-  if (isLoading) return <div className="text-center py-10">Loading...</div>;
+  if (isLoading)
+    return <div className="text-center py-10">{t.review.loading}</div>;
 
   return (
     <div className="font-poppins">
@@ -171,10 +176,10 @@ const ReviewSection = ({ productId }: { productId: string }) => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 md:gap-12">
         <div>
           <h2 className="md:text-[28px] text-[24px] font-semibold text-black mb-1">
-            Customer Review
+            {t.review.customerReview}
           </h2>
           <p className="text-[#727272] text-[16px] md:text-[20px] max-w-[416px]">
-            See what clients say about us.
+            {t.review.customerReviewDesc}
           </p>
         </div>
         <div className="text-center shrink-0">
@@ -193,7 +198,9 @@ const ReviewSection = ({ productId }: { productId: string }) => {
               />
             ))}
           </div>
-          <p className="text-[#8C8C8C] text-base">{totalReviews} Reviews</p>
+          <p className="text-[#8C8C8C] text-base">
+            {totalReviews} {t.review.reviews}
+          </p>
         </div>
         <div className="flex-1 w-full max-w-xs space-y-2">
           {[5, 4, 3, 2, 1].map((star) => (
@@ -223,9 +230,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
             />
           ))
         ) : (
-          <p className="text-gray-400 italic">
-            No reviews yet. Be the first to review!
-          </p>
+          <p className="text-gray-400 italic">{t.review.noReviews}</p>
         )}
       </div>
 
@@ -234,14 +239,14 @@ const ReviewSection = ({ productId }: { productId: string }) => {
         <div className="flex flex-col md:flex-row justify-between gap-4 mb-8">
           <div>
             <h2 className="text-[24px] font-semibold text-black">
-              Submit Your Review
+              {t.review.submitReview}
             </h2>
-            <p className="text-[#727272]">
-              Share your amazing experience with us!
-            </p>
+            <p className="text-[#727272]">{t.review.submitReviewDesc}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-[#727272] font-semibold">Rating</span>
+            <span className="text-[#727272] font-semibold">
+              {t.review.rating}
+            </span>
             <StarRatingInput value={rating} onChange={setRating} />
           </div>
         </div>
@@ -250,23 +255,25 @@ const ReviewSection = ({ productId }: { productId: string }) => {
           <div className="space-y-4">
             {/* Name Input */}
             <div className="flex flex-col">
-              <label className="text-black font-semibold mb-3">Name*</label>
+              <label className="text-black font-semibold mb-3">
+                {t.review.name}*
+              </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your Name"
+                placeholder={t.review.yourName}
                 className="bg-[#F9F9F9] border border-[#D2D2D2] rounded-[12px] py-5 px-5 outline-none focus:border-[#FF7050]"
               />
             </div>
             {/* Number Input */}
             <div className="flex flex-col">
-              <label className="text-black font-semibold mb-3">Number*</label>
+              <label className="text-black font-semibold mb-3">{t.review.phone}*</label>
               <input
                 type="text"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="01XXXXXXXXX"
+                placeholder={t.review.phonePlaceholder}
                 className="bg-[#F9F9F9] border border-[#D2D2D2] rounded-[12px] py-5 px-5 outline-none focus:border-[#FF7050]"
               />
             </div>
@@ -274,11 +281,11 @@ const ReviewSection = ({ productId }: { productId: string }) => {
 
           {/* Review Textarea */}
           <div className="flex flex-col">
-            <label className="text-black font-semibold mb-3">Review*</label>
+            <label className="text-black font-semibold mb-3">{t.review.review}*</label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Type your review here"
+              placeholder={t.review.reviewPlaceholder}
               className="flex-1 bg-[#F9F9F9] border border-[#D2D2D2] rounded-[12px] p-6 outline-none focus:border-[#FF7050] min-h-[174px] resize-none"
             />
           </div>
@@ -287,12 +294,12 @@ const ReviewSection = ({ productId }: { productId: string }) => {
         <div className="flex items-center gap-5 md:flex-row flex-col mt-8">
           {/* Email Input */}
           <div className="flex flex-col md:w-1/2 w-full">
-            <label className="text-black font-semibold mb-3">Email</label>
+            <label className="text-black font-semibold mb-3">{t.review.email}</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Your Email"
+              placeholder={t.review.yourEmail}
               className="bg-[#F9F9F9] border border-[#D2D2D2] rounded-[12px] py-5 px-5 outline-none focus:border-[#FF7050]"
             />
           </div>
@@ -329,7 +336,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
               disabled={isSubmitting}
               className="w-full bg-[#FF7050] rounded-[12px] text-xl font-semibold uppercase text-white py-4 disabled:bg-gray-400 transition-all active:scale-95"
             >
-              {isSubmitting ? "Processing..." : "Submit"}
+              {isSubmitting ? t.review.processing : t.review.submit}
             </button>
           </div>
         </div>

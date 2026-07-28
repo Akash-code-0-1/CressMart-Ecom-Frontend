@@ -4,8 +4,12 @@ import { useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 import { getFaqs } from "@/services-api/faqService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const FAQ = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   // 1. TanStack Query Fetching
@@ -29,7 +33,7 @@ const FAQ = () => {
       <div className="w-full lg:max-w-[1740px] mx-auto">
         {/* Title */}
         <h2 className="text-center text-black text-[28px] md:text-[32px] font-semibold mb-12">
-          Frequently Asked Questions
+          {t.faq.title}
         </h2>
 
         {/* FAQ List */}

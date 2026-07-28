@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import ChevronDownIcon from "../svg/ChevronDownIcon";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
+
 interface Category {
   id: string;
   name: string;
   slug: string;
-  children?: Category[]; 
+  children?: Category[];
 }
 
 interface CategoryDropdownProps {
@@ -20,6 +23,8 @@ const CategoryDropdown = ({
   mobile = false,
   onSelect,
 }: CategoryDropdownProps) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -50,7 +55,7 @@ const CategoryDropdown = ({
             mobile ? "hidden sm:block" : ""
           }`}
         >
-          All Categories
+          {t.search.allCategories}
         </span>
 
         <ChevronDownIcon />
