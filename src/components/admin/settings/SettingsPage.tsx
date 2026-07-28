@@ -360,7 +360,7 @@ export default function SettingsPage() {
     <FormProvider {...methods}>
       <form
         onSubmit={handleSubmit((d) => mutation.mutate(d))}
-        className="w-full bg-white p-8 font-lato"
+        className="w-full bg-white p-4 font-lato"
       >
         <h1 className="text-2xl font-bold text-[#003032] mb-6">Settings</h1>
 
@@ -582,7 +582,7 @@ export default function SettingsPage() {
         />
       </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-10 pt-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 mx-4 pb-8">
         <div className="flex flex-col gap-4">
           {[
             {

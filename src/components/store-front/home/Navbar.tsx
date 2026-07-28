@@ -4,7 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FiMenu, FiX, FiSearch, FiChevronDown } from "react-icons/fi";
+import {
+  FiMenu,
+  FiX,
+  FiSearch,
+  FiChevronDown,
+  FiMinus,
+  FiPlus,
+  FiTrash2,
+} from "react-icons/fi";
 import { LuUserRound as UserIcon } from "react-icons/lu";
 import FireIcon from "../svg/FireIcon";
 import WishIcon from "../svg/WishIcon";
@@ -12,12 +20,18 @@ import CartIcon from "../svg/CartIcon";
 import ChatIcon from "../svg/ChatIcon";
 import { useAuthStore } from "@/store/useAuthStore";
 import CategoryDropdown from "./CategoryDropdown";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
 import { Category, getCategoryTree } from "@/services-api/categoryService";
 import { apiFetch } from "@/utils/api";
 import { Product } from "@/@types/product.type";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  deleteCartItem,
+  fetchCart,
+  updateCartItem,
+} from "@/services-api/cartService";
+import toast from "react-hot-toast";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 
@@ -32,14 +46,20 @@ interface NavDropdownProps {
   isRoot?: boolean;
 }
 
+type CartItem = {
+  id: string;
+  image?: string | null;
+  name?: string;
+  variantInfo?: Record<string, unknown>;
+  price?: string | number;
+  quantity: number;
+};
+
 const Navbar = () => {
   const { language } = useLanguage();
   const t = translations[language];
   const router = useRouter();
   const pathname = usePathname();
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "";
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
@@ -69,11 +89,9 @@ const Navbar = () => {
   const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(
     null,
   );
-
   const searchRef = useRef<HTMLFormElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
-
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories-tree"],
     queryFn: getCategoryTree,
@@ -156,6 +174,59 @@ const Navbar = () => {
         : `${backendBaseUrl}/${user.avatar.replace(/^\/+/, "")}`
       : null;
 
+  const [guestId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+
+    let id = localStorage.getItem("guestId");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("guestId", id);
+    }
+    return id;
+  });
+
+  // cart data
+  const { data: cartData } = useQuery({
+    queryKey: ["cart", user?.id, guestId],
+    queryFn: () => fetchCart(user ? null : guestId),
+    enabled: isStoreReady && (!!user || !!guestId),
+  });
+
+  const cartItems = cartData?.items || ([] as CartItem[]);
+  const subTotal = cartData?.sub_total || 0;
+  const queryClient = useQueryClient();
+
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null;
+
+  const formatVariantValue = (value: unknown) => {
+    if (value === null || value === undefined) return "-";
+    if (isRecord(value)) {
+      if ("label" in value && typeof value.label === "string")
+        return value.label;
+      if ("value" in value && typeof value.value === "string")
+        return value.value;
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
+  // update quantity
+  const { mutate: updateQty } = useMutation({
+    mutationFn: ({ id, qty }: { id: string; qty: number }) =>
+      updateCartItem(id, qty),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
+  });
+
+  // delete cart
+  const { mutate: removeItem } = useMutation({
+    mutationFn: (id: string) => deleteCartItem(id),
+    onSuccess: () => {
+      toast.success("Item removed");
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+  });
+
   return (
     <>
       <header
@@ -237,8 +308,8 @@ const Navbar = () => {
                             src={iconUrl}
                             alt={product.name}
                             fill
-                            className="object-cover"
                             unoptimized
+                            className="object-cover"
                           />
                         </div>
                         <div className="flex-1">
@@ -259,10 +330,11 @@ const Navbar = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <button className="cursor-pointer">
-                <WishIcon className="w-8 md:w-10" />
-              </button>
-
+              <Link href={"/profile/wishlist"}>
+                <button className="cursor-pointer">
+                  <WishIcon className="w-8 md:w-10" />
+                </button>
+              </Link>
               {/* Fixed profile container to prevent layout breaking */}
               <div
                 onClick={handleProfileNav}
@@ -273,8 +345,8 @@ const Navbar = () => {
                     src={avatarUrl}
                     alt="User"
                     fill
-                    className="object-cover"
                     unoptimized
+                    className="object-cover"
                   />
                 ) : (
                   <UserIcon
@@ -354,7 +426,7 @@ const Navbar = () => {
       <div
         className={`fixed top-0 left-0 h-full w-[300px] bg-white z-[210] transform transition-transform duration-500 lg:hidden shadow-2xl ${isDrawerOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="p-6 h-full flex flex-col">
+        <div className="p-6 h-full flex flex-col font-poppins">
           <div className="flex justify-between items-center mb-8">
             <Image src="/images/logo.png" alt="logo" width={140} height={40} />
             <button
@@ -411,17 +483,23 @@ const Navbar = () => {
       >
         <CartIcon className="w-8 md:w-10 text-white" />
         <span className="text-white text-xs md:text-base font-semibold mt-1">
-          2 {t.navbar.items}
+          {cartItems.length} {cartItems.length === 1 ? "Item" : t.navbar.items}
         </span>
       </div>
 
       {/* Cart Drawer */}
+
       <div
-        className={`fixed top-0 right-0 h-full w-[320px] md:w-[400px] bg-white z-[210] transform transition-transform duration-500 shadow-2xl ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`fixed top-0 right-0 h-full w-[320px] md:w-[400px] bg-white z-[210] transform transition-transform duration-500 shadow-2xl font-poppins ${
+          isCartOpen ? "translate-x-0" : "translate-x-full"
+        }`}
       >
         <div className="p-6 h-full flex flex-col">
+          {/* Header */}
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">{t.navbar.yourCart}</h2>
+            <h2 className="text-xl font-bold text-gray-800">
+              {t.navbar.yourCart} ({cartItems.length})
+            </h2>
             <button
               onClick={() => setIsCartOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
@@ -429,16 +507,145 @@ const Navbar = () => {
               <FiX size={24} className="text-gray-500" />
             </button>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-4">
-            <CartIcon className="w-20 h-20 opacity-50" />
-            <p className="text-lg">{t.navbar.yourCartEmpty}</p>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="mt-4 bg-[#FF7050] text-white px-8 py-3 rounded-[8px] font-medium hover:bg-[#e56548]"
-            >
-             {t.navbar.continueShopping}
-            </button>
+          {/* Body - Cart Items List */}
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            {cartItems.length > 0 ? (
+              <div className="flex flex-col gap-5">
+                {cartItems.map((item: CartItem) => {
+                  const imageValue = item.image || "";
+                  const usableImg = imageValue
+                    ? imageValue.startsWith("http")
+                      ? imageValue
+                      : `${backendBaseUrl}/${imageValue.replace(/^\/+/, "")}`
+                    : "/images/placeholder.svg";
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex gap-4 border-b border-gray-50 pb-4"
+                    >
+                      <div className="relative w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                        <Image
+                          src={usableImg}
+                          alt={item.name || "Product Image"}
+                          fill
+                          unoptimized
+                          className="object-contain p-1"
+                        />
+                      </div>
+
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-800 line-clamp-1">
+                            {item.name}
+                          </h4>
+
+                          {/* variant section  */}
+                          {Array.isArray(item.variantInfo) &&
+                            item.variantInfo.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.variantInfo.map((variant, idx) => {
+                                  const v = variant as {
+                                    label?: string;
+                                    type?: string;
+                                    value?: string;
+                                  };
+                                  return (
+                                    <span
+                                      key={idx}
+                                      className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200"
+                                    >
+                                      {v.label ?? "Variant"} : {v.value ?? "-"}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                          <p className="text-[#FF7050] font-bold text-sm mt-1">
+                            TK {item.price}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          {/* Quantity Control */}
+                          <div className="flex items-center border border-gray-200 rounded-md">
+                            <button
+                              onClick={() =>
+                                item.quantity > 1 &&
+                                updateQty({
+                                  id: item.id,
+                                  qty: item.quantity - 1,
+                                })
+                              }
+                              className="p-1 px-2 hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                              <FiMinus size={14} />
+                            </button>
+                            <span className="px-2 text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                updateQty({
+                                  id: item.id,
+                                  qty: item.quantity + 1,
+                                })
+                              }
+                              className="p-1 px-2 hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                              <FiPlus size={14} />
+                            </button>
+                          </div>
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Empty State */
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                <CartIcon className="w-20 h-20 opacity-50" />
+                <p className="text-lg">{t.navbar.yourCartEmpty}</p>
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className="mt-4 bg-[#FF7050] text-white px-8 py-3 rounded-[8px] font-medium hover:bg-[#e56548]"
+                >
+                  {t.navbar.continueShopping}
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Footer - Checkout Section */}
+          {cartItems.length > 0 && (
+            <div className="mt-auto pt-6 border-t border-gray-100">
+              <div className="flex justify-between items-center mb-4 px-2">
+                <span className="text-gray-600 font-medium">Subtotal</span>
+                <span className="text-xl font-bold text-gray-900">
+                  TK {subTotal}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  router.push("/order");
+                }}
+                className="w-full bg-[#FF7050] text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all active:scale-95 cursor-pointer"
+              >
+                Checkout Now
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -454,7 +661,7 @@ const Navbar = () => {
 
       {/* --- RESTORED ORIGINAL MOBILE BOTTOM NAV --- */}
       {isStoreReady && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050]">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050] font-poppins">
           {/* Home Button */}
           <Link
             href="/"
@@ -491,10 +698,12 @@ const Navbar = () => {
           <div className="relative -top-5 z-[200]">
             <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
               <div className="relative w-full h-full flex items-center justify-center">
-                <img
+                <Image
                   src="/images/minilogo.png"
                   alt="Brand"
-                  className="w-10 h-10 object-contain"
+                  fill
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
             </button>

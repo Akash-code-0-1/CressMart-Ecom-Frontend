@@ -66,6 +66,9 @@ export interface Product {
   view_count: number;
   total_sold: number;
   discount_tag?: string | null;
+  shipping_type?: string;
+  featuredImage?: string;
+  price: number;
 }
 
 export interface SpecificationItem {

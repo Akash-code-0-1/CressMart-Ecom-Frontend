@@ -1,8 +1,55 @@
+// import React from "react";
+
+// interface InputFieldProps {
+//   label: string;
+//   placeholder: string;
+//   required?: boolean;
+//   type?: string;
+//   error?: boolean;
+//   isTextArea?: boolean;
+// }
+
+// const InputField: React.FC<InputFieldProps> = ({
+//   label,
+//   placeholder,
+//   required,
+//   type = "text",
+//   error,
+//   isTextArea = false,
+// }) => (
+//   <div className="flex flex-col gap-2 w-full">
+//     <label className="text-[#727272] font-semibold text-lg font-poppins">
+//       {label} {required && <span className="text-[#FF7050]">*</span>}
+//     </label>
+//     {isTextArea ? (
+//       <textarea
+//         placeholder={placeholder}
+//         className="bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-sm border border-transparent focus:border-[#FF7050] transition-all min-h-[100px] font-poppins"
+//       />
+//     ) : (
+//       <input
+//         type={type}
+//         placeholder={placeholder}
+//         className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-base text-normal border ${
+//           error ? "border-[#FF7050]" : "border-transparent"
+//         } focus:border-[#FF7050] transition-all font-poppins`}
+//       />
+//     )}
+//   </div>
+// );
+
+// export default InputField;
+
 import React from "react";
 
 interface InputFieldProps {
   label: string;
   placeholder: string;
+  name: string; // Required for dynamic state handling
+  value: string; // Controlled component value
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void; // Event handler
   required?: boolean;
   type?: string;
   error?: boolean;
@@ -12,6 +59,9 @@ interface InputFieldProps {
 const InputField: React.FC<InputFieldProps> = ({
   label,
   placeholder,
+  name,
+  value,
+  onChange,
   required,
   type = "text",
   error,
@@ -23,16 +73,24 @@ const InputField: React.FC<InputFieldProps> = ({
     </label>
     {isTextArea ? (
       <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
         placeholder={placeholder}
-        className="bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-sm border border-transparent focus:border-[#FF7050] transition-all min-h-[100px] font-poppins"
+        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-sm border transition-all min-h-[100px] font-poppins ${
+          error ? "border-[#FF7050]" : "border-transparent"
+        } focus:border-[#FF7050]`}
       />
     ) : (
       <input
+        name={name}
+        value={value}
+        onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-base text-normal border ${
+        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-base text-normal border transition-all font-poppins ${
           error ? "border-[#FF7050]" : "border-transparent"
-        } focus:border-[#FF7050] transition-all font-poppins`}
+        } focus:border-[#FF7050]`}
       />
     )}
   </div>

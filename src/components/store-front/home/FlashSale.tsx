@@ -46,7 +46,7 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
 
       return {
         ...item,
-        usableImage: usableImage || "/images/placeholder.png",
+        usableImage: usableImage || "/images/placeholder.svg",
       };
     });
   }, [flashSale.products, backendBaseUrl]);

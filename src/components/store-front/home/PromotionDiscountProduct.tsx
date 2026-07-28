@@ -67,7 +67,7 @@ const PromotionDiscountProduct = () => {
               ? rowImage.startsWith("http") || rowImage.startsWith("/images/")
                 ? rowImage
                 : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`
-              : "/images/placeholder.png";
+              : "/images/placeholder.svg";
             return (
               <div
                 key={item.id}

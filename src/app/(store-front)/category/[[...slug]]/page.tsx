@@ -92,7 +92,6 @@ const CategoryPage = () => {
       </p>
     );
   }
-  console.log(filterProductsData);
   return (
     <div className="px-4 md:px-10 mb-20">
       {/* 1. Breadcrumb & Banner */}

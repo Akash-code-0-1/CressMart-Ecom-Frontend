@@ -41,7 +41,7 @@ const Testimonials = () => {
 
   // 2. Data processing function
   const processImage = (url: string | null) => {
-    if (!url) return "/images/placeholder.png";
+    if (!url) return "/images/placeholder.svg";
     return url.startsWith("http")
       ? url
       : `${backendBaseUrl}/${url.replace(/^\/+/, "")}`;

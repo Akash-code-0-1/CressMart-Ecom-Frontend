@@ -1,7 +1,6 @@
 
 "use client";
-
-import React, { useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -55,9 +54,9 @@ const BlogPageGrid = () => {
   if (isError) return null;
 
   return (
-    <section className="w-full pt-10 px-4 md:px-10 bg-white font-inter">
+    <section className="w-full pt-10 px-4 md:px-10 bg-white font-inter mb-10">
       <div className="max-w-[1720px] mx-auto">
-        {/* --- Main Article Grid --- */}
+        {/* Main Article Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12">
           {posts.map((item) => {
             // Construct dynamic image URL
