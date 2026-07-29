@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "জনপ্রিয় ক্যাটাগরি",
   brands: "ব্র্যান্ডস",
+  suppliers: "সরবরাহকারী",
   categories: "ক্যাটাগরি",
 
   ////////////////////////

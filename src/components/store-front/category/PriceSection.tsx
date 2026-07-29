@@ -40,7 +40,12 @@ export default function PriceSection({
           step={500}
           value={value}
           onChange={(e) => setValue(Number(e.target.value))}
-          onMouseUp={() => onUpdate("max", value.toString())}
+          onMouseUp={(e) =>
+            onUpdate("max", (e.target as HTMLInputElement).value)
+          }
+          onTouchEnd={(e) =>
+            onUpdate("max", (e.target as HTMLInputElement).value)
+          }
           className="price-slider absolute w-full z-10 cursor-pointer"
         />
       </div>

@@ -5,7 +5,7 @@ import Brands from "@/components/store-front/home/Brands";
 import FeaturedCategory from "@/components/store-front/home/FeaturedCategory";
 import Features from "@/components/store-front/home/Features";
 import FlashSale from "@/components/store-front/home/FlashSale";
-import PromotionDiscountProduct from "@/components/store-front/home/PromotionDiscountProduct";
+import PromotionDiscountProduct from "@/components/store-front/home/CampaignSection";
 import NewArrivals from "@/components/store-front/home/NewArrivals";
 import Suppliers from "@/components/store-front/home/Suppliers";
 import Testimonials from "@/components/store-front/home/Testimonials";

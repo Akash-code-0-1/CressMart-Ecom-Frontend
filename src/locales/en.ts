@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "Featured Category",
   brands: "Brands",
+  suppliers: "Suppliers",
   categories: "Categories",
 
   ////////////////////////
@@ -500,13 +501,13 @@ export default {
   },
 
   pricing: {
-  pricingList: "Pricing List",
-  totalProductCost: "Total Product Cost",
-  discountAmount: "Discount Amount",
-  coupon: "Coupon",
-  subtotal: "Subtotal",
-  shippingFee: "Shipping Fee",
-  payableAmount: "Payable Amount",
-  currency: "BDT",
-},
+    pricingList: "Pricing List",
+    totalProductCost: "Total Product Cost",
+    discountAmount: "Discount Amount",
+    coupon: "Coupon",
+    subtotal: "Subtotal",
+    shippingFee: "Shipping Fee",
+    payableAmount: "Payable Amount",
+    currency: "BDT",
+  },
 };

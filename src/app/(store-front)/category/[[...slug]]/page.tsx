@@ -7,7 +7,7 @@ import ProductGridHeader from "@/components/store-front/category/ProductGridHead
 import SubCategoryBar from "@/components/store-front/category/SubCategoryBar";
 import ProductCard from "@/components/store-front/common/ProductCard";
 import Link from "next/link";
-import { FaChevronRight, FaFilter, FaTimes } from "react-icons/fa";
+import { FaChevronRight, FaFilter, FaTimes, FaBoxOpen } from "react-icons/fa";
 import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getCategory } from "@/services-api/categoryService";
@@ -148,27 +148,43 @@ const CategoryPage = () => {
             />
           </aside>
           <main className="flex-1">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
-              {filterProductsData?.pages.map((page, i) => (
-                <React.Fragment key={i}>
-                  {page.data.map((product: Product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* Load More Button */}
-            {hasNextPage && (
-              <div className="mt-12 flex justify-center">
-                <button
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="px-8 py-3 bg-white border border-gray-200 rounded-full hover:bg-orange-500 hover:text-white transition-all cursor-pointer font-poppins disabled:opacity-50"
-                >
-                  {isFetchingNextPage ? "Loading..." : "Load More"}
-                </button>
+            {filterProductsData?.pages[0]?.pagination?.total_items === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#F9F9F9] rounded-[22px] border border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-[#FF7050]/10 rounded-full flex items-center justify-center mb-4 text-[#FF7050]">
+                  <FaBoxOpen size={32} />
+                </div>
+                <h3 className="font-poppins text-xl md:text-2xl font-semibold text-black mb-2">
+                  No Products Found
+                </h3>
+                <p className="font-poppins text-sm md:text-base text-[#727272] max-w-md">
+                  We couldn&apos;t find any products in this category matching your selected filters. Try resetting your filter settings.
+                </p>
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
+                  {filterProductsData?.pages.map((page, i) => (
+                    <React.Fragment key={i}>
+                      {page.data.map((product: Product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                {/* Load More Button */}
+                {hasNextPage && (
+                  <div className="mt-12 flex justify-center">
+                    <button
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="px-8 py-3 bg-white border border-gray-200 rounded-full hover:bg-orange-500 hover:text-white transition-all cursor-pointer font-poppins disabled:opacity-50"
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Load More"}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </main>
         </div>

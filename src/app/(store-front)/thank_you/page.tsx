@@ -151,7 +151,7 @@ function ThankYouContent() {
     <div className="min-h-screen bg-[#F7F7F7] py-8 px-4 font-poppins">
       <div
         ref={invoiceRef}
-        className="max-w-[720px] mx-auto bg-white rounded-[16px] shadow-sm p-6 md:p-10"
+        className="max-w-[720px] mx-auto bg-white rounded-2xl p-6 md:p-10"
       >
         <h1 className="text-lg md:text-2xl text-center font-semibold text-[#FF6E50] mb-4">
           Creass Mart

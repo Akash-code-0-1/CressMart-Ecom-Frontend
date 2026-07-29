@@ -140,6 +140,7 @@ export interface FilterProductsQuery {
   max_price?: number;
   category_id?: string;
   brand_id?: string;
+  supplier_id?: string;
   sort?: string;
 }
 
@@ -160,12 +161,20 @@ export const filterProducts = async (
   if (query.page) queryParams.set("page", String(query.page));
   if (query.limit) queryParams.set("limit", String(query.limit));
   if (query.search) queryParams.set("search", query.search);
-  if (query.min_price !== undefined)
+  if (query.min_price !== undefined) {
     queryParams.set("min_price", String(query.min_price));
-  if (query.max_price !== undefined)
+    queryParams.set("minPrice", String(query.min_price));
+  }
+  if (query.max_price !== undefined) {
     queryParams.set("max_price", String(query.max_price));
+    queryParams.set("maxPrice", String(query.max_price));
+  }
   if (query.category_id) queryParams.set("category_id", query.category_id);
   if (query.brand_id) queryParams.set("brand_id", query.brand_id);
+  if (query.supplier_id) {
+    queryParams.set("supplier_id", query.supplier_id);
+    queryParams.set("supplierId", query.supplier_id);
+  }
   if (query.sort) queryParams.set("sort", query.sort);
 
   const res = await apiFetch(`/products?${queryParams.toString()}`, {
@@ -175,8 +184,17 @@ export const filterProducts = async (
   if (!res.ok) throw new Error("Failed to fetch filtered products.");
 
   const json = await res.json();
-  const data = json?.data?.data || json?.data || [];
-  const meta = json?.data?.meta || json?.meta || {};
+
+  // Support multiple response shapes from backend:
+  // Shape A: { data: { data: [...], meta: {...} } }
+  // Shape B: { data: [...], pagination: {...} }
+  // Shape C: { data: [...], meta: {...} }
+  const data =
+    json?.data?.data ||
+    (Array.isArray(json?.data) ? json.data : null) ||
+    [];
+  const meta =
+    json?.data?.meta || json?.pagination || json?.meta || {};
 
   return {
     data: Array.isArray(data) ? data : [],
