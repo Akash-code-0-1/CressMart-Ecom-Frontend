@@ -475,48 +475,54 @@ export default {
   },
 
   checkout: {
-  shoppingDetails: "ডেলিভারির তথ্য",
+    shoppingDetails: "ডেলিভারির তথ্য",
 
-  name: "নাম",
-  number: "মোবাইল নম্বর",
-  address: "ঠিকানা",
-  note: "নোট",
+    name: "নাম",
+    number: "মোবাইল নম্বর",
+    address: "ঠিকানা",
+    note: "নোট",
 
-  namePlaceholder: "আপনার নাম লিখুন",
-  phonePlaceholder: "মোবাইল নম্বর লিখুন",
-  addressPlaceholder: "বাসা, রোড, এলাকা, শহর, জেলা লিখুন",
-  notePlaceholder: "বিশেষ নির্দেশনা লিখুন...",
+    namePlaceholder: "আপনার নাম লিখুন",
+    phonePlaceholder: "মোবাইল নম্বর লিখুন",
+    addressPlaceholder: "বাসা, রোড, এলাকা, শহর, জেলা লিখুন",
+    notePlaceholder: "বিশেষ নির্দেশনা লিখুন...",
 
-  deliveryCharge: "ডেলিভারি চার্জ নির্বাচন করুন",
-  outsideDhaka: "ঢাকার বাইরে ১৩০ টাকা",
-  insideDhaka: "ঢাকার ভিতরে ৭০ টাকা",
+    deliveryCharge: "ডেলিভারি চার্জ নির্বাচন করুন",
+    outsideDhaka: "ঢাকার বাইরে ১৩০ টাকা",
+    insideDhaka: "ঢাকার ভিতরে ৭০ টাকা",
 
-  paymentMethod: "পেমেন্ট পদ্ধতি",
-  cashOnDelivery: "ক্যাশ অন ডেলিভারি",
-  onlinePayment: "অনলাইন পেমেন্ট",
+    paymentMethod: "পেমেন্ট পদ্ধতি",
+    cashOnDelivery: "ক্যাশ অন ডেলিভারি",
+    onlinePayment: "অনলাইন পেমেন্ট",
 
-  coupon: "কুপন",
-  couponPlaceholder: "কুপন কোড লিখুন",
-  apply: "প্রয়োগ করুন",
+    coupon: "কুপন",
+    couponPlaceholder: "কুপন কোড লিখুন",
+    apply: "প্রয়োগ করুন",
 
-  deliveryWarning:
-    "ডেলিভারি রেশিও ৮০% এর কম হলে অথবা একাধিক পণ্যের অর্ডারের ক্ষেত্রে ডেলিভারি চার্জ বা ১০% অগ্রিম প্রয়োজন।",
+    deliveryWarning:
+      "ডেলিভারি রেশিও ৮০% এর কম হলে অথবা একাধিক পণ্যের অর্ডারের ক্ষেত্রে ডেলিভারি চার্জ বা ১০% অগ্রিম প্রয়োজন।",
 
-  placeOrder: "অর্ডার করুন",
-  secureCheckout: "১০০% নিরাপদ চেকআউট ও নিশ্চিন্ত লেনদেন",
+    placeOrder: "অর্ডার করুন",
+    secureCheckout: "১০০% নিরাপদ চেকআউট ও নিশ্চিন্ত লেনদেন",
 
-  myOrders: "আমার অর্ডার",
-},
+    myOrders: "আমার অর্ডার",
+  },
 
-pricing: {
-  pricingList: "মূল্য তালিকা",
-  totalProductCost: "মোট পণ্যের মূল্য",
-  discountAmount: "ছাড়ের পরিমাণ",
-  coupon: "কুপন",
-  subtotal: "সাবটোটাল",
-  shippingFee: "ডেলিভারি চার্জ",
-  payableAmount: "পরিশোধযোগ্য মোট",
-  currency: "টাকা",
-},
+  pricing: {
+    pricingList: "মূল্য তালিকা",
+    totalProductCost: "মোট পণ্যের মূল্য",
+    couponDiscount: "কুপন ছাড়",
+    subtotal: "সাবটোটাল",
+    shippingFee: "ডেলিভারি চার্জ",
+    payableAmount: "পরিশোধযোগ্য মোট",
+    currency: "টাকা",
+  },
 
+  orderCompleted: {
+    title: "অর্ডার সম্পন্ন হয়েছে",
+    messagePrefix: "Creass Mart থেকে অর্ডার করার জন্য ধন্যবাদ।",
+    messageSuffix: "আমরা আপনার অর্ডারটি গ্রহণ করেছি।",
+    contactTitle: "সহায়তার জন্য আমাদের সাথে যোগাযোগ করুন।",
+    inspectMessage: "পণ্য গ্রহণের সময় অনুগ্রহ করে ভালোভাবে যাচাই করে নিন।",
+  },
 };

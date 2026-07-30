@@ -5,7 +5,7 @@ import OrderTable from "@/components/admin/order/OrderTable";
 export default function Page() {
   return (
     <PermissionGuard permission="Orders">
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen">
         <main className="flex-1 overflow-y-auto focus:outline-none">
           <div className="p-2 md:p-0">
             <div className="mt-2">
