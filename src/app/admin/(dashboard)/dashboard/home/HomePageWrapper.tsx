@@ -1,8 +1,8 @@
+
+
 // "use client";
+
 // import { useState } from "react";
-// import { useQuery } from "@tanstack/react-query";
-// import dayjs from "dayjs";
-// import { fetchAdminDashboardStats } from "@/api/dashboardApi";
 // import OverviewSection from "@/components/admin/home/OverviewSection";
 // import DashboardStats from "@/components/admin/home/DashboardStats";
 // import ProductAnalytics from "@/components/admin/home/ProductAnalytics";
@@ -11,29 +11,17 @@
 // export type TimeFilter = "Day" | "Month" | "Year" | "All Time" | "Custom";
 
 // export default function HomePageWrapper() {
-//   // 1. Lift State Up
 //   const [activeFilter, setActiveFilter] = useState<TimeFilter>("Month");
 //   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-//   // 2. Centralized API Call
-//   const { data, isLoading, isError } = useQuery({
-//     queryKey: [
-//       "adminDashboardStats",
-//       activeFilter,
-//       dayjs(selectedDate).format("YYYY-MM-DD"),
-//     ],
-//     queryFn: () => fetchAdminDashboardStats(activeFilter, selectedDate),
-//     staleTime: 1000 * 60 * 5,
-//   });
+//   const isLoading = false;
+//   const isError = false;
 
-//   // Extract data safely
-//   const dashboardData = data;
-//   console.log("dashboardData", dashboardData);
 //   return (
 //     <>
 //       <div className="mt-2">
 //         <OverviewSection
-//           stats={dashboardData?.overview}
+//           stats={undefined}
 //           isLoading={isLoading}
 //           isError={isError}
 //           activeFilter={activeFilter}
@@ -44,26 +32,22 @@
 //       </div>
 
 //       <div className="mt-2 mr-0 md:mr-1">
-//         {/* You can now pass the same data or specific slices to other components */}
 //         <DashboardStats
-//           overview={data?.overview}
-//           lifecycle={data?.orderLifecycle}
-//           chartData={data?.charts.performance}
+//           overview={undefined}
+//           lifecycle={undefined}
+//           chartData={[]}
 //           isLoading={isLoading}
 //         />
 //       </div>
 
 //       <SalesAnalytics
-//         performanceData={data?.charts?.performance}
-//         categoryData={data?.charts?.salesByCategory}
+//         performanceData={[]}
+//         categoryData={[]}
 //         isLoading={isLoading}
 //       />
 
 //       <div className="mt-2 mr-0 md:mr-1 mb-4">
-//         <ProductAnalytics
-//           data={dashboardData?.products}
-//           isLoading={isLoading}
-//         />
+//         <ProductAnalytics />
 //       </div>
 //     </>
 //   );
@@ -73,10 +57,12 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import OverviewSection from "@/components/admin/home/OverviewSection";
 import DashboardStats from "@/components/admin/home/DashboardStats";
 import ProductAnalytics from "@/components/admin/home/ProductAnalytics";
 import SalesAnalytics from "@/components/admin/home/SalesAnalytics";
+import { dashboardApi } from "@/services-api/dashboardService";
 
 export type TimeFilter = "Day" | "Month" | "Year" | "All Time" | "Custom";
 
@@ -84,14 +70,20 @@ export default function HomePageWrapper() {
   const [activeFilter, setActiveFilter] = useState<TimeFilter>("Month");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  const isLoading = false;
-  const isError = false;
+  // 🚀 Fetching from your DashboardController
+  const { data: serverResponse, isLoading, isError } = useQuery({
+    queryKey: ["admin-dashboard-stats", activeFilter, selectedDate.toDateString()],
+    queryFn: () => dashboardApi.getStatistics(activeFilter, selectedDate.toISOString()),
+  });
+
+  // ⚡ FIX: Extract the actual data from the response envelope (handling nesting)
+  const stats = serverResponse?.data || serverResponse;
 
   return (
-    <>
+    <div className="p-2 md:p-4 bg-[#F9F9F9] min-h-screen">
       <div className="mt-2">
         <OverviewSection
-          stats={undefined}
+          stats={stats?.overview} 
           isLoading={isLoading}
           isError={isError}
           activeFilter={activeFilter}
@@ -103,22 +95,25 @@ export default function HomePageWrapper() {
 
       <div className="mt-2 mr-0 md:mr-1">
         <DashboardStats
-          overview={undefined}
-          lifecycle={undefined}
-          chartData={[]}
+          overview={stats?.overview}
+          lifecycle={stats?.orderLifecycle}
+          chartData={stats?.charts?.performance || []}
           isLoading={isLoading}
         />
       </div>
 
       <SalesAnalytics
-        performanceData={[]}
-        categoryData={[]}
+        performanceData={stats?.charts?.performance || []}
+        categoryData={[]} // Category data can be added if backend provides it
         isLoading={isLoading}
       />
 
       <div className="mt-2 mr-0 md:mr-1 mb-4">
-        <ProductAnalytics />
+        <ProductAnalytics 
+          bestSellingData={stats?.tables?.bestSellers || []}
+          isLoading={isLoading}
+        />
       </div>
-    </>
+    </div>
   );
 }
