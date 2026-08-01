@@ -32,6 +32,16 @@ interface Attribute {
   hex?: string;
 }
 
+const normalizeAttributeLabel = (label?: string, type?: string): string => {
+  const raw = String(label || type || "").trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes("color")) return "Color";
+  if (lower.includes("size")) return "Size";
+  if (lower.includes("variant") || lower.includes("option")) return "Variant";
+  if (lower.includes("style")) return "Style";
+  return raw ? `${raw.charAt(0).toUpperCase()}${raw.slice(1)}` : "Variant";
+};
+
 const parseAttributes = (rawAttributes: unknown): Attribute[] => {
   if (!rawAttributes) return [];
 
@@ -46,49 +56,56 @@ const parseAttributes = (rawAttributes: unknown): Attribute[] => {
 
   const result: Attribute[] = [];
 
+  const pushAttribute = (label: string, value: string, type?: string, hex?: string) => {
+    const normalizedLabel = normalizeAttributeLabel(label, type);
+    const normalizedType = type
+      ? String(type).trim().toLowerCase()
+      : normalizedLabel.trim().toLowerCase();
+
+    if (normalizedLabel && value) {
+      result.push({
+        label: normalizedLabel,
+        value: String(value).trim(),
+        type: normalizedType,
+        hex: hex ? String(hex) : undefined,
+      });
+    }
+  };
+
   if (Array.isArray(data)) {
     data.forEach((item) => {
       if (item && typeof item === "object") {
+        const parsedItem = item as Record<string, unknown>;
         const label =
-          item.label ||
-          item.name ||
-          item.type ||
-          item.key ||
-          item.attributeName;
-        const value = item.value || item.val || item.attributeValue;
+          parsedItem.label ||
+          parsedItem.name ||
+          parsedItem.type ||
+          parsedItem.key ||
+          parsedItem.attributeName;
+        const value =
+          parsedItem.value ||
+          parsedItem.val ||
+          parsedItem.attributeValue ||
+          parsedItem.name ||
+          parsedItem.value;
+        const hex = parsedItem.hex;
         if (label && value) {
-          result.push({
-            label: String(label).trim(),
-            value: String(value).trim(),
-            type: item.type ? String(item.type) : undefined,
-            hex: item.hex ? String(item.hex) : undefined,
-          });
+          pushAttribute(label as string, value as string, parsedItem.type as string, hex as string | undefined);
         }
       }
     });
   } else if (data && typeof data === "object") {
     Object.entries(data).forEach(([key, val]) => {
-      if (key && val) {
-        if (typeof val === "object" && val !== null) {
-          const vObj = val as unknown as {
-            value: string;
-            val: string;
-            name: string;
-            type: string;
-            hex: string;
-          };
-          result.push({
-            label: String(key).trim(),
-            value: String(vObj.value || vObj.val || vObj.name || "").trim(),
-            type: vObj.type ? String(vObj.type) : undefined,
-            hex: vObj.hex ? String(vObj.hex) : undefined,
-          });
-        } else {
-          result.push({
-            label: String(key).trim(),
-            value: String(val).trim(),
-          });
+      if (!key || val == null) return;
+      if (typeof val === "object" && !Array.isArray(val)) {
+        const vObj = val as Record<string, unknown>;
+        const value = vObj.value || vObj.val || vObj.name;
+        const hex = vObj.hex;
+        if (value) {
+          pushAttribute(key, value as string, vObj.type as string, hex as string | undefined);
         }
+      } else {
+        pushAttribute(key, String(val));
       }
     });
   }

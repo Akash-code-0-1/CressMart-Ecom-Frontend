@@ -1,27 +1,59 @@
 import { apiFetch } from "@/utils/api";
 
-// get wishlist
-export const getWishlist = async () => {
+const getLocalMohasagorWishlist = (): any[] => {
+  if (typeof window === "undefined") return [];
   try {
-    const response = await apiFetch(`wishlist`, {
-      method: "GET",
-    });
-    if (response.status === 401) {
-      return [];
-    }
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.message || `Error: ${response.status}`);
-    }
-    return result.data || [];
-  } catch (error) {
-    console.error("Fetch Error (getWishlist):", error);
+    const raw = localStorage.getItem("mohasagor_wishlist_items");
+    return raw ? JSON.parse(raw) : [];
+  } catch {
     return [];
   }
 };
 
+const saveLocalMohasagorWishlist = (items: any[]) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("mohasagor_wishlist_items", JSON.stringify(items));
+  } catch {}
+};
+
+// get wishlist
+export const getWishlist = async () => {
+  let serverItems: any[] = [];
+  try {
+    const response = await apiFetch(`wishlist`, {
+      method: "GET",
+    });
+    if (response.ok) {
+      const result = await response.json();
+      serverItems = result.data || [];
+    }
+  } catch (error) {
+    console.error("Fetch Error (getWishlist):", error);
+  }
+
+  const localItems = getLocalMohasagorWishlist();
+  if (localItems.length > 0) {
+    return [...serverItems, ...localItems];
+  }
+  return serverItems;
+};
+
 // wishlist create
 export const createWishlist = async (productId: string) => {
+  if (productId.startsWith("mohasagor-")) {
+    const localItems = getLocalMohasagorWishlist();
+    if (!localItems.some((i) => i.productId === productId || i.id === productId)) {
+      localItems.push({
+        id: productId,
+        productId: productId,
+        created_at: new Date().toISOString(),
+      });
+      saveLocalMohasagorWishlist(localItems);
+    }
+    return { success: true, message: "Added to wishlist" };
+  }
+
   try {
     const response = await apiFetch(`wishlist`, {
       method: "POST",
@@ -55,6 +87,15 @@ export const createWishlist = async (productId: string) => {
 
 // delete wishlist
 export const deleteWishlist = async (productId: string) => {
+  if (productId.startsWith("mohasagor-")) {
+    const localItems = getLocalMohasagorWishlist();
+    const filtered = localItems.filter(
+      (i) => i.productId !== productId && i.id !== productId,
+    );
+    saveLocalMohasagorWishlist(filtered);
+    return { success: true, message: "Removed from wishlist" };
+  }
+
   try {
     const response = await apiFetch(`wishlist/${productId}`, {
       method: "DELETE",
@@ -75,6 +116,3 @@ export const deleteWishlist = async (productId: string) => {
     throw error;
   }
 };
-
-
-

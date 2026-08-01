@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "Featured Category",
   brands: "Brands",
+  suppliers: "Suppliers",
   categories: "Categories",
 
   ////////////////////////
@@ -479,8 +480,9 @@ export default {
     notePlaceholder: "Write your instruction here...",
 
     deliveryCharge: "Select Delivery Charge",
-    outsideDhaka: "Outside Dhaka BDT 130",
-    insideDhaka: "Inside Dhaka BDT 70",
+    outsideDhakaLabel: "Outside Dhaka",
+    insideDhakaLabel: "Inside Dhaka",
+    subCityLabel: "Sub City",
 
     paymentMethod: "Payment Method",
     cashOnDelivery: "Cash on Delivery",
@@ -500,13 +502,13 @@ export default {
   },
 
   pricing: {
-  pricingList: "Pricing List",
-  totalProductCost: "Total Product Cost",
-  discountAmount: "Discount Amount",
-  coupon: "Coupon",
-  subtotal: "Subtotal",
-  shippingFee: "Shipping Fee",
-  payableAmount: "Payable Amount",
-  currency: "BDT",
-},
+    pricingList: "Pricing List",
+    totalProductCost: "Total Product Cost",
+    discountAmount: "Discount Amount",
+    coupon: "Coupon",
+    subtotal: "Subtotal",
+    shippingFee: "Shipping Fee",
+    payableAmount: "Payable Amount",
+    currency: "BDT",
+  },
 };

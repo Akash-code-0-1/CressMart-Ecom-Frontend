@@ -1,6 +1,7 @@
 export default {
   featuredCategory: "জনপ্রিয় ক্যাটাগরি",
   brands: "ব্র্যান্ডস",
+  suppliers: "সরবরাহকারী",
   categories: "ক্যাটাগরি",
 
   ////////////////////////
@@ -488,9 +489,9 @@ export default {
   notePlaceholder: "বিশেষ নির্দেশনা লিখুন...",
 
   deliveryCharge: "ডেলিভারি চার্জ নির্বাচন করুন",
-  outsideDhaka: "ঢাকার বাইরে ১৩০ টাকা",
-  insideDhaka: "ঢাকার ভিতরে ৭০ টাকা",
-
+    outsideDhakaLabel: "ঢাকার বাইরে",
+    insideDhakaLabel: "ঢাকার ভিতরে",
+    subCityLabel: "সাব সিটি",
   paymentMethod: "পেমেন্ট পদ্ধতি",
   cashOnDelivery: "ক্যাশ অন ডেলিভারি",
   onlinePayment: "অনলাইন পেমেন্ট",

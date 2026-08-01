@@ -33,6 +33,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Product } from "@/@types/product.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { MOHASAGOR_PREFIX } from "@/constants/checkout";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -43,15 +44,11 @@ const MainCheckoutSection: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
-  // SourceTracker (in layout) already captured & saved the source on first page load.
-  // Here we just read it from sessionStorage.
   const [orderSource, setOrderSource] = useState<string>("direct");
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const stored = sessionStorage.getItem("order_source");
-      if (stored) setOrderSource(stored);
-    }, 0);
-    return () => clearTimeout(timer);
+    const stored = sessionStorage.getItem("order_source");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (stored) setOrderSource(stored);
   }, []);
 
   const [guestId] = useState<string | null>(() => {
@@ -69,23 +66,20 @@ const MainCheckoutSection: React.FC = () => {
     phone: "",
     address: "",
     note: "",
-    shippingArea: "outside",
+    shippingArea: "outside" as "inside" | "outside" | "sub_city",
     paymentMethod: "COD",
   });
 
-  // Coupon state
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
 
-  // Fetch Cart Data
   const { data: cartData, isLoading } = useQuery({
     queryKey: ["cart", user?.id, guestId],
     queryFn: () => fetchCart(user ? null : guestId),
     enabled: isStoreReady && (!!user || !!guestId),
   });
 
-  // Fetch Shipping Settings from GET /shipping-settings
   const { data: shippingSettings } = useQuery({
     queryKey: ["shipping-settings"],
     queryFn: fetchShippingSettings,
@@ -93,32 +87,23 @@ const MainCheckoutSection: React.FC = () => {
 
   const rawCartItems: CartItem[] = cartData?.items || [];
 
-  // Fetch missing product details (shipping_type, shipping_config) per cart item if not provided by backend cart endpoint
   const productQueries = useQueries({
     queries: rawCartItems.map((item) => ({
       queryKey: ["product-detail-shipping", item.productId],
-      queryFn: () => fetchSingleProduct(item.productId),
-      enabled: !!item.productId,
+      queryFn: () => {
+        if (item.productId?.startsWith(MOHASAGOR_PREFIX))
+          return Promise.resolve(null);
+        return fetchSingleProduct(item.productId);
+      },
+      enabled:
+        !!item.productId && !item.productId?.startsWith(MOHASAGOR_PREFIX),
     })),
   });
 
-  // Combine raw cart items with product details for 100% accurate shipping rules calculation
   const cartItems: CartItem[] = useMemo(() => {
     return rawCartItems.map((item, index) => {
       const pData = productQueries[index]?.data;
       const existingProduct = (item.product || {}) as Product;
-
-      const sType =
-        existingProduct.shipping_type ||
-        (item as unknown as { shipping_type?: string }).shipping_type ||
-        pData?.shipping_type ||
-        "DEFAULT";
-
-      const sConfig =
-        existingProduct.shipping_config ||
-        (item as unknown as { shipping_config?: unknown }).shipping_config ||
-        pData?.shipping_config ||
-        null;
 
       return {
         ...item,
@@ -129,85 +114,65 @@ const MainCheckoutSection: React.FC = () => {
           price: Number(
             item.price || existingProduct.price || pData?.sell_price || 0,
           ),
-          shipping_type: sType,
-          shipping_config: sConfig,
+          shipping_type:
+            existingProduct.shipping_type || pData?.shipping_type || "DEFAULT",
+          shipping_config:
+            existingProduct.shipping_config || pData?.shipping_config || null,
         },
       };
     });
   }, [rawCartItems, productQueries]);
 
   const courierConfig = shippingSettings?.courier_config;
-
-  // Dynamically check if Sub City option is valid for current cart items
+  // golobal setttings have only enable
   const isSubCityAvailable = useMemo(() => {
-    if (!cartItems || cartItems.length === 0) {
-      return courierConfig?.sub_city !== undefined;
-    }
-
-    const hasCustomItems = cartItems.some(
-      (item) => item.product?.shipping_type === "CUSTOM",
-    );
-
-    if (hasCustomItems) {
-      const hasSubCityInCustom = cartItems.some((item) => {
-        const prod = (item.product || {}) as unknown as {
-          shipping_type?: string;
-          shipping_config?: unknown;
-        };
-        if (prod.shipping_type !== "CUSTOM") return false;
-
-        const rawConfig = prod.shipping_config;
-        let parsedConfig: unknown[] = [];
-        if (Array.isArray(rawConfig)) parsedConfig = rawConfig;
-        else if (typeof rawConfig === "string") {
-          try {
-            parsedConfig = JSON.parse(rawConfig);
-          } catch (e) {}
+    if (!courierConfig?.sub_city) return false;
+    return cartItems.every((item) => {
+      const prod = (item.product || {}) as unknown as Product;
+      if (String(prod.shipping_type).toUpperCase() === "CUSTOM") {
+        const raw = prod.shipping_config;
+        let config = [];
+        try {
+          config = typeof raw === "string" ? JSON.parse(raw) : raw || [];
+        } catch {
+          config = [];
         }
-
-        return parsedConfig.some((sc: unknown) => {
-          const z = String((sc as {zone: string}).zone || "").toLowerCase();
-          return (
-            z.includes("sub") || z.includes("subcity") || z.includes("sub_city")
-          );
-        });
-      });
-
-      if (!hasSubCityInCustom) {
-        return false;
+        return (
+          Array.isArray(config) &&
+          config.some((c) => String(c.zone).toLowerCase().includes("sub"))
+        );
       }
-    }
-
-    return courierConfig?.sub_city !== undefined;
+      return true;
+    });
   }, [cartItems, courierConfig]);
 
-  // Fallback shippingArea if sub_city is no longer available
   useEffect(() => {
     if (!isSubCityAvailable && formData.shippingArea === "sub_city") {
-      const timer = setTimeout(() => {
-        setFormData((prev) => ({ ...prev, shippingArea: "outside" }));
-      }, 0);
-      return () => clearTimeout(timer);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData((prev) => ({ ...prev, shippingArea: "outside" }));
     }
   }, [isSubCityAvailable, formData.shippingArea]);
 
-  // Dynamically calculate actual shipping fees for each area based on cart products (CUSTOM, FREE, DEFAULT)
-  const insideFeeCalculated = useMemo(() => {
-    return calculateCartShippingDetails(cartItems, "inside", shippingSettings)
-      .totalShippingFee;
-  }, [cartItems, shippingSettings]);
+  // dynamic shipping fee calculation
+  const insideFeeCalculated = useMemo(
+    () =>
+      calculateCartShippingDetails(cartItems, "inside", shippingSettings)
+        .totalShippingFee,
+    [cartItems, shippingSettings],
+  );
+  const outsideFeeCalculated = useMemo(
+    () =>
+      calculateCartShippingDetails(cartItems, "outside", shippingSettings)
+        .totalShippingFee,
+    [cartItems, shippingSettings],
+  );
+  const subCityFeeCalculated = useMemo(
+    () =>
+      calculateCartShippingDetails(cartItems, "sub_city", shippingSettings)
+        .totalShippingFee,
+    [cartItems, shippingSettings],
+  );
 
-  const outsideFeeCalculated = useMemo(() => {
-    return calculateCartShippingDetails(cartItems, "outside", shippingSettings)
-      .totalShippingFee;
-  }, [cartItems, shippingSettings]);
-
-  const subCityFeeCalculated = useMemo(() => {
-    return calculateCartShippingDetails(cartItems, "sub_city", shippingSettings)
-      .totalShippingFee;
-  }, [cartItems, shippingSettings]);
-
-  // Selected area shipping fee
   const calculatedShippingFee = useMemo(() => {
     if (formData.shippingArea === "inside") return insideFeeCalculated;
     if (formData.shippingArea === "sub_city") return subCityFeeCalculated;
@@ -219,70 +184,74 @@ const MainCheckoutSection: React.FC = () => {
     subCityFeeCalculated,
   ]);
 
-  // Update Quantity Mutation
+  const formatShippingOptionLabel = (label: string, fee: number) =>
+    `${label} - BDT ${fee}`;
+
   const updateQtyMutation = useMutation({
     mutationFn: ({ id, qty }: { id: string; qty: number }) =>
       updateCartItem(id, qty),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
     onError: () => toast.error("Failed to update quantity"),
   });
 
-  // Remove Item Mutation
   const removeItemMutation = useMutation({
     mutationFn: (id: string) => deleteCartItem(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast.success("Item removed from cart");
     },
-    onError: () => toast.error("Failed to remove item"),
   });
 
-  // Apply Coupon Mutation
   const applyCouponMutation = useMutation({
     mutationFn: (code: string) => applyCouponService({ code }),
     onSuccess: (data: CouponResponse) => {
       const discount = data?.discountAmount ?? data?.data?.discountAmount ?? 0;
       setCouponDiscount(Number(discount));
       setAppliedCoupon(couponInput.trim());
-      toast.success(data.message || "Coupon applied successfully!");
-    },
-    onError: (error: Error) => {
-      setCouponDiscount(0);
-      setAppliedCoupon(null);
-      toast.error(error.message || "Invalid or expired coupon");
+      toast.success("Coupon applied successfully!");
     },
   });
 
-  // Place Order Mutation
   const placeOrderMutation = useMutation({
     mutationFn: (payload: OrderPayload) => createOrderService(payload),
     onSuccess: async (data) => {
       toast.success("Order placed successfully!");
-      // Clear cart from backend
+
+      const orderUUID = data?.data?.id || data?.id || "";
+      const hasMohasagor = cartItems.some((i) =>
+        i.productId?.startsWith(MOHASAGOR_PREFIX),
+      );
+
+      // clean the cart
       try {
         await clearCart(user ? null : guestId);
-      } catch (_) {
-        // silent — cart clear failure shouldn't block navigation
+      } catch (err) {
+        console.error("Cart API cleanup failed:", err);
       }
-      // Invalidate cart query so header/navbar count resets to 0
-      queryClient.invalidateQueries({ queryKey: ["cart"] });
-      // Clear guestId so next visit starts fresh
-      if (!user) {
-        localStorage.removeItem("guestId");
-      }
-      // Clear persisted source so next order detects fresh
+
+      // re-fresh react query cache
+      queryClient.invalidateQueries({
+        queryKey: ["cart", user?.id || null, guestId],
+      });
+
+      // extra clearing
       sessionStorage.removeItem("order_source");
-      const orderObj = data?.data || data;
-      const orderId = orderObj?.id || orderObj?.orderId || "";
-      router.push(orderId ? `/thank_you?orderId=${orderId}` : "/thank_you");
+      sessionStorage.removeItem("mohasagor_order");
+
+      // custom event for real-time count update
+      window.dispatchEvent(new Event("cart_updated"));
+
+      // redirect
+      const redirectUrl = orderUUID
+        ? `/thank_you?orderId=${orderUUID}${hasMohasagor ? "&type=mohasagor" : ""}`
+        : "/thank_you";
+
+      router.push(redirectUrl);
     },
     onError: (error: Error) => {
-      toast.error(error.message);
+      toast.error(error.message || "Something went wrong.");
     },
   });
-
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -297,37 +266,91 @@ const MainCheckoutSection: React.FC = () => {
       toast.error("Please fill in all required fields");
       return;
     }
-
     if (cartItems.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
 
+    const allItemsForBackend = cartItems.map((item) => {
+      const isMohasagor = item.productId?.startsWith(MOHASAGOR_PREFIX);
+
+      // fee
+      const fee = calculateCartShippingDetails(
+        [item],
+        formData.shippingArea,
+        shippingSettings,
+      ).totalShippingFee;
+
+      if (isMohasagor) {
+        const formattedAttributes = Array.isArray(item.variantInfo)
+          ? item.variantInfo.map((v) => ({
+              type: "text",
+              label: v.label || "Variant",
+              value: v.value || "",
+            }))
+          : [
+              {
+                type: "text",
+                label: "Variant",
+                value: String(item.variantInfo || ""),
+              },
+            ];
+
+        return {
+          isExternal: true as const,
+          externalProductId: item.productId,
+          externalVariantId: item.variantId || null,
+          externalName: item.name || item.product?.name || "Mohasagor Product",
+          externalPrice: Number(item.price || 0),
+          externalImage: item.image || item.product?.featuredImage || "",
+          externalAttributes: formattedAttributes,
+          item_shipping_fee: fee,
+          quantity: item.quantity,
+        };
+      }
+
+      return {
+        productId: item.productId,
+        quantity: item.quantity,
+        variantId:
+          item.variantId && item.variantId !== "null"
+            ? item.variantId
+            : undefined,
+        item_shipping_fee: fee,
+      };
+    });
+
     const payload: OrderPayload = {
       customerName: formData.name,
       customerPhone: formData.phone,
       customerAddress: formData.address,
-      customerNote: formData.note,
+      customerNote: [
+        formData.note,
+        cartItems.some((i) => i.productId?.startsWith(MOHASAGOR_PREFIX))
+          ? `[Mohasagor External Products: ${cartItems
+              .filter((i) => i.productId?.startsWith(MOHASAGOR_PREFIX))
+              .map((i) => `${i.name}`)
+              .join(", ")}]`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
       paymentMethod: formData.paymentMethod,
       shippingArea: formData.shippingArea,
       shippingFee: calculatedShippingFee,
-      couponCode: appliedCoupon || undefined,
       source: orderSource,
-      items: cartItems.map((item) => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
-      })),
+      items: allItemsForBackend,
+      couponCode: appliedCoupon || undefined,
     };
 
     placeOrderMutation.mutate(payload);
   };
 
-  // Clear stored source after order is placed successfully (handled in onSuccess)
-
   if (isLoading)
     return (
-      <div className="p-20 text-center font-poppins">Loading Checkout...</div>
+      <div className="p-20 text-center font-poppins text-lg font-medium">
+        Loading Checkout...
+      </div>
     );
 
   return (
@@ -335,7 +358,7 @@ const MainCheckoutSection: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         {/* Form Section */}
         <div className="lg:col-span-7 flex flex-col gap-5 md:gap-6">
-          <h2 className="text-lg md:text-xl font-semibold font-poppins mb-2 md:mb-4">
+          <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-4">
             {t.checkout.shoppingDetails}
           </h2>
 
@@ -376,26 +399,36 @@ const MainCheckoutSection: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-2 w-full relative">
               <label className="text-[#727272] font-semibold text-base md:text-lg">
-                {t.checkout.deliveryCharge} <span className="text-[#FF7050]">*</span>
+                {t.checkout.deliveryCharge}{" "}
+                <span className="text-[#FF7050]">*</span>
               </label>
               <div className="relative w-full">
                 <select
                   name="shippingArea"
                   value={formData.shippingArea}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base md:text-lg border border-transparent appearance-none cursor-pointer"
+                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base border appearance-none cursor-pointer"
                 >
                   <option value="outside">
-                    {t.checkout.outsideDhaka} BDT {outsideFeeCalculated}
+                    {formatShippingOptionLabel(
+                      t.checkout.outsideDhakaLabel,
+                      outsideFeeCalculated,
+                    )}
                   </option>
                   <option value="inside">
-                    {t.checkout.insideDhaka} BDT {insideFeeCalculated}
+                    {formatShippingOptionLabel(
+                      t.checkout.insideDhakaLabel,
+                      insideFeeCalculated,
+                    )}
                   </option>
                   {isSubCityAvailable && (
                     <option value="sub_city">
-                      Sub City BDT {subCityFeeCalculated}
+                      {formatShippingOptionLabel(
+                        t.checkout.subCityLabel,
+                        subCityFeeCalculated,
+                      )}
                     </option>
                   )}
                 </select>
@@ -407,14 +440,15 @@ const MainCheckoutSection: React.FC = () => {
 
             <div className="flex flex-col gap-2 w-full relative">
               <label className="text-[#727272] font-semibold text-base md:text-lg">
-                {t.checkout.paymentMethod} <span className="text-[#FF7050]">*</span>
+                {t.checkout.paymentMethod}{" "}
+                <span className="text-[#FF7050]">*</span>
               </label>
               <div className="relative w-full">
                 <select
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base md:text-lg border border-transparent appearance-none cursor-pointer"
+                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base border appearance-none cursor-pointer"
                 >
                   <option value="COD">{t.checkout.cashOnDelivery}</option>
                   <option value="Online">{t.checkout.onlinePayment}</option>
@@ -426,35 +460,24 @@ const MainCheckoutSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Coupon Code Input */}
           <div className="flex flex-col gap-2">
             <label className="text-[#727272] font-semibold text-base md:text-lg">
               {t.checkout.coupon}
             </label>
-            <div className="flex gap-2 md:flex-row flex-col">
+            <div className="flex gap-2">
               <input
                 placeholder={t.checkout.couponPlaceholder}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && couponInput.trim()) {
-                    applyCouponMutation.mutate(couponInput.trim());
-                  }
-                }}
-                className="bg-[#F9F9F9] py-4 md:py-5 px-4 md:px-6 rounded-[10px] outline-none text-base md:text-lg border border-transparent w-full font-poppins"
+                className="bg-[#F9F9F9] py-4 px-4 rounded-[10px] outline-none text-base border w-full font-poppins"
               />
               <button
-                onClick={() => {
-                  if (!couponInput.trim()) return;
-                  applyCouponMutation.mutate(couponInput.trim());
-                }}
-                disabled={
-                  applyCouponMutation.isPending || !couponInput.trim()
-                }
-                className="bg-[#9E9E9E] text-base md:text-lg cursor-pointer hover:bg-gray-500 transition-colors text-white px-10 py-3.5 md:py-4 rounded-[12px] font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={() => applyCouponMutation.mutate(couponInput.trim())}
+                disabled={applyCouponMutation.isPending || !couponInput.trim()}
+                className="bg-[#9E9E9E] text-white px-8 py-3.5 rounded-[12px] hover:bg-gray-500 transition-colors"
               >
                 {applyCouponMutation.isPending
-                  ? "Applying..."
+                  ? "..."
                   : appliedCoupon
                     ? "Applied"
                     : t.checkout.apply}
@@ -462,30 +485,27 @@ const MainCheckoutSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Warning Banner */}
-          <div className="bg-[#FFFF00] p-3 md:p-4 rounded-[12px] flex items-start sm:items-center gap-2 text-sm md:text-[16px] font-normal text-left sm:text-center text-black justify-center">
-            <span className="text-base leading-none shrink-0">⚠️</span>
+          <div className="bg-[#FFFF00] p-4 rounded-[12px] flex items-center gap-2 text-sm md:text-base font-normal justify-center">
+            <span>⚠️</span>
             <span>{t.checkout.deliveryWarning}</span>
           </div>
 
           <button
             onClick={handlePlaceOrder}
             disabled={placeOrderMutation.isPending}
-            className="bg-[#FF7050] text-white py-3.5 md:py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] active:scale-[0.99] transition-all w-full cursor-pointer disabled:opacity-70"
+            className="bg-[#FF7050] text-white py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] transition-all cursor-pointer"
           >
-            {placeOrderMutation.isPending ? "Placing Order..." : t.checkout.placeOrder}
+            {placeOrderMutation.isPending
+              ? "Placing Order..."
+              : t.checkout.placeOrder}
           </button>
-          <p className="text-center text-[#727272] text-sm md:text-base font-normal">
-            {t.checkout.secureCheckout}
-          </p>
         </div>
 
-        {/* Cart Summary Section */}
         <div className="lg:col-span-5">
           <h2 className="text-lg md:text-xl font-semibold mb-6 md:mb-10">
             {t.checkout.myOrders}
           </h2>
-          <div className="flex flex-col max-h-[400px] overflow-y-auto no-scrollbar">
+          <div className="flex flex-col max-h-[400px] overflow-y-auto no-scrollbar mb-4">
             {cartItems.map((item) => (
               <OrderItemComponent
                 key={item.id}
@@ -496,9 +516,6 @@ const MainCheckoutSection: React.FC = () => {
                 onRemove={(id) => removeItemMutation.mutate(id)}
               />
             ))}
-            {cartItems.length === 0 && (
-              <p className="text-gray-400 py-10">Cart is empty</p>
-            )}
           </div>
           <PricingList
             items={cartItems}

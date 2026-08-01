@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -27,7 +26,7 @@ interface CampaignResponse {
   timestamp: string;
 }
 
-const PromotionDiscountProduct = () => {
+const CampaignSection = () => {
   const { language } = useLanguage();
   const t = translations[language];
   // 3. Apply the type to useQuery
@@ -149,4 +148,4 @@ const PromotionDiscountProduct = () => {
   );
 };
 
-export default PromotionDiscountProduct;
+export default CampaignSection;

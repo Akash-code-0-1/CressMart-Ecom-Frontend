@@ -32,7 +32,7 @@ export interface Order {
   totalAmountDue: number; // Numeric version (JSON has 681, while total_amount_due is string)
   customer: Customer;
   items: OrderItem[];
-  orderNo: string;
+  customerNote?: string;
 }
 
 export interface TableColumn<T = unknown> {
@@ -79,16 +79,29 @@ export interface OrderPayload {
   customerPhone: string;
   customerAddress: string;
   customerNote?: string;
+  customer_note?: string;
   paymentMethod: string;
   shippingArea: string;
   shippingFee?: number;
   couponCode?: string;
   source?: string;
-  items: {
-    productId: string;
-    variantId?: string;
-    quantity: number;
-  }[];
+  items: (
+    | {
+        productId: string;
+        variantId?: string;
+        quantity: number;
+        isExternal?: never;
+      }
+    | {
+        isExternal: true;
+        externalProductId: string;
+        externalName: string;
+        externalPrice: number;
+        quantity: number;
+        productId?: never;
+        variantId?: never;
+      }
+  )[];
 }
 
 export interface Customer {
@@ -99,9 +112,12 @@ export interface Customer {
 
 export interface OrderItem {
   id: string;
+  productId?: string;
+  variantId?: string;
   name: string;
   quantity: number;
   price: number;
   image: string;
   variantInfo: string;
+  unit_price: number;
 }
