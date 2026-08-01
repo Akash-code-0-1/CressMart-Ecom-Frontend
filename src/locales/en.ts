@@ -504,11 +504,18 @@ export default {
   pricing: {
     pricingList: "Pricing List",
     totalProductCost: "Total Product Cost",
-    discountAmount: "Discount Amount",
-    coupon: "Coupon",
+    couponDiscount: "Coupon Discount",
     subtotal: "Subtotal",
     shippingFee: "Shipping Fee",
     payableAmount: "Payable Amount",
     currency: "BDT",
+  },
+
+  orderCompleted: {
+    title: "Order Completed",
+    messagePrefix: "Thanks for ordering from",
+    messageSuffix: "We've received your order.",
+    contactTitle: "Contact us for help.",
+    inspectMessage: "Please inspect the product upon receipt.",
   },
 };

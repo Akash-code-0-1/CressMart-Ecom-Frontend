@@ -1,6 +1,8 @@
 import React from "react";
 import { IoClose, IoCall } from "react-icons/io5";
 import { FaCheck } from "react-icons/fa";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface OrderCompletedModalProps {
   isOpen: boolean;
@@ -11,6 +13,8 @@ const OrderCompletedModal: React.FC<OrderCompletedModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   if (!isOpen) return null;
 
   return (
@@ -32,20 +36,20 @@ const OrderCompletedModal: React.FC<OrderCompletedModalProps> = ({
 
           {/* Title */}
           <h2 className="text-xl md:text-[32px] font-semibold text-black mb-4 font-poppins">
-            Order Completed
+            {t.orderCompleted.title}
           </h2>
 
           {/* Subtext */}
           <p className="text-[#727272] text-base font-normal font-poppins mb-8 max-w-[312px]">
-            Thanks for ordering from{" "}
+            {t.orderCompleted.messagePrefix}{" "}
             <span className="font-semibold text-[#727272]">Creass Mart</span>.
-            We&apos;ve received your order.
+            {t.orderCompleted.messageSuffix}
           </p>
 
           {/* Contact Section */}
           <div className="bg-[#FFECDF] w-full rounded-[24px] py-4 mb-6">
             <h3 className="text-[#FF5C24] text-base font-medium mb-4 font-poppins">
-              Contact us for help.
+              {t.orderCompleted.contactTitle}
             </h3>
             <button className="bg-[#FF7050] text-white mx-auto px-[42px] py-4 rounded-[39px] flex items-center justify-center gap-3 text-base font-medium font-poppins">
               <IoCall size={24} className="md:size-7" />
@@ -55,7 +59,7 @@ const OrderCompletedModal: React.FC<OrderCompletedModalProps> = ({
 
           {/* Footer Text */}
           <p className="text-[#727272] text-sm font-poppins">
-            Please inspect the product upon receipt.
+            {t.orderCompleted.inspectMessage}
           </p>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { RiDeleteBin6Line } from "react-icons/ri";
 import { CartItem } from "@/@types/order.type";
 
 import { extractImageUrl } from "@/utils/image";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 interface OrderItemProps {
   item: CartItem;
@@ -17,6 +19,8 @@ const OrderItem: React.FC<OrderItemProps> = ({
   onUpdateQuantity,
   onRemove,
 }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const { product, variant, quantity, id } = item;
 
   const backendBaseUrl =
@@ -80,7 +84,7 @@ const OrderItem: React.FC<OrderItemProps> = ({
 
           <div className="flex items-center gap-3">
             <span className="text-[#FF7050] font-bold text-[18px]">
-              BDT {price}
+              {t.product.bdt} {price}
             </span>
           </div>
         </div>
