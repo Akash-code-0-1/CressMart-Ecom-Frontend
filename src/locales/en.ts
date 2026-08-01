@@ -480,8 +480,9 @@ export default {
     notePlaceholder: "Write your instruction here...",
 
     deliveryCharge: "Select Delivery Charge",
-    outsideDhaka: "Outside Dhaka BDT 130",
-    insideDhaka: "Inside Dhaka BDT 70",
+    outsideDhakaLabel: "Outside Dhaka",
+    insideDhakaLabel: "Inside Dhaka",
+    subCityLabel: "Sub City",
 
     paymentMethod: "Payment Method",
     cashOnDelivery: "Cash on Delivery",

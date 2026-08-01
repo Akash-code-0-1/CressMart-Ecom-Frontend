@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { getSuppliers, Supplier, SupplierResponse } from "@/services-api/supplierService";
+import {
+  getSuppliers,
+  Supplier,
+  SupplierResponse,
+} from "@/services-api/supplierService";
 import { filterProducts } from "@/services-api/productService";
 import { fetchMohasagorProducts } from "@/services-api/mohasagorService";
 import ProductCard from "@/components/store-front/common/ProductCard";
@@ -20,7 +24,9 @@ function SuppliersContent() {
   const searchParams = useSearchParams();
   const initialSupplierId = searchParams.get("id");
 
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
   const productsRef = useRef<HTMLDivElement>(null);
 
   // ── 1. Fetch Suppliers ──────────────────────────────────────────────
@@ -98,6 +104,8 @@ function SuppliersContent() {
       return current_page < total_pages ? current_page + 1 : undefined;
     },
   });
+
+  console.log("productsData", productsData);
 
   const totalProducts = productsData?.pages[0]?.pagination?.total_items ?? 0;
 

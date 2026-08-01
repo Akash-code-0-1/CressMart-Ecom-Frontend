@@ -228,17 +228,25 @@ export const searchProducts = async (query: string) => {
   return productsList;
 };
 
+import { getMohasagorProductBySlug } from "./mohasagorService";
+
 // get product by id
 export const getProductBySlug = async (
   slug: string,
 ): Promise<Product | null> => {
   if (!slug) return null;
 
+  if (slug.startsWith("mohasagor-")) {
+    return getMohasagorProductBySlug(slug);
+  }
+
   const res = await apiFetch(`/products/${slug}`, {
     method: "GET",
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return getMohasagorProductBySlug(slug);
+  }
   const result = await res.json();
 
   return result?.data || null;

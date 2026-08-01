@@ -53,6 +53,10 @@ export interface ThankYouOrderItem {
   unit_price: string;
   unit_cost: string;
   item_shipping_fee: string;
+  external_image?: string;
+  externalImage?: string;
+  external_variant_info?: string;
+  externalVariantInfo?: string;
 
   product: {
     name: string;
