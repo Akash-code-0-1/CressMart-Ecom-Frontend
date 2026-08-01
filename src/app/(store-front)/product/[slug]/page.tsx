@@ -15,10 +15,14 @@ export default async function ProductDetailsPage({ params }: Props) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
 
-  await queryClient.prefetchQuery({
-    queryKey: ["product", slug],
-    queryFn: () => getProductBySlug(slug),
-  });
+  // Skip server-side prefetch for Mohasagor products —
+  // they are fetched directly from Mohasagor API on the client side.
+  if (!slug.startsWith("mohasagor-")) {
+    await queryClient.prefetchQuery({
+      queryKey: ["product", slug],
+      queryFn: () => getProductBySlug(slug),
+    });
+  }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

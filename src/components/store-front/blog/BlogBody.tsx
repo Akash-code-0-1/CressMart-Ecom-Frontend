@@ -1,3 +1,4 @@
+'use client';
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
 import Image from "next/image";

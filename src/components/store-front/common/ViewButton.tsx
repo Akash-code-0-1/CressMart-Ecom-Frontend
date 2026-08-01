@@ -1,3 +1,5 @@
+"use client";
+
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
 

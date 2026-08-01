@@ -211,16 +211,31 @@ export interface OrderItemInput {
   quantity: number;
 }
 
+export interface ExternalOrderItemInput {
+  isExternal: true;
+  externalProductId: string;
+  externalName: string;
+  externalPrice: number;
+  externalImage?: string;
+  external_image?: string;
+  externalVariantInfo?: string;
+  external_variant_info?: string;
+  quantity: number;
+}
+
+export type CreateOrderItems = OrderItemInput | ExternalOrderItemInput;
+
 export interface CreateOrderRequest {
   customerName?: string;
   customerPhone?: string;
   customerAddress?: string;
   customerNote?: string;
+  customer_note?: string;
   paymentMethod: "COD" | "ONLINE" | string;
   shippingArea: "inside" | "outside" | string;
   couponCode?: string;
   source?: string;
-  items: OrderItemInput[];
+  items: CreateOrderItems[];
 }
 
 // 🚀 FIXED: Added full update payload interface

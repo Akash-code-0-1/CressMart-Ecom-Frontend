@@ -15,13 +15,14 @@ export const extractOrderData = (
     ? raw.order_items.map((it: ThankYouOrderItem, index: number) => {
         const variantImage = it.variant?.images?.[0];
         const productImage = it.product?.images?.[0];
+        const externalImage = it.external_image || it.externalImage || "";
         const image = extractImageUrl(
-          variantImage || productImage,
+          variantImage || productImage || externalImage,
           backendBaseUrl,
         );
 
-        let variantInfo = "";
-        if (it.variant?.attributes) {
+        let variantInfo = it.external_variant_info || it.externalVariantInfo || "";
+        if (!variantInfo && it.variant?.attributes) {
           if (Array.isArray(it.variant.attributes)) {
             variantInfo = it.variant.attributes
               .map((attr: { label?: string; name?: string; type?: string; key?: string; value?: string; val?: string }) => {
@@ -40,14 +41,33 @@ export const extractOrderData = (
 
         return {
           id: String(it.id || index),
+          productId: it.product_id || undefined,
+          variantId: it.variant_id || undefined,
           name: it.product_name || it.product?.name || "Unknown Product",
           quantity: Number(it.quantity || 1),
           price: Number(it.unit_price || 0),
           image,
           variantInfo,
+          shippingFee: Number(it.item_shipping_fee || 0),
         };
       })
     : [];
+
+  const itemShippingFees = items
+    .map((item) => Number(item.shippingFee || 0))
+    .filter((fee) => !Number.isNaN(fee) && fee > 0);
+
+  const computedDeliveryFee = itemShippingFees.length
+    ? Math.min(...itemShippingFees)
+    : Number(raw.shipping_fee || 0);
+
+  const computedSubtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const computedTotal =
+    computedSubtotal - Number(raw.discount_amount || 0) + computedDeliveryFee;
 
   return {
     id: String(raw.id || defaultOrderId || 0),
@@ -61,14 +81,15 @@ export const extractOrderData = (
         })
       : "",
     status: raw.status?.toLowerCase() === "pending" ? "pending" : "completed",
-    deliveryFee: Number(raw.shipping_fee || 0),
+    deliveryFee: computedDeliveryFee,
     discountAmount: Number(raw.discount_amount || 0),
-    totalAmountDue: Number(raw.total_amount_due || 0),
+    totalAmountDue: computedTotal,
     customer: {
       name: raw.customer_name || "",
       phone: raw.customer_phone || "",
       address: raw.customer_address || "",
     },
+    customerNote: raw.customer_note || raw.customerNote || "",
     items,
   } as Order;
 };
