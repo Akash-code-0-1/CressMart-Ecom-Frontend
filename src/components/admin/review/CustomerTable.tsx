@@ -26,6 +26,7 @@ interface CustomerItem {
   phone: string;
   email: string;
   status: "active" | "inactive" | "blocked";
+  success_score: number;
 }
 
 // 🚀 Safe transparent fallback string to break infinite onError request loops
@@ -38,7 +39,7 @@ export default function CustomerTable() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const cPage = Number(searchParams.get("c_page")) || 1;
@@ -56,6 +57,8 @@ export default function CustomerTable() {
       }
     },
   });
+
+  console.log(serverPayload);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -103,49 +106,50 @@ export default function CustomerTable() {
         phone: user.phone,
         email: user.email,
         status: user.status,
+        success_score: user.success_score,
       };
     },
   );
 
-  const handleSelectRow = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
-    );
-  };
+  // const handleSelectRow = (id: string) => {
+  //   setSelectedIds((prev) =>
+  //     prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
+  //   );
+  // };
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === customerData.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(customerData.map((item) => item.id));
-    }
-  };
+  // const handleSelectAll = () => {
+  //   if (selectedIds.length === customerData.length) {
+  //     setSelectedIds([]);
+  //   } else {
+  //     setSelectedIds(customerData.map((item) => item.id));
+  //   }
+  // };
 
   const columns: TableColumn<CustomerItem>[] = [
-    {
-      header: "",
-      key: "checkbox-selection",
-      headerClassName: "w-[45px]",
-      headerRender: () => (
-        <input
-          type="checkbox"
-          className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={
-            selectedIds.length === customerData.length &&
-            customerData.length > 0
-          }
-          onChange={handleSelectAll}
-        />
-      ),
-      render: (item) => (
-        <input
-          type="checkbox"
-          className="w-4 h-4 rounded border-[#EAF8E7] accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.includes(item.id)}
-          onChange={() => handleSelectRow(item.id)}
-        />
-      ),
-    },
+    // {
+    //   header: "",
+    //   key: "checkbox-selection",
+    //   headerClassName: "w-[45px]",
+    //   headerRender: () => (
+    //     <input
+    //       type="checkbox"
+    //       className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
+    //       checked={
+    //         selectedIds.length === customerData.length &&
+    //         customerData.length > 0
+    //       }
+    //       onChange={handleSelectAll}
+    //     />
+    //   ),
+    //   render: (item) => (
+    //     <input
+    //       type="checkbox"
+    //       className="w-4 h-4 rounded border-[#EAF8E7] accent-[#1DA1F2] cursor-pointer"
+    //       checked={selectedIds.includes(item.id)}
+    //       onChange={() => handleSelectRow(item.id)}
+    //     />
+    //   ),
+    // },
     {
       header: "SL",
       key: "sl",
@@ -214,6 +218,15 @@ export default function CustomerTable() {
           </div>
         );
       },
+    },
+    {
+      header: "Success Rate",
+      key: "successRate",
+      render: (item) => (
+        <span className="text-[15px] text-[#1D1A1A] font-normal">
+          {item.success_score}
+        </span>
+      ),
     },
     {
       header: "Action",

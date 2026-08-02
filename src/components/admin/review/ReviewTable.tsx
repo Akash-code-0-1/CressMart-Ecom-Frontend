@@ -541,7 +541,6 @@ export default function ReviewTable() {
           setIsEditModalOpen={setIsEditModalOpen}
           setEditingReviewId={setEditingReviewId}
           isUploadingImage={isUploadingImage}
-          // currentModalProductImage={currentModalProductImage}
           modalFileRef={modalFileRef}
           handleModalImageReplacement={handleModalImageReplacement}
           editRating={editRating}

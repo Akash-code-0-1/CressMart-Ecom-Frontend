@@ -102,15 +102,15 @@ const ReviewHead = () => {
             </div>
           </div>
 
-          <SelectTrigger label="10 Tags" />
+          {/* <SelectTrigger label="10 Tags" /> */}
 
-          <div className="w-full sm:w-auto">
+          {/* <div className="w-full sm:w-auto">
             <PrimaryButton
               label="Add Customer"
               icon={<PluseIcon />}
               onClick={() => router.push("/admin/dashboard/users/create")}
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

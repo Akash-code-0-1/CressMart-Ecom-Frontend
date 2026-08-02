@@ -1,6 +1,5 @@
 import { Star, X } from "lucide-react";
 import Image from "next/image";
-import { ReviewItem } from "./ReviewModal";
 
 function resolveImageUrl(img: string, fallback: string) {
   if (!img) return fallback;
