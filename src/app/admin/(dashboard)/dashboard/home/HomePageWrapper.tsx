@@ -1,5 +1,3 @@
-
-
 // "use client";
 
 // import { useState } from "react";
@@ -53,7 +51,6 @@
 //   );
 // }
 
-
 "use client";
 
 import { useState } from "react";
@@ -71,9 +68,18 @@ export default function HomePageWrapper() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // 🚀 Fetching from your DashboardController
-  const { data: serverResponse, isLoading, isError } = useQuery({
-    queryKey: ["admin-dashboard-stats", activeFilter, selectedDate.toDateString()],
-    queryFn: () => dashboardApi.getStatistics(activeFilter, selectedDate.toISOString()),
+  const {
+    data: serverResponse,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: [
+      "admin-dashboard-stats",
+      activeFilter,
+      selectedDate.toDateString(),
+    ],
+    queryFn: () =>
+      dashboardApi.getStatistics(activeFilter, selectedDate.toISOString()),
   });
 
   // ⚡ FIX: Extract the actual data from the response envelope (handling nesting)
@@ -83,7 +89,7 @@ export default function HomePageWrapper() {
     <div className="p-2 md:p-4 bg-[#F9F9F9] min-h-screen">
       <div className="mt-2">
         <OverviewSection
-          stats={stats?.overview} 
+          stats={stats?.overview}
           isLoading={isLoading}
           isError={isError}
           activeFilter={activeFilter}
@@ -104,12 +110,12 @@ export default function HomePageWrapper() {
 
       <SalesAnalytics
         performanceData={stats?.charts?.performance || []}
-        categoryData={[]} // Category data can be added if backend provides it
+        categoryData={stats?.categorySales || []} // Ensure this matches backend key
         isLoading={isLoading}
       />
 
       <div className="mt-2 mr-0 md:mr-1 mb-4">
-        <ProductAnalytics 
+        <ProductAnalytics
           bestSellingData={stats?.tables?.bestSellers || []}
           isLoading={isLoading}
         />
