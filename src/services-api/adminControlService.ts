@@ -1,11 +1,16 @@
 import { apiFetch } from "@/utils/api";
 
-export const fetchAdminStaff = async (params: { page: number; limit: number; search?: string; status?: string }) => {
+export const fetchAdminStaff = async (params: {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+}) => {
   // Convert params object to query string
   const query = new URLSearchParams(params as any).toString();
-  
+
   const res = await apiFetch(`/users/admin/staff?${query}`);
-  
+
   if (!res.ok) throw new Error("Failed to fetch admin staff");
   const data = await res.json();
   console.log("Admin staff fetched successfully:", data);
@@ -30,7 +35,7 @@ export const deleteAdmin = async (id: string) => {
   const res = await apiFetch(`/users/${id}`, {
     method: "DELETE",
   });
-  
+
   if (!res.ok) throw new Error("Failed to delete admin");
   return await res.json();
 };
@@ -40,5 +45,5 @@ export const fetchAdminById = async (id: string) => {
   if (!res.ok) throw new Error("Failed to fetch admin details");
   const result = await res.json();
   // Based on your logs, we need the .data property
-  return result.data || result; 
+  return result.data || result;
 };

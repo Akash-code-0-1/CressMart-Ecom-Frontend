@@ -105,8 +105,6 @@ function SuppliersContent() {
     },
   });
 
-  console.log("productsData", productsData);
-
   const totalProducts = productsData?.pages[0]?.pagination?.total_items ?? 0;
 
   const getImageUrl = (rawUrl: string | null | undefined) => {
@@ -240,7 +238,11 @@ function SuppliersContent() {
                   {productsData?.pages.map((page, i) => (
                     <React.Fragment key={i}>
                       {page.data.map((product: Product) => (
-                        <ProductCard key={product.id} product={product} />
+                        <ProductCard
+                          key={product.id}
+                          product={product}
+                          isShowWishlist={false}
+                        />
                       ))}
                     </React.Fragment>
                   ))}

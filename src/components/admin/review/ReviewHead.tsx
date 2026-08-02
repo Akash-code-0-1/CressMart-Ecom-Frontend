@@ -1,39 +1,6 @@
-// "use client";
-
-// import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
-// import PrimaryButton from "../common/PrimaryButton";
-// import SearchBar from "../common/SearchBar";
-// import SelectTrigger from "../common/SelectTrigger";
-
-// const ReviewHead = () => {
-//   return (
-//     <div className="w-full bg-white p-5 font-lato mt-2">
-//       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-//         <h2 className="text-[#023337] text-[22px] font-bold font-lato">
-//           Customers Review
-//         </h2>
-
-//         <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full lg:w-auto">
-//           {/* Search Bar */}
-//           <SearchBar />
-//           <SelectTrigger label="All Status" />
-//           <SelectTrigger label="10 Tags" />
-
-//           {/* Add Product Button container */}
-//           <div className="w-full sm:w-auto">
-//             <PrimaryButton label="Add Customer" icon={<PluseIcon />} />
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ReviewHead;
-
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
@@ -46,13 +13,9 @@ const ReviewHead = () => {
   const searchParams = useSearchParams();
 
   const currentStatus = searchParams.get("status") || "";
-  // 🚀 FIXED: Bind to c_search to synchronize across the customer view registry
+  //Bind to c_search to synchronize across the customer view registry
   const globalSearch = searchParams.get("c_search") || "";
   const [searchInput, setSearchInput] = useState(globalSearch);
-
-  useEffect(() => {
-    setSearchInput(globalSearch);
-  }, [globalSearch]);
 
   const handleSearchSubmit = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -95,7 +58,7 @@ const ReviewHead = () => {
               placeholder="Search Customers..."
               className="bg-transparent border-none outline-none text-sm w-full text-black placeholder:text-[#7B7B7B]"
             />
-            <button 
+            <button
               onClick={handleSearchSubmit}
               className="text-sm cursor-pointer font-normal text-black ml-2 font-semibold"
             >
@@ -104,24 +67,50 @@ const ReviewHead = () => {
           </div>
 
           <div className="relative group">
-            <SelectTrigger label={currentStatus === "" ? "All Status" : currentStatus.toLowerCase()} />
+            <SelectTrigger
+              label={
+                currentStatus === ""
+                  ? "All Status"
+                  : currentStatus.toLowerCase()
+              }
+            />
             <div className="absolute left-0 mt-1 hidden group-hover:block bg-white border border-gray-100 rounded-[8px] shadow-xl z-50 text-xs text-black py-1 min-w-[120px]">
-              <button onClick={() => handleStatusSelect("")} className="w-full text-left px-3 py-2 hover:bg-gray-50">All Status</button>
-              <button onClick={() => handleStatusSelect("PENDING")} className="w-full text-left px-3 py-2 hover:bg-gray-50">Pending</button>
-              <button onClick={() => handleStatusSelect("APPROVED")} className="w-full text-left px-3 py-2 hover:bg-gray-50">Approved</button>
-              <button onClick={() => handleStatusSelect("REJECTED")} className="w-full text-left px-3 py-2 hover:bg-gray-50">Rejected</button>
+              <button
+                onClick={() => handleStatusSelect("")}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50"
+              >
+                All Status
+              </button>
+              <button
+                onClick={() => handleStatusSelect("PENDING")}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50"
+              >
+                Pending
+              </button>
+              <button
+                onClick={() => handleStatusSelect("APPROVED")}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50"
+              >
+                Approved
+              </button>
+              <button
+                onClick={() => handleStatusSelect("REJECTED")}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50"
+              >
+                Rejected
+              </button>
             </div>
           </div>
 
-          <SelectTrigger label="10 Tags" />
+          {/* <SelectTrigger label="10 Tags" /> */}
 
-          <div className="w-full sm:w-auto">
-            <PrimaryButton 
-              label="Add Customer" 
-              icon={<PluseIcon />} 
+          {/* <div className="w-full sm:w-auto">
+            <PrimaryButton
+              label="Add Customer"
+              icon={<PluseIcon />}
               onClick={() => router.push("/admin/dashboard/users/create")}
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

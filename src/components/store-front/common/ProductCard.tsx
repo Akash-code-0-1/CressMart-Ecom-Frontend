@@ -19,9 +19,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 interface ProductCardProps {
   product: Product;
+  isShowWishlist?: boolean;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
@@ -74,9 +75,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
-
-  // Add to cart mutation 
-  const { mutateAsync: handleAddToCartAsync, mutate: handleAddToCart, isPending: isAddingToCart } = useMutation({
+  // Add to cart mutation
+  const {
+    mutateAsync: handleAddToCartAsync,
+    mutate: handleAddToCart,
+    isPending: isAddingToCart,
+  } = useMutation({
     mutationFn: async () => {
       const guestId = localStorage.getItem("guestId") || "";
 
@@ -145,17 +149,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
           )}
 
           {/* Wishlist Button */}
-          <button
-            onClick={handleWishlistToggle}
-            disabled={isAdding || isRemoving}
-            className="cursor-pointer absolute top-2 right-2 z-20 hover:scale-110 transition-transform bg-white/90 p-1.5 rounded-full shadow-md"
-          >
-            {isWishlisted ? (
-              <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
-            ) : (
-              <WishIcon className="w-6 md:w-7 text-gray-500" />
-            )}
-          </button>
+          {isShowWishlist && (
+            <button
+              onClick={handleWishlistToggle}
+              disabled={isAdding || isRemoving}
+              className="cursor-pointer absolute top-2 right-2 z-20 hover:scale-110 transition-transform bg-white/90 p-1.5 rounded-full shadow-md"
+            >
+              {isWishlisted ? (
+                <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
+              ) : (
+                <WishIcon className="w-6 md:w-7 text-gray-500" />
+              )}
+            </button>
+          )}
           {/* Clickable Image Area */}
           <Link
             href={`/product/${product.slug}`}
@@ -248,7 +254,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             handleAddToCart();
           }}
           disabled={isAddingToCart}
-          className="w-full bg-white border border-[#E2E2E2] md:py-2 py-1.5 rounded-lg cursor-pointer md:text-[16px] text-xs " 
+          className="w-full bg-white border border-[#E2E2E2] md:py-2 py-1.5 rounded-lg cursor-pointer md:text-[16px] text-xs "
         >
           {isAddingToCart ? "Adding..." : "Add To Cart"}
         </button>

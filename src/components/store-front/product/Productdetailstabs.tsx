@@ -22,9 +22,13 @@ const ProductDetailsTabs = ({ product }: Props) => {
 
   const tabs: { label: string; id: TabType; count?: number }[] = [
     { label: t.productDetails.description, id: "Description" },
-    { label:  t.productDetails.specification, id: "Specification" },
-    { label:  t.productDetails.faqs, id: "FAQs" },
-    { label:  t.productDetails.review, id: "Review", count: product.total_reviews },
+    { label: t.productDetails.specification, id: "Specification" },
+    { label: t.productDetails.faqs, id: "FAQs" },
+    {
+      label: t.productDetails.review,
+      id: "Review",
+      count: product.total_reviews,
+    },
   ];
 
   return (

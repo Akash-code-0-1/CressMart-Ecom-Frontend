@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customerApi } from "@/services-api/customerService";
 import DataTable from "../common/DataTable";
 import Pagination from "../common/Pagination";
+import Image from "next/image";
 
 interface TableColumn<T> {
   header: string;
@@ -25,10 +26,12 @@ interface CustomerItem {
   phone: string;
   email: string;
   status: "active" | "inactive" | "blocked";
+  success_score: number;
 }
 
 // 🚀 Safe transparent fallback string to break infinite onError request loops
-const FALLBACK_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='45' height='45' viewBox='0 0 45 45'><rect width='45' height='45' fill='%23F3F4F6'/><circle cx='22.5' cy='18' r='7' fill='%239CA3AF'/><path d='M10,38 C10,30 16,26 22.5,26 C29,26 35,30 35,38' fill='%239CA3AF'/></svg>";
+const FALLBACK_AVATAR =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='45' height='45' viewBox='0 0 45 45'><rect width='45' height='45' fill='%23F3F4F6'/><circle cx='22.5' cy='18' r='7' fill='%239CA3AF'/><path d='M10,38 C10,30 16,26 22.5,26 C29,26 35,30 35,38' fill='%239CA3AF'/></svg>";
 
 export default function CustomerTable() {
   const queryClient = useQueryClient();
@@ -36,7 +39,7 @@ export default function CustomerTable() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const cPage = Number(searchParams.get("c_page")) || 1;
@@ -54,6 +57,8 @@ export default function CustomerTable() {
       }
     },
   });
+
+  console.log(serverPayload);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
@@ -79,7 +84,7 @@ export default function CustomerTable() {
   const BACKEND_URL = baseApiUrl.replace("/api/v1", "");
 
   const customerData: CustomerItem[] = rawUsers.map(
-    (user: any, index: number) => {
+    (user: CustomerItem, index: number) => {
       let finalAvatar = FALLBACK_AVATAR;
 
       if (user.avatar && user.avatar.trim() !== "") {
@@ -101,49 +106,50 @@ export default function CustomerTable() {
         phone: user.phone,
         email: user.email,
         status: user.status,
+        success_score: user.success_score,
       };
     },
   );
 
-  const handleSelectRow = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
-    );
-  };
+  // const handleSelectRow = (id: string) => {
+  //   setSelectedIds((prev) =>
+  //     prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
+  //   );
+  // };
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === customerData.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(customerData.map((item) => item.id));
-    }
-  };
+  // const handleSelectAll = () => {
+  //   if (selectedIds.length === customerData.length) {
+  //     setSelectedIds([]);
+  //   } else {
+  //     setSelectedIds(customerData.map((item) => item.id));
+  //   }
+  // };
 
   const columns: TableColumn<CustomerItem>[] = [
-    {
-      header: "",
-      key: "checkbox-selection",
-      headerClassName: "w-[45px]",
-      headerRender: () => (
-        <input
-          type="checkbox"
-          className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={
-            selectedIds.length === customerData.length &&
-            customerData.length > 0
-          }
-          onChange={handleSelectAll}
-        />
-      ),
-      render: (item) => (
-        <input
-          type="checkbox"
-          className="w-4 h-4 rounded border-[#EAF8E7] accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.includes(item.id)}
-          onChange={() => handleSelectRow(item.id)}
-        />
-      ),
-    },
+    // {
+    //   header: "",
+    //   key: "checkbox-selection",
+    //   headerClassName: "w-[45px]",
+    //   headerRender: () => (
+    //     <input
+    //       type="checkbox"
+    //       className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
+    //       checked={
+    //         selectedIds.length === customerData.length &&
+    //         customerData.length > 0
+    //       }
+    //       onChange={handleSelectAll}
+    //     />
+    //   ),
+    //   render: (item) => (
+    //     <input
+    //       type="checkbox"
+    //       className="w-4 h-4 rounded border-[#EAF8E7] accent-[#1DA1F2] cursor-pointer"
+    //       checked={selectedIds.includes(item.id)}
+    //       onChange={() => handleSelectRow(item.id)}
+    //     />
+    //   ),
+    // },
     {
       header: "SL",
       key: "sl",
@@ -158,7 +164,7 @@ export default function CustomerTable() {
       key: "image",
       render: (item) => (
         <div className="flex items-center">
-          <img
+          <Image
             src={item.avatar}
             alt={item.name}
             width={45}
@@ -170,6 +176,7 @@ export default function CustomerTable() {
                 el.src = FALLBACK_AVATAR; // Break the cycle immediately
               }
             }}
+            unoptimized
           />
         </div>
       ),
@@ -211,6 +218,15 @@ export default function CustomerTable() {
           </div>
         );
       },
+    },
+    {
+      header: "Success Rate",
+      key: "successRate",
+      render: (item) => (
+        <span className="text-[15px] text-[#1D1A1A] font-normal">
+          {item.success_score}
+        </span>
+      ),
     },
     {
       header: "Action",
