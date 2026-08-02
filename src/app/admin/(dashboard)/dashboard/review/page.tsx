@@ -95,7 +95,6 @@ export default function Page() {
     queryKey: ["admin-customer-review-stats"],
     queryFn: async () => {
       const res = await reviewApi.getMetrics();
-      console.log("📊 Stats Data Payload Check:", res); // Debug log to see exactly what comes back
       return res;
     },
   });
@@ -109,9 +108,9 @@ export default function Page() {
       val: String(liveMetrics.totalUsers ?? "0"),
       sub: "Total user",
       icon: User,
-      iconBgColor: "bg-gradient-to-r from-[#38BDF8] to-[#1E90FF]", // 💡 Beautiful gradient background box
+      iconBgColor: "bg-gradient-to-r from-[#38BDF8] to-[#1E90FF]",
       bgColor: "bg-[#F1F9FF]",
-      textColor: "text-white", // 💡 High-contrast white icon on the blue gradient surface
+      textColor: "text-white",
     },
     {
       title: "Review",
@@ -148,8 +147,8 @@ export default function Page() {
 
   return (
     <PermissionGuard permission="Customer & Review">
-      <div className="flex h-screen overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
+      <div className="flex h-screen">
+        <main className="flex-1">
           <div className="p-2 md:p-0">
             <div className="bg-white">
               <ReviewHead />

@@ -19,6 +19,7 @@ import EditOrderModal, {
 } from "@/components/store-front/thank_you/Editordermodal";
 import { OrderItem } from "@/@types/order.type";
 import { invoiceItem } from "@/@types/invoice.type";
+import { getSettings } from "@/services-api/globalSettingsService";
 
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
@@ -29,6 +30,14 @@ export default function ThankYouContent() {
   const [editedCustomer, setEditedCustomer] = useState<CustomerInfo | null>(
     null,
   );
+
+  const { data: setting } = useQuery({
+    queryKey: ["setting"],
+    queryFn: () => getSettings(),
+  });
+  const settingsdata = setting?.data;
+
+  console.log("🚀 ~ ThankYouContent ~ setting:", settingsdata);
 
   const {
     data: apiResponse,
@@ -43,6 +52,12 @@ export default function ThankYouContent() {
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
+
+  const invoiceLogo = settingsdata?.primary_logo
+    ? settingsdata.primary_logo.startsWith("http")
+      ? settingsdata.primary_logo
+      : `${backendBaseUrl}${settingsdata.primary_logo.startsWith("/") ? "" : "/"}${settingsdata.primary_logo}`
+    : "/images/admin/logo.png";
 
   // edit invoice mutation
   const editInvoiceMutation = useMutation({
@@ -98,37 +113,25 @@ export default function ThankYouContent() {
     <div className="min-h-screen bg-[#F7F7F7] py-10 px-4 flex flex-col items-center">
       <div
         ref={invoiceRef}
-        className="w-full max-w-[800px] bg-white rounded-3xl p-8 md:p-12 shadow-sm text-[#2D2D2D]"
+        className="w-full max-w-[1020px] bg-white rounded-lg p-8 md:p-12 font-poppins text-[#2D2D2D]"
       >
         {/* Header Section */}
         <div className="flex justify-between items-start mb-10">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-12 h-12 bg-[#FF5C24] rounded-full flex items-center justify-center text-white font-bold text-2xl">
-                CM
-              </div>
-              <div>
-                <h1 className="text-xl font-black text-[#FF5C24] tracking-tight uppercase">
-                  Creass Mart
-                </h1>
-                <p className="text-[10px] text-[#FF5C24] font-bold -mt-1 tracking-widest">
-                  BUY WITH CONFIDENCE
-                </p>
-              </div>
+              <Image
+                src={invoiceLogo}
+                alt="logo"
+                width={160}
+                height={60}
+                className="object-contain rounded-md"
+                unoptimized
+              />
             </div>
             <div className="text-[11px] text-gray-500 font-medium">
               <p>www.creassmart.com</p>
-              <p>opbd.shop@gmail.com</p>
-              <p>+88 0141 0050041</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <h2 className="text-sm font-semibold text-gray-600 mb-1 uppercase tracking-wider">
-              Business address
-            </h2>
-            <div className="text-[11px] text-gray-500 font-medium">
-              <p>D-14/3, Bank Colony, Savar</p>
-              <p>Dhaka-1340</p>
+              <p>{settingsdata?.contact_email}</p>
+              <p>+88 01904300117</p>
             </div>
           </div>
         </div>
@@ -136,28 +139,28 @@ export default function ThankYouContent() {
         <hr className="border-gray-100 mb-8" />
 
         {/* Info Meta */}
-        <div className="flex justify-between mb-10 text-[13px]">
+        <div className="flex justify-between mb-10 text-[13px] flex-wrap gap-5">
           <div>
             <p className="text-gray-400 font-medium mb-1">Billed to</p>
-            <p className="font-bold text-lg">{currentCustomer.name}</p>
+            <p className="font-medium text-lg">{currentCustomer.name}</p>
             <p className="font-medium text-gray-600">{currentCustomer.phone}</p>
             <p className="text-gray-500 w-56">{currentCustomer.address}</p>
           </div>
           <div className="text-right space-y-4">
             <div>
               <p className="text-gray-400 font-medium">Invoice number</p>
-              <p className="font-bold text-gray-800">
+              <p className="font-medium text-gray-800">
                 #{apiResponse.invoice_number}
               </p>
             </div>
             <div className="flex gap-10">
               <div>
                 <p className="text-gray-400 font-medium">Date</p>
-                <p className="font-bold text-gray-800">{formattedDate}</p>
+                <p className="font-medium text-gray-800">{formattedDate}</p>
               </div>
               <div>
                 <p className="text-gray-400 font-medium">Order number</p>
-                <p className="font-bold text-gray-800">
+                <p className="font-medium text-gray-800">
                   #{apiResponse.order_number}
                 </p>
               </div>
@@ -169,7 +172,7 @@ export default function ThankYouContent() {
         <div className="mb-10 overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="text-[11px] text-gray-400 uppercase font-bold border-b border-gray-100">
+              <tr className="text-[11px] text-gray-400 uppercase font-medium border-b border-gray-100">
                 <th className="pb-3">NO.</th>
                 <th className="pb-3 px-4">ITEM DETAIL</th>
                 <th className="pb-3">SKU</th>
@@ -223,7 +226,7 @@ export default function ThankYouContent() {
                           />
                         </div>
                         <div>
-                          <p className="font-bold text-gray-800 line-clamp-1">
+                          <p className="font-medium text-gray-800 line-clamp-1">
                             {item.product_name}
                           </p>
                           {vInfo && (
@@ -236,7 +239,7 @@ export default function ThankYouContent() {
                       <td className="py-5 text-gray-400 font-medium">
                         {item.variant?.sku || item.product?.sku || "N/A"}
                       </td>
-                      <td className="py-5 font-bold text-gray-800">
+                      <td className="py-5 font-medium text-gray-800">
                         {item.quantity}
                       </td>
                       <td className="py-5 text-gray-400 font-medium">
@@ -245,7 +248,7 @@ export default function ThankYouContent() {
                       <td className="py-5 text-right font-medium">
                         ৳{Number(item.unit_price).toLocaleString()}
                       </td>
-                      <td className="py-5 text-right font-bold">
+                      <td className="py-5 text-right font-medium">
                         ৳
                         {(
                           Number(item.unit_price) * item.quantity
@@ -264,7 +267,7 @@ export default function ThankYouContent() {
           <button
             onClick={() => setIsEditOpen(true)}
             data-html2canvas-ignore
-            className="flex items-center gap-2 text-base font-bold text-gray-800 hover:text-[#FF5C24] transition-colors"
+            className="flex items-center gap-2 text-base font-medium text-gray-800 hover:text-[#FF5C24] transition-colors"
           >
             <FiEdit3 className="text-xl" /> Edit
           </button>
@@ -272,25 +275,25 @@ export default function ThankYouContent() {
           <div className="w-full max-w-[280px] space-y-3">
             <div className="flex justify-between text-sm text-gray-500 font-medium">
               <span>Sub Total</span>
-              <span className="font-bold text-gray-800">
+              <span className="font-medium text-gray-800">
                 ৳{subtotal.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between text-sm text-gray-500 font-medium">
               <span>Delivery Charge</span>
-              <span className="font-bold text-gray-800">
+              <span className="font-medium text-gray-800">
                 ৳{shippingFee.toLocaleString()}
               </span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-sm text-red-500 font-medium">
                 <span>Discount</span>
-                <span className="font-bold">
+                <span className="font-medium">
                   -৳{discountAmount.toLocaleString()}
                 </span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-50 pt-3">
+            <div className="flex justify-between text-lg font-medium text-gray-900 border-t border-gray-50 pt-3">
               <span>Grand Total</span>
               <span className="text-[#FF5C24]">
                 ৳{apiResponse.total_bill?.toLocaleString()}
@@ -298,11 +301,11 @@ export default function ThankYouContent() {
             </div>
             <div className="flex justify-between text-sm text-gray-500 font-medium">
               <span>Advance Pay</span>
-              <span className="font-bold text-gray-800">
+              <span className="font-medium text-gray-800">
                 ৳{apiResponse?.advance_amount?.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-3">
+            <div className="flex justify-between text-lg font-medium text-gray-900 border-t border-gray-200 pt-3">
               <span>Due Pay</span>
               <span className="text-[#FF5C24]">
                 ৳{apiResponse.total_amount_due?.toLocaleString()}
@@ -313,7 +316,7 @@ export default function ThankYouContent() {
 
         {/* Disclaimer */}
         <div className="mt-16 text-center border-t border-gray-50 pt-6">
-          <p className="text-[12px] font-bold text-red-500">
+          <p className="text-[14px] font-medium text-red-500">
             বিঃ দ্রঃ ইনভয়েসসহ আনবক্সিং ভিডিও বাধ্যতামূলক ভিডিও ছাড়া কোনো অভিযোগ
             গ্রহণযোগ্য নয়*
           </p>
