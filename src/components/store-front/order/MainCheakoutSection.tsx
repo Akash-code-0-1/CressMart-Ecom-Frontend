@@ -492,7 +492,7 @@ const MainCheckoutSection: React.FC = () => {
                   name="shippingArea"
                   value={formData.shippingArea}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base border appearance-none cursor-pointer"
+                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
                 >
                   {dynamicShippingOptions.map((opt) => (
                     <option key={opt.key} value={opt.key}>
@@ -516,7 +516,7 @@ const MainCheckoutSection: React.FC = () => {
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleInputChange}
-                  className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base border appearance-none cursor-pointer"
+                  className="w-full bg-[#F7F7F7] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
                 >
                   <option value="COD">{t.checkout.cashOnDelivery}</option>
                   <option value="Online">{t.checkout.onlinePayment}</option>
@@ -537,12 +537,12 @@ const MainCheckoutSection: React.FC = () => {
                 placeholder={t.checkout.couponPlaceholder}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
-                className="bg-[#F9F9F9] py-4 px-4 rounded-[10px] outline-none text-base border w-full font-poppins"
+                className="bg-[#F7F7F7] py-4 px-4 rounded-xl outline-none text-base w-full font-poppins"
               />
               <button
                 onClick={() => applyCouponMutation.mutate(couponInput.trim())}
                 disabled={applyCouponMutation.isPending || !couponInput.trim()}
-                className="bg-[#9E9E9E] text-white px-8 py-3.5 rounded-[12px] hover:bg-gray-500 transition-colors"
+                className="bg-[#9E9E9E] text-white px-8 py-3.5 rounded-xl hover:bg-gray-500 transition-colors"
               >
                 {applyCouponMutation.isPending
                   ? "..."
