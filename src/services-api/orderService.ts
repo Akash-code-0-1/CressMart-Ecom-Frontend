@@ -19,12 +19,7 @@
 //   items: OrderItemInput[];
 // }
 
-// export interface UpdateInvoicePayload {
-//   customerName?: string;
-//   customerPhone?: string;
-//   customerAddress?: string;
-//   customerNote?: string;
-// }
+
 
 // export interface OrderQuery {
 //   page?: number | string;
@@ -256,6 +251,13 @@ export interface UpdateOrderRequest {
   courier_area_id?: number;
 }
 
+export interface UpdateInvoicePayload {
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  customerNote?: string;
+}
+
 export interface OrderQuery {
   page?: number | string;
   limit?: number | string;
@@ -306,6 +308,29 @@ export const getOrderByIdService = async (id: string) => {
     return result.data || result;
   } catch (error) {
     console.error("Fetch Order Error:", error);
+    throw error;
+  }
+};
+
+// 🚀 3. Edit order invoice service
+export const editOrderInvoiceService = async (
+  id: string,
+  invoiceData: UpdateInvoicePayload,
+) => {
+  try {
+    const response = await apiFetch(`/orders/${id}/invoice-edit`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(invoiceData),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to update invoice");
+    }
+    return result.data || result;
+  } catch (error) {
+    console.error("Edit Invoice Error:", error);
     throw error;
   }
 };
