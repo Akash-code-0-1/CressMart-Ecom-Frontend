@@ -73,6 +73,34 @@ export const uploadProductMedia = async (files: FileList) => {
   return [];
 };
 
+// ── ADD THIS TO productService.ts (next to uploadProductMedia) ──
+// 🚀 UPLOAD VARIANT-SPECIFIC IMAGE(S) TO PRODUCT VARIANT INTERCEPTOR
+export const uploadVariantImage = async (files: FileList) => {
+  const token = await getAdminTokenAction();
+  const formData = new FormData();
+
+  Array.from(files).forEach((file) => {
+    formData.append("image", file);
+  });
+
+  const res = await apiFetch("/products/upload-variant-image", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token || ""}` },
+    body: formData,
+  });
+
+  if (!res.ok)
+    throw new Error("Failed to upload the variant image assets to server.");
+  const data = await res.json();
+
+  if (data?.image_url) return [data.image_url];
+  if (data?.data?.image_url) return [data.data.image_url];
+  if (Array.isArray(data?.image_urls)) return data.image_urls;
+  if (Array.isArray(data?.data?.image_urls)) return data.data.image_urls;
+
+  return [];
+};
+
 // 🚀 4. SUBMIT NEW PRODUCT
 export const createProduct = async (payload: Record<string, unknown>) => {
   const token = await getAdminTokenAction();
@@ -190,11 +218,8 @@ export const filterProducts = async (
   // Shape B: { data: [...], pagination: {...} }
   // Shape C: { data: [...], meta: {...} }
   const data =
-    json?.data?.data ||
-    (Array.isArray(json?.data) ? json.data : null) ||
-    [];
-  const meta =
-    json?.data?.meta || json?.pagination || json?.meta || {};
+    json?.data?.data || (Array.isArray(json?.data) ? json.data : null) || [];
+  const meta = json?.data?.meta || json?.pagination || json?.meta || {};
 
   return {
     data: Array.isArray(data) ? data : [],

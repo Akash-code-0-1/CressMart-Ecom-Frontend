@@ -237,12 +237,12 @@ export default function CustomerTable() {
             onClick={() =>
               setActiveMenuId(activeMenuId === item.id ? null : item.id)
             }
-            className="text-black p-1 transition-colors"
+            className="cursor-pointer text-black p-1 transition-colors"
           >
             <MoreVertical size={20} />
           </button>
           {activeMenuId === item.id && (
-            <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-[8px] shadow-lg py-1 z-50 text-xs text-black">
+            <div className="absolute cursor-pointer right-0 mt-1 w-40 bg-white border border-gray-200 rounded-[8px] shadow-lg py-1 z-50 text-xs text-black">
               {item.status !== "active" && (
                 <button
                   onClick={() =>
@@ -251,7 +251,7 @@ export default function CustomerTable() {
                       status: "active",
                     })
                   }
-                  className="w-full text-left px-3 py-2 text-emerald-600 hover:bg-gray-50 flex items-center gap-1.5"
+                  className="w-full cursor-pointer text-left px-3 py-2 text-emerald-600 hover:bg-gray-50 flex items-center gap-1.5"
                 >
                   <UserCheck size={14} /> Activate Profile
                 </button>
@@ -264,7 +264,7 @@ export default function CustomerTable() {
                       status: "blocked",
                     })
                   }
-                  className="w-full text-left px-3 py-2 text-rose-600 hover:bg-gray-50 flex items-center gap-1.5"
+                  className="w-full cursor-pointer text-left px-3 py-2 text-rose-600 hover:bg-gray-50 flex items-center gap-1.5"
                 >
                   <Ban size={14} /> Block User
                 </button>
