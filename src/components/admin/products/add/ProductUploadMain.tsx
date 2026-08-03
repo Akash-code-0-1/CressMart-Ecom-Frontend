@@ -22,6 +22,7 @@ import {
   ChevronUp,
   Save,
   X,
+  Pencil,
 } from "lucide-react";
 import { apiFetch } from "@/utils/api";
 import {
@@ -30,6 +31,7 @@ import {
   createProduct,
   updateProduct,
   fetchSingleProduct,
+  updateVariant,
 } from "@/services-api/productService";
 
 import EditFileIcon from "@/components/store-front/svg/svg/EditFileIcon";
@@ -37,6 +39,8 @@ import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
 import PrimaryButton from "../../common/PrimaryButton";
 import RichTextEditor from "./Richtexteditor";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
 // ── SHARED BASE ATOMIC DESIGN MOLECULES ──
 export const Label = ({
@@ -134,7 +138,7 @@ export const SectionWrapper = ({
         />
       </div>
       {description && !isCollapsed && (
-        <p className="text-xs text-[#A2A2A2] -mt-3 mb-5 leading-tight">
+        <p className="text-sm text-[#A2A2A2] -mt-3 mb-5 leading-tight">
           {description}
         </p>
       )}
@@ -151,6 +155,7 @@ type VariantAttribute = {
   hex?: string;
 };
 type VariantRow = {
+  variantId?: string;
   attributes: VariantAttribute[];
   stock: number;
   sku: string;
@@ -200,10 +205,8 @@ export default function ProductUploadMain() {
       video_urls: [] as string[],
       specifications: [] as { type: string; desc: string }[],
       faqs: [] as { q: string; a: string }[],
-      applyDefaultDelivery: true,
-      deliveryChargeDefault: "120",
-      deliveryChargeSpecificInside: "60",
-      deliveryChargeSpecificOutside: "200",
+      shippingMode: "DEFAULT" as "DEFAULT" | "CUSTOM" | "FREE",
+      customShippingRows: [] as { zone: string; charge: string }[],
       variants: [] as VariantRow[],
     },
   });
@@ -218,8 +221,28 @@ export default function ProductUploadMain() {
     },
   );
 
+  // Handles any shape backend might send: ["id1","id2"], [{id:"id1"}], [{tag_id:"id1"}], [{tag:{id:"id1"}}]
+  function extractIds(source: any): string[] {
+    if (!Array.isArray(source)) return [];
+    return source
+      .map((item: any) => {
+        let id = null;
+        if (typeof item === "string" || typeof item === "number") id = item;
+        else if (item?.id) id = item.id;
+        else if (item?.tag_id) id = item.tag_id;
+        else if (item?.tag?.id) id = item.tag.id;
+
+        return id ? String(id) : null;
+      })
+      .filter(Boolean) as string[];
+  }
   useEffect(() => {
     if (isEditMode && existingProduct) {
+      const formattedTags = extractIds(
+        existingProduct.tag_ids ??
+          existingProduct.product_tags ??
+          existingProduct.tags,
+      );
       methods.reset({
         name: existingProduct.name || "",
         slug: existingProduct.slug || "",
@@ -246,9 +269,11 @@ export default function ProductUploadMain() {
         seoTitle: existingProduct.meta_title || "",
         seoDescription: existingProduct.meta_description || "",
         seoKeywords: existingProduct.meta_tags || "",
-        tag_ids: Array.isArray(existingProduct.tag_ids)
-          ? existingProduct.tag_ids
-          : [],
+        tag_ids: extractIds(
+          existingProduct.tag_ids ??
+            existingProduct.product_tags ??
+            existingProduct.tags,
+        ),
         supplier_ids: Array.isArray(existingProduct.supplier_ids)
           ? existingProduct.supplier_ids
           : Array.isArray(existingProduct.suppliers)
@@ -261,19 +286,22 @@ export default function ProductUploadMain() {
           ? existingProduct.specifications
           : [],
         faqs: Array.isArray(existingProduct.faqs) ? existingProduct.faqs : [],
-        applyDefaultDelivery: existingProduct.shipping_type === "DEFAULT",
-        deliveryChargeDefault: String(
-          existingProduct.shipping_config?.[0]?.charge ?? 120,
-        ),
-        deliveryChargeSpecificInside: String(
-          existingProduct.shipping_config?.[0]?.charge ?? 60,
-        ),
-        deliveryChargeSpecificOutside: String(
-          existingProduct.shipping_config?.[1]?.charge ?? 200,
-        ),
+        shippingMode:
+          existingProduct.shipping_type === "FREE"
+            ? "FREE"
+            : existingProduct.shipping_type === "CUSTOM"
+              ? "CUSTOM"
+              : "DEFAULT",
+        customShippingRows: Array.isArray(existingProduct.shipping_config)
+          ? existingProduct.shipping_config.map((row: any) => ({
+              zone: row.zone || "",
+              charge: String(row.charge ?? 0),
+            }))
+          : [],
         // 🚀 FIXED: map backend's attributes[] array instead of the old flat `attribute` string
         variants: Array.isArray(existingProduct.variants)
           ? existingProduct.variants.map((v: any) => ({
+              variantId: v.id,
               attributes: Array.isArray(v.attributes) ? v.attributes : [],
               stock: v.stock ?? 0,
               sku: v.sku || "",
@@ -332,56 +360,39 @@ export default function ProductUploadMain() {
           ? formPayload.specifications
           : [],
         faqs: Array.isArray(formPayload.faqs) ? formPayload.faqs : [],
-        shipping_type: formPayload.applyDefaultDelivery
-          ? "DEFAULT"
-          : "SPECIFIC",
-        shipping_config: [
-          { zone: "Dhaka", charge: Number(formPayload.deliveryChargeDefault) },
-          {
-            zone: "Outside Dhaka",
-            charge: formPayload.applyDefaultDelivery
-              ? Number(formPayload.deliveryChargeDefault)
-              : Number(formPayload.deliveryChargeSpecificOutside),
-          },
-        ],
+
+        shipping_type: formPayload.shippingMode,
+        ...(formPayload.shippingMode === "CUSTOM"
+          ? {
+              shipping_config: (formPayload.customShippingRows || [])
+                .filter((r: any) => r.zone?.trim())
+                .map((r: any) => ({
+                  zone: r.zone.trim(),
+                  charge: Number(r.charge) || 0,
+                })),
+            }
+          : formPayload.shippingMode === "FREE"
+            ? { shipping_config: [] }
+            : {}),
       };
 
-      // Exclude sub-arrays on PATCH requests to comply with Prisma constraints
-      if (!isEditMode) {
-        finalPayload.tag_ids = formPayload.tag_ids || [];
-        finalPayload.supplier_ids = formPayload.supplier_ids || [];
-        // 🚀 FIXED: send `attributes` (array of {label, value, type}) matching backend contract,
-        // instead of the old single flat `attribute` string
-        // finalPayload.variants = (formPayload.variants as VariantRow[]).map(
-        //   (v) => ({
-        //     attributes: Array.isArray(v.attributes) ? v.attributes : [],
-        //     stock: Number(v.stock) || 0,
-        //     sku: v.sku || `SKU-${Date.now()}`,
-        //     price: Number(v.price) || 0,
-        //     images: Array.isArray(v.images)
-        //       ? v.images.map((img: any) => String(img))
-        //       : [],
-        //   }),
-        // );
+      // Include tags and suppliers in payload for both Create and Edit mode
+      finalPayload.tag_ids = formPayload.tag_ids || [];
+      finalPayload.supplier_ids = formPayload.supplier_ids || [];
 
-        // এই ব্লকের বাইরে ভ্যারিয়েন্ট নিয়ে আসুন
-        finalPayload.variants = (formPayload.variants as VariantRow[]).map(
-          (v) => ({
-            attributes: Array.isArray(v.attributes) ? v.attributes : [],
-            stock: Number(v.stock) || 0,
-            sku: v.sku || `SKU-${Date.now()}`,
-            price: Number(v.price) || 0,
-            images: Array.isArray(v.images)
-              ? v.images.map((img: any) => String(img))
-              : [],
-          }),
-        );
-
-        if (!isEditMode) {
-          finalPayload.tag_ids = formPayload.tag_ids || [];
-          finalPayload.supplier_ids = formPayload.supplier_ids || [];
-        }
-      }
+      // Include variants in payload for both create and edit mode
+      finalPayload.variants = (formPayload.variants as VariantRow[]).map(
+        (v) => ({
+          ...(v.variantId || v.id ? { id: v.variantId || v.id } : {}),
+          attributes: Array.isArray(v.attributes) ? v.attributes : [],
+          stock: Number(v.stock) || 0,
+          sku: v.sku || `SKU-${Date.now()}`,
+          price: Number(v.price) || 0,
+          images: Array.isArray(v.images)
+            ? v.images.map((img: string) => String(img))
+            : [],
+        }),
+      );
 
       if (isEditMode && productId) {
         return updateProduct(productId, finalPayload);
@@ -419,7 +430,7 @@ export default function ProductUploadMain() {
       router.push("/admin/dashboard/products");
       router.refresh();
     },
-    onError: (err: any) => {
+    onError: (err) => {
       alert(`Rejection Error: ${err.message}`);
     },
   });
@@ -537,7 +548,7 @@ export default function ProductUploadMain() {
               </div>
             </SectionWrapper>
 
-            <InventorySection Calendar={Calendar} Barcode={Barcode} />
+            <InventorySection Barcode={Barcode} />
             <VariantsSection isEditMode={isEditMode} />
             <BrandSection />
             <ShippingSection isEditMode={isEditMode} />
@@ -564,7 +575,7 @@ export default function ProductUploadMain() {
                 </span>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 text-sm">
                   {watchedValues.name ? (
                     <CheckCircle2 size={16} className="text-[#085E00]" />
                   ) : (
@@ -572,7 +583,7 @@ export default function ProductUploadMain() {
                   )}
                   <span>Item Identification parameters mapped</span>
                 </div>
-                <div className="flex items-center gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 text-sm">
                   {images.length > 0 ? (
                     <CheckCircle2 size={16} className="text-[#085E00]" />
                   ) : (
@@ -580,7 +591,7 @@ export default function ProductUploadMain() {
                   )}
                   <span>Media assets loaded to storage</span>
                 </div>
-                <div className="flex items-center gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 text-sm">
                   {watchedValues.category_id ? (
                     <CheckCircle2 size={16} className="text-[#085E00]" />
                   ) : (
@@ -592,9 +603,9 @@ export default function ProductUploadMain() {
             </div>
 
             <SidebarCatalogSection />
+            <SidebarBrandSection />
             <SidebarSupplierSection isEditMode={isEditMode} />
             <SidebarTagSection isEditMode={isEditMode} />
-            <ConditionSection />
           </div>
         </div>
       </form>
@@ -607,7 +618,12 @@ function GeneralInfoSection({
   setImages,
   uploading,
   setUploading,
-}: any) {
+}: {
+  images: string[];
+  setImages: React.Dispatch<React.SetStateAction<string[]>>;
+  uploading: boolean;
+  setUploading: (uploading: boolean) => void;
+}) {
   const { register, setValue, watch, control } = useFormContext();
   const fileRef = useRef<HTMLInputElement>(null);
   const autoSlug = watch("autoSlug");
@@ -625,8 +641,12 @@ function GeneralInfoSection({
       if (paths.length > 0) {
         setImages((prev: string[]) => [...prev, ...paths]);
       }
-    } catch (err: any) {
-      alert(`Asset Sync Rejection: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Asset Sync Rejection: ${err.message}`);
+      } else {
+        toast.error(`Asset Sync Rejection: Something went wrong`);
+      }
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -666,7 +686,7 @@ function GeneralInfoSection({
         </div>
 
         <div>
-          <Label>Product Slug (URL Path)</Label>
+          <Label required>Slug</Label>
           <input
             {...register("slug")}
             disabled={autoSlug}
@@ -676,46 +696,62 @@ function GeneralInfoSection({
         </div>
 
         <div>
-          <Label required>Media Gallery</Label>
-          <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[160px]">
-            {images.map((src: string, i: number) => {
-              const cleanImg = src.trim();
-              const finalSrc = cleanImg.startsWith("http")
-                ? cleanImg
-                : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`;
+          <Label required>Media</Label>
+          <div className="bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[160px]">
+            {images.length > 0 && (
+              <div className="flex flex-row flex-wrap items-center justify-center gap-3 mb-4">
+                {images.map((src: string, i: number) => {
+                  const cleanImg = src.trim();
+                  const finalSrc = cleanImg.startsWith("http")
+                    ? cleanImg
+                    : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`;
 
-              return (
-                <div
-                  key={i}
-                  className="relative group w-20 h-20 rounded border overflow-hidden bg-white shadow-3xs"
-                >
-                  <img
-                    src={finalSrc}
-                    className="w-full h-full object-cover"
-                    alt=""
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setImages(
-                        images.filter((_: string, idx: number) => idx !== i),
-                      )
-                    }
-                    className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              );
-            })}
+                  return (
+                    <div
+                      key={i}
+                      className="relative group w-20 h-20 rounded border border-gray-200 overflow-hidden bg-white shadow-xs shrink-0"
+                    >
+                      <Image
+                        unoptimized
+                        width={100}
+                        height={100}
+                        src={finalSrc}
+                        className="w-full h-full object-cover"
+                        alt={`image ${i + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImages(
+                            images.filter(
+                              (_: string, idx: number) => idx !== i,
+                            ),
+                          )
+                        }
+                        className="absolute inset-0 bg-black/40 text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div
               onClick={() => fileRef.current?.click()}
               className="cursor-pointer flex flex-col items-center select-none"
             >
               <IamgeIcon size="48" color="#999" />
-              <span className="text-xs text-gray-500 mt-2 font-medium">
-                Stage gallery photos (Multiple Allowed)
+              <span className="text-[#A2A2A2] text-base font-normal">
+                Drag image here or click to add.
               </span>
+              <span className="max-w-[300px] text-xs text-[#A2A2A2] mt-2 font-normal">
+                Recommended formats: JPG, PNG. Max size: 4MB. Use 1:1 aspect
+                ratio (1080×1080 px).
+              </span>
+              <button className="cursor-pointer text-sm font-lato font-semibold px-4 py-2 bg-[#FF9F1C] rounded-sm text-white mt-3">
+                Add Image
+              </button>
             </div>
             <input
               type="file"
@@ -751,7 +787,7 @@ function GeneralInfoSection({
             rules={{ required: true }}
             render={({ field }) => (
               <RichTextEditor
-                value={field.value}
+                value={field.value || ""}
                 onChange={field.onChange}
                 placeholder="Ex: Description"
               />
@@ -763,7 +799,7 @@ function GeneralInfoSection({
   );
 }
 
-function InventorySection({ Barcode }: any) {
+function InventorySection({ Barcode }: { Barcode?: React.ElementType }) {
   const { register, watch, setValue } = useFormContext();
   const isVariantMandatory = watch("is_variant_mandatory");
   const selectedUnitId = watch("unit_id");
@@ -846,13 +882,13 @@ function InventorySection({ Barcode }: any) {
 }
 
 // ── VARIANTS SECTION: multi-attribute (Color + Size ...) + per-variant image upload ──
+
 function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
-  const { control, watch, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { control, watch } = useFormContext();
+  const { fields, append, remove, update } = useFieldArray({
     control,
     name: "variants",
   });
-  const isMandatory = watch("is_variant_mandatory");
 
   const baseStorageUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -875,11 +911,23 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
   const [draftImages, setDraftImages] = useState<string[]>([]);
   const [uploadingVariantImg, setUploadingVariantImg] = useState(false);
 
+  // 👇 NEW: which row (if any) is currently being edited
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
   const resolveImgSrc = (src: string) => {
     const cleanImg = (src || "").trim();
     return cleanImg.startsWith("http")
       ? cleanImg
       : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`;
+  };
+
+  const resetDraft = () => {
+    setDraftAttributes([]);
+    setVStock("");
+    setVPrice("");
+    setVSku("");
+    setDraftImages([]);
+    setEditingIndex(null);
   };
 
   const handlePushAttribute = () => {
@@ -914,13 +962,32 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
       if (paths.length > 0) {
         setDraftImages((prev) => [...prev, ...paths]);
       }
-    } catch (err: any) {
-      alert(`Variant Image Sync Rejection: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Variant Image Sync Rejection: ${err.message}`);
+      } else {
+        toast.error(
+          "An unexpected error occurred while uploading the variant image.",
+        );
+      }
     } finally {
       setUploadingVariantImg(false);
       if (variantFileRef.current) variantFileRef.current.value = "";
     }
   };
+
+  // 👇 NEW: mutation to PATCH an existing variant on the server
+  const updateVariantMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: VariantRow }) =>
+      updateVariant(id, payload),
+    onError: (err: unknown) => {
+      if (err instanceof Error) {
+        toast.error(`Variant Update Rejection: ${err.message}`);
+      } else {
+        toast.error("An unexpected error occurred while updating the variant.");
+      }
+    },
+  });
 
   const handlePushOption = () => {
     if (draftAttributes.length === 0 || !vPrice) return;
@@ -931,56 +998,107 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
       sku: vSku || `SKU-${Date.now()}`,
       images: draftImages,
     });
-    setDraftAttributes([]);
-    setVStock("");
-    setVPrice("");
-    setVSku("");
-    setDraftImages([]);
+    resetDraft();
   };
+
+  // 👇 NEW: load an existing row into the draft fields for editing
+  const handleEditClick = (idx: number) => {
+    const variant = watch(`variants.${idx}`) as VariantRow;
+    setDraftAttributes(variant.attributes || []);
+    setVStock(String(variant.stock ?? ""));
+    setVPrice(String(variant.price ?? ""));
+    setVSku(variant.sku || "");
+    setDraftImages(variant.images || []);
+    setEditingIndex(idx);
+  };
+
+  // 👇 NEW: commit the edit — PATCH to backend if it has a variantId, else just update local row
+  const handleUpdateOption = () => {
+    if (editingIndex === null) return;
+    if (draftAttributes.length === 0 || !vPrice) return;
+
+    const existing = watch(`variants.${editingIndex}`) as VariantRow;
+    const payload = {
+      attributes: draftAttributes,
+      stock: Number(vStock) || 0,
+      price: Number(vPrice) || 0,
+      sku: vSku || existing.sku || `SKU-${Date.now()}`,
+      images: draftImages,
+    };
+
+    const updatedRow: VariantRow = {
+      ...payload,
+      variantId: existing.variantId || existing.id,
+    };
+
+    if (existing.variantId || existing.id) {
+      const targetId = (existing.variantId || existing.id)!;
+      updateVariantMutation.mutate(
+        { id: targetId, payload },
+        {
+          onSuccess: () => {
+            update(editingIndex, updatedRow);
+            toast.success("Variant updated successfully!");
+            resetDraft();
+          },
+          onError: () => {
+            // fallback local update if server patch handles full form submit
+            update(editingIndex, updatedRow);
+            resetDraft();
+          },
+        },
+      );
+    } else {
+      update(editingIndex, updatedRow);
+      toast.success("Variant updated!");
+      resetDraft();
+    }
+  };
+
+  const showBuilder = !isEditMode || editingIndex !== null;
 
   return (
     <SectionWrapper
       title="Product Variants"
       description={
         isEditMode
-          ? "Variants are managed read-only during core metadata edit."
+          ? "Existing variants can be edited individually and synced to the server."
           : "Combine attributes (e.g. Color + Size) to build a variant row."
       }
     >
-      <div className="border border-sky-400 rounded-[12px] p-5 space-y-4 bg-white">
+      <div className="rounded-lg p-5 space-y-4 border border-[#38BDF8] bg-white">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-base font-semibold text-black">
+            <h4 className="text-base font-medium text-black">
               Make this variant mandatory
             </h4>
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-[#A2A2A2]">
               Forces selection rules onto storefront client checkout lines
             </p>
           </div>
-          <div
-            className="cursor-pointer"
-            // onClick={() =>
-            //   !isEditMode && setValue("is_variant_mandatory", !isMandatory)
-            // }
-          >
-            <Toggle name="is_variant_mandatory" />
-          </div>
+          <Toggle name="is_variant_mandatory" />
         </div>
 
         {/* Committed variant rows */}
         {fields.map((field, idx) => {
           const variant = watch(`variants.${idx}`) as VariantRow;
+          const isBeingEdited = editingIndex === idx;
           return (
             <div
               key={field.id}
-              className="flex justify-between items-center gap-3 text-xs bg-gray-50 p-2.5 rounded border"
+              className={`flex justify-between items-center gap-3 text-xs p-2.5 rounded border ${
+                isBeingEdited ? "bg-sky-50 border-sky-300" : "bg-gray-50"
+              }`}
             >
               <div className="flex items-center gap-3 flex-1 flex-wrap">
                 {Array.isArray(variant?.images) && variant.images[0] && (
-                  <img
+                  <Image
+                    width={36}
+                    height={36}
                     src={resolveImgSrc(variant.images[0])}
                     className="w-9 h-9 rounded object-cover border bg-white"
-                    alt=""
+                    alt="Variant image"
+                    unoptimized
                   />
                 )}
                 <span>
@@ -993,24 +1111,49 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
                   {variant?.sku}
                 </span>
               </div>
-              {!isEditMode && (
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => remove(idx)}
-                  className="text-red-500 hover:text-red-700 shrink-0"
+                  onClick={() => handleEditClick(idx)}
+                  disabled={updateVariantMutation.isPending}
+                  className="text-sky-600 hover:text-sky-800 cursor-pointer disabled:opacity-50"
+                  title="Edit variant"
                 >
-                  <Trash2 size={14} />
+                  <Pencil size={14} />
                 </button>
-              )}
+                {!isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => remove(idx)}
+                    className="text-red-500 hover:text-red-700 cursor-pointer"
+                    title="Remove variant"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
 
-        {!isEditMode && (
+        {showBuilder && (
           <>
+            {editingIndex !== null && (
+              <div className="flex items-center justify-between bg-amber-50 border border-amber-200 text-amber-700 text-xs px-3 py-2 rounded">
+                <span>Editing variant row #{editingIndex + 1}</span>
+                <button
+                  type="button"
+                  onClick={resetDraft}
+                  className="font-semibold underline cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
             {/* Attribute builder (Color, Size, etc.) */}
-            <div className="bg-gray-50 border rounded-[8px] p-3 space-y-3">
-              <label className="text-xs font-semibold block">
+            <div className="bg-white rounded-lg space-y-3">
+              <label className="text-sm font-medium block">
                 Attributes (e.g. Color, Size)
               </label>
               <div
@@ -1019,13 +1162,13 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
                 <input
                   value={attrLabel}
                   onChange={(e) => setAttrLabel(e.target.value)}
-                  className="w-full bg-white border p-2 text-xs rounded outline-none col-span-1"
+                  className="w-full bg-[#F9F9F9] p-2 text-xs rounded outline-none col-span-1"
                   placeholder="Label (Color)"
                 />
                 <input
                   value={attrValue}
                   onChange={(e) => setAttrValue(e.target.value)}
-                  className="w-full bg-white border p-2 text-xs rounded outline-none col-span-1"
+                  className="w-full bg-[#F9F9F9] p-2 text-xs rounded outline-none col-span-1"
                   placeholder="Value (Black)"
                 />
                 <select
@@ -1033,7 +1176,7 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
                   onChange={(e) =>
                     setAttrType(e.target.value as "text" | "color")
                   }
-                  className="w-full bg-white border p-2 text-xs rounded outline-none col-span-1"
+                  className="w-full bg-[#F9F9F9] p-2 text-xs rounded outline-none col-span-1"
                 >
                   <option value="text">Text</option>
                   <option value="color">Color</option>
@@ -1046,13 +1189,12 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
                     className="w-full h-full border rounded cursor-pointer col-span-1"
                   />
                 )}
-                <button
-                  type="button"
+
+                <PrimaryButton
+                  label="Add more"
                   onClick={handlePushAttribute}
-                  className="flex items-center justify-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90 col-span-1"
-                >
-                  <PluseIcon /> Add
-                </button>
+                  icon={<PluseIcon />}
+                />
               </div>
               {draftAttributes.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -1082,44 +1224,42 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
             {/* Core variant fields + image upload */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold mb-1 block">
-                  Price
-                </label>
+                <label className="text-sm font-medium mb-1 block">Price</label>
                 <input
                   type="number"
                   value={vPrice}
                   onChange={(e) => setVPrice(e.target.value)}
-                  className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
+                  className="w-full bg-[#F9F9F9] py-4 px-2 text-xs rounded outline-none"
                   placeholder="72000"
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold mb-1 block">
+                <label className="text-sm font-medium mb-1 block">
                   Stock Level
                 </label>
                 <input
                   type="number"
                   value={vStock}
                   onChange={(e) => setVStock(e.target.value)}
-                  className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
+                  className="w-full bg-[#F9F9F9] py-4 px-2 text-xs rounded outline-none"
                   placeholder="30"
                 />
               </div>
               <div className="col-span-2">
-                <label className="text-xs font-semibold mb-1 block">
+                <label className="text-sm font-medium mb-1 block">
                   Custom Variant SKU
                 </label>
                 <input
                   value={vSku}
                   onChange={(e) => setVSku(e.target.value)}
-                  className="w-full bg-gray-50 border p-2 text-xs rounded outline-none"
+                  className="w-full bg-g[#F9F9F9] py-4 px-2 text-xs rounded outline-none"
                   placeholder="POLO-BLK-M"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold mb-1 block">
+              <label className="text-sm font-medium mb-1 block">
                 Variant Image
               </label>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1128,10 +1268,13 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
                     key={i}
                     className="relative group w-14 h-14 rounded border overflow-hidden bg-white"
                   >
-                    <img
+                    <Image
+                      width={56}
+                      height={56}
+                      unoptimized
                       src={resolveImgSrc(src)}
                       className="w-full h-full object-cover"
-                      alt=""
+                      alt="Variant image"
                     />
                     <button
                       type="button"
@@ -1175,10 +1318,18 @@ function VariantsSection({ isEditMode }: { isEditMode: boolean }) {
 
             <button
               type="button"
-              onClick={handlePushOption}
-              className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90"
+              onClick={
+                editingIndex !== null ? handleUpdateOption : handlePushOption
+              }
+              disabled={updateVariantMutation.isPending}
+              className="flex items-center gap-1 bg-[#36BAF9] text-white rounded text-sm font-medium  px-3 py-2 cursor-pointer"
             >
-              <PluseIcon /> Commit Variant
+              {updateVariantMutation.isPending ? (
+                <Loader2 className="animate-spin" size={14} />
+              ) : (
+                <PluseIcon />
+              )}{" "}
+              {editingIndex !== null ? "Update Variant" : "Commit Variant"}
             </button>
           </>
         )}
@@ -1243,73 +1394,95 @@ function BrandSection() {
     </SectionWrapper>
   );
 }
-
 function ShippingSection({ isEditMode }: { isEditMode: boolean }) {
-  const { watch, setValue } = useFormContext();
-  const applyDefault = watch("applyDefaultDelivery");
+  const { control, watch, setValue, register } = useFormContext();
+  const shippingMode = watch("shippingMode") as "DEFAULT" | "CUSTOM" | "FREE";
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "customShippingRows",
+  });
+
+  const modes: { value: "DEFAULT" | "CUSTOM" | "FREE"; label: string }[] = [
+    { value: "DEFAULT", label: "Default" },
+    { value: "CUSTOM", label: "Custom" },
+    { value: "FREE", label: "Free" },
+  ];
 
   return (
     <SectionWrapper
       title="Shipping Configuration"
-      description={
-        isEditMode
-          ? "Shipping zones configurations are structural relations."
-          : undefined
-      }
+      description="Choose how delivery charges apply to this product."
     >
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h4 className="text-sm font-semibold text-gray-800">
-              Apply default global shipping rates
-            </h4>
-            <p className="text-xs text-gray-400">
-              If disabled, specific rates apply dynamically
-            </p>
-          </div>
-          <div
-            className="cursor-pointer"
-            onClick={() =>
-              !isEditMode && setValue("applyDefaultDelivery", !applyDefault)
-            }
-          >
-            <Toggle name="applyDefaultDelivery" />
-          </div>
+        <div className="flex gap-2 flex-wrap">
+          {modes.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setValue("shippingMode", m.value)}
+              className={`px-4 py-2 rounded-[8px] text-xs font-semibold border transition-colors cursor-pointer ${
+                shippingMode === m.value
+                  ? "bg-[#FF9F1C] text-white border-[#FF9F1C]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
         </div>
-        {applyDefault ? (
-          <div>
-            <Label>Delivery Charge (Default Global Rate)</Label>
-            <Input
-              type="number"
-              name="deliveryChargeDefault"
-              placeholder="120"
-            />
+
+        {shippingMode === "DEFAULT" && (
+          <div className="bg-gray-50 border border-gray-200 text-gray-600 text-xs px-3 py-2.5 rounded-[8px]">
+            This product will use the system&apos;s global default delivery
+            rate.
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Inside Dhaka Charge</Label>
-              <Input
-                type="number"
-                name="deliveryChargeSpecificInside"
-                placeholder="60"
-              />
-            </div>
-            <div>
-              <Label>Outside Dhaka Charge</Label>
-              <Input
-                type="number"
-                name="deliveryChargeSpecificOutside"
-                placeholder="200"
-              />
-            </div>
+        )}
+
+        {shippingMode === "FREE" && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-xs px-3 py-2.5 rounded-[8px]">
+            This product will ship free of charge to all zones (৳0).
+          </div>
+        )}
+
+        {shippingMode === "CUSTOM" && (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400">
+              Add as many delivery zones as needed with their own charge.
+            </p>
+            {fields.map((field, idx) => (
+              <div key={field.id} className="flex gap-2 items-center">
+                <input
+                  {...register(`customShippingRows.${idx}.zone`)}
+                  className="flex-1 bg-[#F9F9F9] px-2.5 py-3 text-xs rounded outline-none"
+                  placeholder="Zone (e.g. Dhaka, Chittagong, Sylhet)"
+                />
+                <input
+                  type="number"
+                  {...register(`customShippingRows.${idx}.charge`)}
+                  className="w-32 bg-[#F9F9F9] px-2.5 py-3 text-xs rounded outline-none"
+                  placeholder="Charge (৳)"
+                />
+                <button
+                  type="button"
+                  onClick={() => remove(idx)}
+                  className="text-red-500 hover:text-red-700 shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+            <PrimaryButton
+              label="Add Zone"
+              onClick={() => append({ zone: "", charge: "" })}
+              icon={<PluseIcon />}
+            />
           </div>
         )}
       </div>
     </SectionWrapper>
   );
 }
-
 function SeoSection() {
   return (
     <SectionWrapper title="SEO Meta Search Info">
@@ -1358,12 +1531,12 @@ function SpecificationsSection() {
           <div key={field.id} className="flex gap-2 items-center">
             <input
               {...register(`specifications.${idx}.type`)}
-              className="flex-1 bg-[#F9F9F9] border p-2.5 text-xs rounded outline-none"
+              className="flex-1 bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none"
               placeholder="Type (e.g. Origin)"
             />
             <input
               {...register(`specifications.${idx}.desc`)}
-              className="flex-[2] bg-[#F9F9F9] border p-2.5 text-xs rounded outline-none"
+              className="flex-[2] bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none"
               placeholder="Description (e.g. Bangladesh)"
             />
             <button
@@ -1375,13 +1548,12 @@ function SpecificationsSection() {
             </button>
           </div>
         ))}
-        <button
-          type="button"
+
+        <PrimaryButton
+          label="Add Specification"
           onClick={() => append({ type: "", desc: "" })}
-          className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90"
-        >
-          <PluseIcon /> Add Specification
-        </button>
+          icon={<PluseIcon />}
+        />
       </div>
     </SectionWrapper>
   );
@@ -1399,14 +1571,11 @@ function FaqsSection() {
     >
       <div className="space-y-4">
         {fields.map((field, idx) => (
-          <div
-            key={field.id}
-            className="border border-gray-100 rounded-[8px] p-3 space-y-2 bg-[#F9FAFB]"
-          >
+          <div key={field.id} className="rounded-lg p-3 space-y-2">
             <div className="flex gap-2 items-center">
               <input
                 {...register(`faqs.${idx}.q`)}
-                className="flex-1 bg-white border p-2.5 text-xs rounded outline-none"
+                className="flex-1 bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none"
                 placeholder="Question"
               />
               <button
@@ -1419,18 +1588,17 @@ function FaqsSection() {
             </div>
             <textarea
               {...register(`faqs.${idx}.a`)}
-              className="w-full bg-white border p-2.5 text-xs rounded outline-none resize-none min-h-[60px]"
+              className="w-full bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none resize-none min-h-[60px]"
               placeholder="Answer"
             />
           </div>
         ))}
-        <button
-          type="button"
+
+        <PrimaryButton
+          label="Add FAQ"
           onClick={() => append({ q: "", a: "" })}
-          className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90"
-        >
-          <PluseIcon /> Add FAQ
-        </button>
+          icon={<PluseIcon />}
+        />
       </div>
     </SectionWrapper>
   );
@@ -1466,7 +1634,7 @@ function VideoUrlsSection() {
             <input
               value={url}
               readOnly
-              className="flex-1 bg-[#F9F9F9] border p-2.5 text-xs rounded outline-none text-gray-600"
+              className="flex-1 bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none text-gray-600"
             />
             <button
               type="button"
@@ -1487,16 +1655,14 @@ function VideoUrlsSection() {
                 handleAddUrl();
               }
             }}
-            className="flex-1 bg-[#F9F9F9] border p-2.5 text-xs rounded outline-none"
+            className="flex-1 bg-[#F9F9F9] px-2.5 py-4 text-xs rounded outline-none"
             placeholder="https://www.youtube.com/watch?v=..."
           />
-          <button
-            type="button"
+          <PrimaryButton
+            label="Add Video URL"
             onClick={handleAddUrl}
-            className="flex items-center gap-1 bg-[#003032] text-white rounded text-xs font-bold px-3 py-2 cursor-pointer hover:opacity-90 shrink-0"
-          >
-            <PluseIcon /> Add
-          </button>
+            icon={<PluseIcon />}
+          />
         </div>
       </div>
     </SectionWrapper>
@@ -1542,7 +1708,7 @@ function SidebarCatalogSection() {
 
   return (
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-black font-medium text-[20px] mb-4">
+      <h3 className="text-black font-medium text-base mb-4">
         Catalog Selection
       </h3>
       <Label required>System Category Tree</Label>
@@ -1567,6 +1733,59 @@ function SidebarCatalogSection() {
     </div>
   );
 }
+function SidebarBrandSection() {
+  const { setValue, watch } = useFormContext();
+  const activeBrandId = watch("brand_id");
+
+  const { data: brandResponse, isLoading } = useQuery({
+    queryKey: ["brands-list-select-sidebar"],
+    queryFn: async () => {
+      const res = await apiFetch("/brand");
+      return res.json();
+    },
+  });
+
+  const brandList = (() => {
+    if (Array.isArray(brandResponse)) return brandResponse;
+    if (brandResponse && Array.isArray(brandResponse.data))
+      return brandResponse.data;
+    if (brandResponse && Array.isArray(brandResponse.data?.data))
+      return brandResponse.data.data;
+    return [];
+  })();
+
+  return (
+    <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
+      <h3 className="text-black font-medium text-base mb-4">Brand Selection</h3>
+      <Label>Select Brand</Label>
+      <div className="relative w-full">
+        <select
+          value={activeBrandId || ""}
+          onChange={(e) =>
+            setValue("brand_id", e.target.value, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          className="w-full bg-[#F9FAFB] border border-gray-200 text-gray-800 px-4 py-3 text-xs rounded-[8px] outline-none appearance-none cursor-pointer focus:bg-white"
+        >
+          <option value="">
+            {isLoading ? "Synchronizing brands..." : "Select Brand Mapping"}
+          </option>
+          {brandList.map((brand: any) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          size={14}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+      </div>
+    </div>
+  );
+}
 
 function SidebarTagSection({ isEditMode }: { isEditMode: boolean }) {
   const { setValue, watch } = useFormContext();
@@ -1582,33 +1801,42 @@ function SidebarTagSection({ isEditMode }: { isEditMode: boolean }) {
 
   const tagsList = (() => {
     if (Array.isArray(tagsResponse)) return tagsResponse;
-    if (tagsResponse && Array.isArray(tagsResponse.data))
+    if (tagsResponse?.data && Array.isArray(tagsResponse.data))
       return tagsResponse.data;
-    if (tagsResponse && Array.isArray(tagsResponse.data?.data))
+    if (tagsResponse?.data?.data && Array.isArray(tagsResponse.data.data))
       return tagsResponse.data.data;
     return [];
   })();
 
-  const handleToggleTagSelection = (tagId: string) => {
-    if (isEditMode) return;
-    const updatedTags = activeTags.includes(tagId)
-      ? activeTags.filter((id: string) => id !== tagId)
-      : [...activeTags, tagId];
-    setValue("tag_ids", updatedTags);
+  const handleToggleTagSelection = (tagId: any) => {
+    const idStr = String(tagId);
+    const updatedTags = activeTags.includes(idStr)
+      ? activeTags.filter((id: string) => id !== idStr)
+      : [...activeTags, idStr];
+    setValue("tag_ids", updatedTags, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   return (
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-[#003032] font-bold text-md mb-4">Tags Assignment</h3>
+      <h3 className="text-[#003032] font-medium text-base mb-4">
+        Tags Assignment
+      </h3>
       <Label>Select Associated Tags</Label>
-      <div className="max-h-[140px] overflow-y-auto border border-gray-100 p-2.5 rounded-[6px] space-y-1.5 bg-[#F9FAFB]">
+      <div className="max-h-[200px] overflow-y-auto border border-gray-100 p-2.5 rounded-[6px] space-y-1.5 bg-[#F9FAFB]">
         {tagsList.map((tag: any) => {
-          const isSelected = activeTags.includes(tag.id);
+          const isSelected = activeTags.includes(String(tag.id));
           return (
             <div
               key={tag.id}
               onClick={() => handleToggleTagSelection(tag.id)}
-              className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-sky-50 text-sky-700 font-semibold" : "hover:bg-gray-100 text-gray-600"} ${isEditMode ? "opacity-60 cursor-not-allowed" : ""}`}
+              className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-all border ${
+                isSelected
+                  ? "bg-sky-100 text-sky-700 border-sky-300 font-semibold"
+                  : "hover:bg-gray-100 text-gray-600 border-transparent"
+              }`}
             >
               <span>{tag.name}</span>
               {isSelected && <span className="font-bold text-sky-600">✓</span>}
@@ -1645,21 +1873,21 @@ function SidebarSupplierSection({ isEditMode }: { isEditMode: boolean }) {
   })();
 
   const handleToggleSupplier = (supplierId: string) => {
-    if (isEditMode) return;
     const updated = activeSuppliers.includes(supplierId)
       ? activeSuppliers.filter((id: string) => id !== supplierId)
       : [...activeSuppliers, supplierId];
-    setValue("supplier_ids", updated);
+    setValue("supplier_ids", updated, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   };
 
   return (
     <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-[#003032] font-bold text-md mb-4">
+      <h3 className="text-[#003032] font-medium text-base mb-4">
         Suppliers Assignment
       </h3>
-      <Label subLabel={isEditMode ? "Locked on edit" : undefined}>
-        Select Linked Suppliers
-      </Label>
+      <Label>Select Linked Suppliers</Label>
       <div className="max-h-[140px] overflow-y-auto border border-gray-100 p-2.5 rounded-[6px] space-y-1.5 bg-[#F9FAFB]">
         {supplierList.map((supplier: any) => {
           const isSelected = activeSuppliers.includes(supplier.id);
@@ -1667,7 +1895,11 @@ function SidebarSupplierSection({ isEditMode }: { isEditMode: boolean }) {
             <div
               key={supplier.id}
               onClick={() => handleToggleSupplier(supplier.id)}
-              className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-sky-50 text-sky-700 font-semibold" : "hover:bg-gray-100 text-gray-600"} ${isEditMode ? "opacity-60 cursor-not-allowed" : ""}`}
+              className={`flex items-center justify-between text-xs p-2 rounded cursor-pointer transition-colors ${
+                isSelected
+                  ? "bg-sky-50 text-sky-700 font-semibold"
+                  : "hover:bg-gray-100 text-gray-600"
+              }`}
             >
               <span>{supplier.name}</span>
               {isSelected && <span className="font-bold text-sky-600">✓</span>}
@@ -1677,31 +1909,6 @@ function SidebarSupplierSection({ isEditMode }: { isEditMode: boolean }) {
         {supplierList.length === 0 && (
           <span className="text-[11px] text-gray-400">No suppliers found.</span>
         )}
-      </div>
-    </div>
-  );
-}
-
-function ConditionSection() {
-  const { register } = useFormContext();
-  return (
-    <div className="bg-white rounded-[8px] p-5 border border-gray-100 shadow-xs">
-      <h3 className="text-[#003032] font-bold text-md mb-4">
-        Product Condition
-      </h3>
-      <div className="relative">
-        <select
-          {...register("condition")}
-          className="w-full bg-[#F9FAFB] border border-gray-200 px-4 py-3 rounded-[8px] text-xs text-gray-700 outline-none appearance-none cursor-pointer"
-        >
-          <option value="NEW">New / Boxed</option>
-          <option value="USED">Used / Second Hand</option>
-          <option value="REFURBISHED">Refurbished / Factory Restored</option>
-        </select>
-        <ChevronDown
-          size={14}
-          className="text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-        />
       </div>
     </div>
   );

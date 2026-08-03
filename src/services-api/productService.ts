@@ -73,7 +73,6 @@ export const uploadProductMedia = async (files: FileList) => {
   return [];
 };
 
-// ── ADD THIS TO productService.ts (next to uploadProductMedia) ──
 // 🚀 UPLOAD VARIANT-SPECIFIC IMAGE(S) TO PRODUCT VARIANT INTERCEPTOR
 export const uploadVariantImage = async (files: FileList) => {
   const token = await getAdminTokenAction();
@@ -154,6 +153,30 @@ export const deleteProduct = async (id: string) => {
     headers: { Authorization: `Bearer ${token || ""}` },
   });
   if (!res.ok) throw new Error("Could not drop target catalog item.");
+  return res.json();
+};
+
+// update variant
+export const updateVariant = async (
+  id: string,
+  payload: Record<string, unknown>,
+) => {
+  const token = await getAdminTokenAction();
+  const res = await apiFetch(`/products/variants/${id}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json();
+    throw new Error(
+      errorJson?.message || "Failed to finalize product update specifications.",
+    );
+  }
   return res.json();
 };
 

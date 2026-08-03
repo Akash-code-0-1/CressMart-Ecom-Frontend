@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Underline } from "@tiptap/extension-underline";
@@ -88,6 +88,7 @@ export default function RichTextEditor({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [headingOpen, setHeadingOpen] = useState(false);
   const [fontSizeOpen, setFontSizeOpen] = useState(false);
+  const [, forceRerender] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -112,7 +113,18 @@ export default function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
+    onSelectionUpdate: () => forceRerender((n) => n + 1),
+    onTransaction: () => forceRerender((n) => n + 1),
   });
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      // শুধুমাত্র তখনই কন্টেন্ট সেট করবে যখন ডাটাবেসের ভ্যালু এবং এডিটরের ভ্যালু আলাদা হবে
+      editor.commands.setContent(value || "");
+    }
+  }, [value, editor]);
+
+  if (!editor) return null;
 
   if (!editor) return null;
 
@@ -157,12 +169,20 @@ export default function RichTextEditor({
   };
 
   const handleImageButtonClick = () => imageInputRef.current?.click();
+  const exitListIfActive = () => {
+    if (editor.isActive("bulletList") || editor.isActive("orderedList")) {
+      editor.chain().focus().liftListItem("listItem").run();
+    }
+  };
 
   const handleImageFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    exitListIfActive();
+
     try {
       setUploadingImage(true);
       const paths = await uploadProductMedia(files);
