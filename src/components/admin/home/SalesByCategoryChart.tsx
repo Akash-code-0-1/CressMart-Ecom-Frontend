@@ -1,7 +1,6 @@
 "use client";
-
+import React, { useState, useEffect } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-
 
 interface PieChartData {
     name: string;
@@ -10,28 +9,64 @@ interface PieChartData {
 }
 
 export default function SalesByCategoryChart({ pieData }: { pieData: PieChartData[] }) {
+    // 🚀 FIX: Prevent Hydration Error
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        // Return a placeholder with the same height to prevent layout shift
+        return <div className="w-full h-[220px] bg-gray-50 animate-pulse rounded-full" />;
+    }
+
+    // Handle empty data state
+    if (!pieData || pieData.length === 0) {
+        return (
+            <div className="w-full h-[220px] flex items-center justify-center text-gray-400 text-sm">
+                No data available
+            </div>
+        );
+    }
+
     return (
         <div className="w-full min-w-0">
-            <ResponsiveContainer width="99%" height={220}>
+            <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                     <Pie
                         data={pieData}
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={4}
+                        innerRadius={65} // Slightly larger for a cleaner look
+                        outerRadius={95}
+                        paddingAngle={5}
                         dataKey="value"
+                        nameKey="name"
                         stroke="none"
                         startAngle={90}
                         endAngle={-270}
+                        animationBegin={0}
+                        animationDuration={800}
                     >
                         {pieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                            <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.color} 
+                                className="outline-none focus:outline-none"
+                            />
                         ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip 
+                        contentStyle={{ 
+                            borderRadius: '10px', 
+                            border: 'none', 
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                        }} 
+                        formatter={(value: number) => [`${value}%`, 'Sales Share']}
+                    />
                 </PieChart>
             </ResponsiveContainer>
         </div>
-    )
+    );
 }
-

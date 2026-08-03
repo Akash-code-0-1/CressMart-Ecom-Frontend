@@ -76,14 +76,11 @@
 // };
 
 // export default SalesAnalytics;
-
 "use client";
 import React from "react";
 import SalesByCategoryChart from "./SalesByCategoryChart";
 import SalesPerformenceChart from "./SalesPerformenceChart";
-// import { PerformanceChartItem } from "@/types/dashboard";
 
-// Define a type for the Category data based on your UI needs
 interface CategoryData {
   name: string;
   value: number;
@@ -91,36 +88,26 @@ interface CategoryData {
 }
 
 interface SalesAnalyticsProps {
-  performanceData?: PerformanceChartItem[];
+  performanceData?: any[];
   categoryData?: CategoryData[];
   isLoading?: boolean;
 }
 
-// Default colors for the pie chart categories
-const CATEGORY_COLORS = [
-  "#5D36FF",
-  "#FAA43F",
-  "#FFBB99",
-  "#F35050",
-  "#AEDF33",
-  "#36C5F0",
-  "#A155B9",
-];
+const CATEGORY_COLORS = ["#5D36FF", "#FAA43F", "#FFBB99", "#F35050", "#AEDF33"];
 
 const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
   performanceData = [],
   categoryData = [],
   isLoading,
 }) => {
-  // Transform performance data if keys don't match exactly (API uses 'label', 'canceled')
+  // ⚡ FIX: Mapping backend 'canceled' to component 'cancel'
   const formattedLineData = performanceData.map((item) => ({
     day: item.label,
     placed: item.placed,
     delivered: item.delivered,
-    cancel: item.canceled, // mapping 'canceled' from API to 'cancel' for your chart
+    cancel: item.canceled, // 🚀 Corrected key mapping
   }));
 
-  // Attach colors to category data if not present
   const formattedPieData = categoryData.map((item, index) => ({
     ...item,
     color: item.color || CATEGORY_COLORS[index % CATEGORY_COLORS.length],
@@ -128,46 +115,57 @@ const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2 font-poppins mr-1">
-      {/* 1. Sale Performance (Line Chart) */}
-      <div className="lg:col-span-2 bg-white p-6 rounded-[8px]">
+      {/* 1. Sale Performance */}
+      <div className="lg:col-span-2 bg-white p-6 rounded-[8px] shadow-sm border border-gray-50">
         <div className="flex flex-col gap-4 mb-6">
-          <h2 className="text-[18px] font-lato font-bold text-black">
+          <h2 className="text-[18px] font-lato font-bold text-black text-left">
             Sale Performance
           </h2>
           <div className="flex gap-6 text-[12px] font-semibold">
-            <span className="text-[#38BDF8]">Placed Order</span>
-            <span className="text-[#FB923C]">Order Delivered</span>
-            <span className="text-[#EF4444]">Order Cancel</span>
+            <span className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#38BDF8]" /> Placed Order
+            </span>
+            <span className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#FB923C]" /> Order
+              Delivered
+            </span>
+            <span className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#EF4444]" /> Order Cancel
+            </span>
           </div>
         </div>
 
         {isLoading ? (
           <div className="h-[250px] flex items-center justify-center text-gray-400">
-            Loading Chart...
+            Loading charts...
           </div>
         ) : (
           <SalesPerformenceChart lineData={formattedLineData} />
         )}
       </div>
 
-      {/* 2. Sale By Category (Doughnut Chart) */}
-      <div className="bg-white p-6 rounded-[8px] overflow-hidden">
-        <h2 className="text-[18px] font-lato font-bold text-black mb-6">
+      {/* 2. Sale By Category */}
+      <div className="bg-white p-6 rounded-[8px] shadow-sm border border-gray-50 overflow-hidden">
+        <h2 className="text-[18px] font-lato font-bold text-black mb-6 text-left">
           Sale By Category
         </h2>
 
-        {formattedPieData.length > 0 ? (
+        {isLoading ? (
+          <div className="h-[200px] flex items-center justify-center text-gray-400 animate-pulse">
+            Calculating...
+          </div>
+        ) : formattedPieData.length > 0 ? (
           <>
             <SalesByCategoryChart pieData={formattedPieData} />
             <div className="grid grid-cols-2 gap-y-3 mt-4">
               {formattedPieData.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-[11px] font-medium text-gray-800 whitespace-nowrap">
-                    {item.name}
+                  <span className="text-[11px] font-medium text-gray-800">
+                    {item.name}{" "}
                     <span
                       className="font-bold ml-0.5"
                       style={{ color: item.color }}
@@ -181,7 +179,7 @@ const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
           </>
         ) : (
           <div className="h-[200px] flex flex-col items-center justify-center text-gray-400">
-            <p>No Category Data</p>
+            <p className="text-xs">No sales data for this period</p>
           </div>
         )}
       </div>
