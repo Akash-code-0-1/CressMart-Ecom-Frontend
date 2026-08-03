@@ -30,7 +30,7 @@ import {
 import { fetchSingleProduct } from "@/services-api/productService";
 import { CartItem, OrderPayload } from "@/@types/order.type";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Product } from "@/@types/product.type";
+import { Product, ShippingConfig } from "@/@types/product.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { MOHASAGOR_PREFIX } from "@/constants/checkout";
@@ -153,36 +153,106 @@ const MainCheckoutSection: React.FC = () => {
     }
   }, [isSubCityAvailable, formData.shippingArea]);
 
-  // dynamic shipping fee calculation
-  const insideFeeCalculated = useMemo(
-    () =>
-      calculateCartShippingDetails(cartItems, "inside", shippingSettings)
-        .totalShippingFee,
-    [cartItems, shippingSettings],
-  );
-  const outsideFeeCalculated = useMemo(
-    () =>
-      calculateCartShippingDetails(cartItems, "outside", shippingSettings)
-        .totalShippingFee,
-    [cartItems, shippingSettings],
-  );
-  const subCityFeeCalculated = useMemo(
-    () =>
-      calculateCartShippingDetails(cartItems, "sub_city", shippingSettings)
-        .totalShippingFee,
-    [cartItems, shippingSettings],
-  );
+  // Dynamic shipping options computation (location & charge)
+  const dynamicShippingOptions = useMemo(() => {
+    // Check if any product in cart has CUSTOM shipping_type with custom shipping_config
+    const customOptions: { key: string; label: string; fee: number }[] = [];
+
+    cartItems.forEach((item) => {
+      const prod = (item.product || {}) as Product;
+      const sType = String(prod.shipping_type || "DEFAULT").toUpperCase();
+      const rawConfig = prod.shipping_config || item.shipping_config;
+      if (sType === "CUSTOM" && rawConfig) {
+        let config: ShippingConfig[] = [];
+        try {
+          config =
+            typeof rawConfig === "string" ? JSON.parse(rawConfig) : rawConfig;
+        } catch {
+          config = [];
+        }
+        if (Array.isArray(config)) {
+          config.forEach((c) => {
+            if (c.zone && c.charge !== undefined && c.charge !== null) {
+              const zoneName = String(c.zone).trim();
+              const chargeNum = Number(c.charge);
+              const exists = customOptions.find(
+                (opt) => opt.label.toLowerCase() === zoneName.toLowerCase(),
+              );
+              if (!exists) {
+                customOptions.push({
+                  key: zoneName.toLowerCase().replace(/\s+/g, "_"),
+                  label: zoneName,
+                  fee: chargeNum,
+                });
+              } else {
+                exists.fee = Math.max(exists.fee, chargeNum);
+              }
+            }
+          });
+        }
+      }
+    });
+
+    if (customOptions.length > 0) {
+      return customOptions;
+    }
+
+    // Default Fallback Options
+    const options = [
+      {
+        key: "inside",
+        label: t.checkout.insideDhakaLabel || "Inside Dhaka",
+        fee: calculateCartShippingDetails(cartItems, "inside", shippingSettings)
+          .totalShippingFee,
+      },
+      {
+        key: "outside",
+        label: t.checkout.outsideDhakaLabel || "Outside Dhaka",
+        fee: calculateCartShippingDetails(
+          cartItems,
+          "outside",
+          shippingSettings,
+        ).totalShippingFee,
+      },
+    ];
+
+    if (isSubCityAvailable) {
+      options.push({
+        key: "sub_city",
+        label: t.checkout.subCityLabel || "Sub City",
+        fee: calculateCartShippingDetails(
+          cartItems,
+          "sub_city",
+          shippingSettings,
+        ).totalShippingFee,
+      });
+    }
+
+    return options;
+  }, [cartItems, shippingSettings, isSubCityAvailable, t]);
+
+  // Set default shippingArea when options load if current is invalid
+  useEffect(() => {
+    if (dynamicShippingOptions.length > 0) {
+      const exists = dynamicShippingOptions.some(
+        (opt) => opt.key === formData.shippingArea,
+      );
+      if (!exists) {
+        setFormData((prev) => ({
+          ...prev,
+          shippingArea: dynamicShippingOptions[0].key,
+        }));
+      }
+    }
+  }, [dynamicShippingOptions]);
 
   const calculatedShippingFee = useMemo(() => {
-    if (formData.shippingArea === "inside") return insideFeeCalculated;
-    if (formData.shippingArea === "sub_city") return subCityFeeCalculated;
-    return outsideFeeCalculated;
-  }, [
-    formData.shippingArea,
-    insideFeeCalculated,
-    outsideFeeCalculated,
-    subCityFeeCalculated,
-  ]);
+    const selectedOpt = dynamicShippingOptions.find(
+      (opt) => opt.key === formData.shippingArea,
+    );
+    if (selectedOpt) return selectedOpt.fee;
+    return dynamicShippingOptions[0]?.fee || 0;
+  }, [formData.shippingArea, dynamicShippingOptions]);
 
   const formatShippingOptionLabel = (label: string, fee: number) =>
     `${label} - BDT ${fee}`;
@@ -274,12 +344,8 @@ const MainCheckoutSection: React.FC = () => {
     const allItemsForBackend = cartItems.map((item) => {
       const isMohasagor = item.productId?.startsWith(MOHASAGOR_PREFIX);
 
-      // fee
-      const fee = calculateCartShippingDetails(
-        [item],
-        formData.shippingArea,
-        shippingSettings,
-      ).totalShippingFee;
+      // fee matching selected dynamic option or calculated shipping fee
+      const fee = calculatedShippingFee;
 
       if (isMohasagor) {
         const formattedAttributes = Array.isArray(item.variantInfo)
@@ -320,6 +386,21 @@ const MainCheckoutSection: React.FC = () => {
       };
     });
 
+    // Map shippingArea to standard inside/outside backend enum if custom zone key was selected
+    const selectedOpt = dynamicShippingOptions.find(
+      (opt) => opt.key === formData.shippingArea,
+    );
+    const resolvedShippingArea =
+      formData.shippingArea === "inside" ||
+      formData.shippingArea === "outside" ||
+      formData.shippingArea === "sub_city"
+        ? formData.shippingArea
+        : selectedOpt &&
+            selectedOpt.label.toLowerCase().includes("dhaka") &&
+            !selectedOpt.label.toLowerCase().includes("outside")
+          ? "inside"
+          : "outside";
+
     const payload: OrderPayload = {
       customerName: formData.name,
       customerPhone: formData.phone,
@@ -336,8 +417,10 @@ const MainCheckoutSection: React.FC = () => {
         .filter(Boolean)
         .join(" | "),
       paymentMethod: formData.paymentMethod,
-      shippingArea: formData.shippingArea,
+      shippingArea: resolvedShippingArea,
       shippingFee: calculatedShippingFee,
+      shipping_fee: calculatedShippingFee,
+      delivery_charge: calculatedShippingFee,
       source: orderSource,
       items: allItemsForBackend,
       couponCode: appliedCoupon || undefined,
@@ -411,26 +494,11 @@ const MainCheckoutSection: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-[12px] outline-none text-base border appearance-none cursor-pointer"
                 >
-                  <option value="outside">
-                    {formatShippingOptionLabel(
-                      t.checkout.outsideDhakaLabel,
-                      outsideFeeCalculated,
-                    )}
-                  </option>
-                  <option value="inside">
-                    {formatShippingOptionLabel(
-                      t.checkout.insideDhakaLabel,
-                      insideFeeCalculated,
-                    )}
-                  </option>
-                  {isSubCityAvailable && (
-                    <option value="sub_city">
-                      {formatShippingOptionLabel(
-                        t.checkout.subCityLabel,
-                        subCityFeeCalculated,
-                      )}
+                  {dynamicShippingOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {formatShippingOptionLabel(opt.label, opt.fee)}
                     </option>
-                  )}
+                  ))}
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <FaCaretDown />

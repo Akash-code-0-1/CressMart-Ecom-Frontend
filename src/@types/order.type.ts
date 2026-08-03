@@ -81,7 +81,7 @@ export interface OrderPayload {
   customerNote?: string;
   customer_note?: string;
   paymentMethod: string;
-  shippingArea: string;
+  shippingArea: string[] | [];
   shippingFee?: number;
   couponCode?: string;
   source?: string;

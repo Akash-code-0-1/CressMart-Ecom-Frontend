@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -195,21 +194,6 @@ const Navbar = () => {
   const cartItems = cartData?.items || ([] as CartItem[]);
   const subTotal = cartData?.sub_total || 0;
   const queryClient = useQueryClient();
-
-  // const isRecord = (value: unknown): value is Record<string, unknown> =>
-  //   typeof value === "object" && value !== null;
-
-  // const formatVariantValue = (value: unknown) => {
-  //   if (value === null || value === undefined) return "-";
-  //   if (isRecord(value)) {
-  //     if ("label" in value && typeof value.label === "string")
-  //       return value.label;
-  //     if ("value" in value && typeof value.value === "string")
-  //       return value.value;
-  //     return JSON.stringify(value);
-  //   }
-  //   return String(value);
-  // };
 
   // update quantity
   const { mutate: updateQty } = useMutation({

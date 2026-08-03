@@ -95,7 +95,13 @@ export default function ThankYouContent() {
         acc + Number(item.unit_price) * item.quantity,
       0,
     ) || 0;
-  const shippingFee = Number(apiResponse.shipping_fee || 0);
+  const shippingFee = Number(
+    apiResponse.shipping_fee ??
+      apiResponse.delivery_fee ??
+      apiResponse.delivery_charge ??
+      apiResponse.shippingFee ??
+      0,
+  );
   const discountAmount = Number(apiResponse.discount_amount || 0);
 
   const formattedDate = apiResponse.created_at
