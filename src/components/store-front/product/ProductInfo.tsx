@@ -56,7 +56,12 @@ const parseAttributes = (rawAttributes: unknown): Attribute[] => {
 
   const result: Attribute[] = [];
 
-  const pushAttribute = (label: string, value: string, type?: string, hex?: string) => {
+  const pushAttribute = (
+    label: string,
+    value: string,
+    type?: string,
+    hex?: string,
+  ) => {
     const normalizedLabel = normalizeAttributeLabel(label, type);
     const normalizedType = type
       ? String(type).trim().toLowerCase()
@@ -90,7 +95,12 @@ const parseAttributes = (rawAttributes: unknown): Attribute[] => {
           parsedItem.value;
         const hex = parsedItem.hex;
         if (label && value) {
-          pushAttribute(label as string, value as string, parsedItem.type as string, hex as string | undefined);
+          pushAttribute(
+            label as string,
+            value as string,
+            parsedItem.type as string,
+            hex as string | undefined,
+          );
         }
       }
     });
@@ -102,7 +112,12 @@ const parseAttributes = (rawAttributes: unknown): Attribute[] => {
         const value = vObj.value || vObj.val || vObj.name;
         const hex = vObj.hex;
         if (value) {
-          pushAttribute(key, value as string, vObj.type as string, hex as string | undefined);
+          pushAttribute(
+            key,
+            value as string,
+            vObj.type as string,
+            hex as string | undefined,
+          );
         }
       } else {
         pushAttribute(key, String(val));
@@ -361,7 +376,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
         <span className="text-[#727272] font-medium flex items-center">
           <FaCheck className="mr-1 flex-shrink-0" />
-          <span className="font-bold mr-1">{product.total_sold || 0}</span> {t.product.sold}
+          <span className="font-bold mr-1">{product.total_sold || 0}</span>{" "}
+          {t.product.sold}
         </span>
 
         <div className="hidden sm:block h-5 w-[1px] bg-[#D2D2D2]"></div>
@@ -377,7 +393,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         <span
           className={`${currentStock > 0 ? "bg-[#32CD32]" : "bg-red-500"} text-white text-xs sm:text-[14px] font-semibold px-3 py-1 rounded-[8px]`}
         >
-          {currentStock > 0 ? `${currentStock} ${t.product.inStock}` : t.product.outOfStock}
+          {currentStock > 0
+            ? `${currentStock} ${t.product.inStock}`
+            : t.product.outOfStock}
         </span>
       </div>
 
@@ -426,7 +444,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       </p>
 
       {/* Dynamic separated variant selection (Color, Size, etc.) */}
-      {attributeCategories.length > 0 ? (
+      {/* {attributeCategories.length > 0 ? (
         <div className="flex flex-col gap-4 my-1">
           {attributeCategories.map((category) => {
             const valuesMap = new Map<
@@ -522,6 +540,138 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                     />
                   )}
                   {getVariantDisplayLabel(variant.attributes as Attribute[])}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null} */}
+
+      {/* Dynamic Attribute Selection */}
+      {attributeCategories.length > 0 ? (
+        <div className="flex flex-col gap-5 my-1">
+          {attributeCategories.map((category) => {
+            // 1. Extract all unique values available for this specific category across all variants
+            const valuesMap = new Map<string, Attribute>();
+            product.variants?.forEach((v) => {
+              const attrs = parseAttributes(v.attributes);
+              attrs.forEach((attr) => {
+                if (
+                  attr.label.toLowerCase() === category.toLowerCase() &&
+                  !valuesMap.has(attr.value)
+                ) {
+                  valuesMap.set(attr.value, attr);
+                }
+              });
+            });
+
+            const uniqueValues = Array.from(valuesMap.values());
+            const currentSelectedVal = selectedAttributes[category];
+
+            return (
+              <div key={category} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-black text-base font-semibold">
+                    {category}:
+                  </span>
+                  {currentSelectedVal && (
+                    <span className="text-[#FF7050] text-sm font-medium">
+                      {currentSelectedVal}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {uniqueValues.map((item) => {
+                    const isSelected = currentSelectedVal === item.value;
+
+                    // 2. Logic to check if this option should be disabled
+                    // It checks if there's ANY variant that has this value AND matches the other selected attributes
+                    const isAvailable = product.variants?.some((v) => {
+                      const vAttrs = parseAttributes(v.attributes);
+
+                      // Does this variant have the current item value?
+                      const hasThisValue = vAttrs.some(
+                        (a) =>
+                          a.label.toLowerCase() === category.toLowerCase() &&
+                          a.value === item.value,
+                      );
+                      if (!hasThisValue) return false;
+
+                      // Does this variant also match the SELECTED values in OTHER categories?
+                      return Object.entries(selectedAttributes).every(
+                        ([selLabel, selVal]) => {
+                          if (selLabel.toLowerCase() === category.toLowerCase())
+                            return true; // Skip current category
+                          return vAttrs.some(
+                            (a) =>
+                              a.label.toLowerCase() ===
+                                selLabel.toLowerCase() && a.value === selVal,
+                          );
+                        },
+                      );
+                    });
+
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        disabled={!isAvailable}
+                        onClick={() =>
+                          handleSelectAttribute(category, item.value)
+                        }
+                        className={`flex items-center gap-2 px-4 py-2 border rounded-[8px] text-sm font-medium transition-all 
+                    ${
+                      isSelected
+                        ? "border-[#FF7050] bg-[#FF7050] text-white shadow-sm font-semibold cursor-pointer"
+                        : isAvailable
+                          ? "border-[#E2E2E2] text-[#4D4D4D] hover:border-[#FF7050] bg-white cursor-pointer"
+                          : "border-[#F2F2F2] text-[#D2D2D2] bg-[#FAFAFA] cursor-not-allowed opacity-50"
+                    }`}
+                      >
+                        {item.hex && (
+                          <span
+                            className={`w-4 h-4 rounded-full border shrink-0 ${!isAvailable ? "border-transparent" : "border-gray-200"}`}
+                            style={{ backgroundColor: item.hex }}
+                          />
+                        )}
+                        {item.value}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : product.variants && product.variants.length > 0 ? (
+        /* Fallback for products without clearly labeled attributes */
+        <div className="flex flex-col gap-3">
+          <span className="text-black text-lg font-semibold">Variants:</span>
+          <div className="flex flex-wrap gap-2">
+            {product.variants.map((variant) => {
+              const isSelected = selectedVariant?.id === variant.id;
+              const attrs = parseAttributes(variant.attributes);
+              const colorAttr = attrs.find((a) => a.type === "color" || a.hex);
+
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  onClick={() => setSelectedVariant(variant)}
+                  className={`flex items-center gap-2 px-4 py-2 border rounded-md text-sm font-medium transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-[#FF7050] bg-[#FF7050] text-white shadow-md"
+                      : "border-gray-300 text-gray-700 hover:border-[#FF7050]"
+                  }`}
+                >
+                  {colorAttr?.hex && (
+                    <span
+                      className="w-4 h-4 rounded-full border border-gray-200"
+                      style={{ backgroundColor: colorAttr.hex }}
+                    />
+                  )}
+                  {attrs.map((a) => a.value).join(" / ")}
                 </button>
               );
             })}
