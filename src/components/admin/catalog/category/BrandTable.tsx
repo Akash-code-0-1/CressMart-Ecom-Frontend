@@ -142,7 +142,7 @@ export default function BrandTable() {
             src={srcUrl}
             key={srcUrl} // KEY + srcUrl forces React to re-render when the image changes
             alt={item.name}
-            className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border"
+            className="rounded-[8px] object-cover h-11 w-11 bg-gray-50"
           />
         );
       },

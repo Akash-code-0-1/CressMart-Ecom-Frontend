@@ -115,7 +115,7 @@ export default function TagTable() {
         const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
         const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
         const srcUrl = isValidImg ? (cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`) : "/images/products/product2.png";
-        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-10 w-10 bg-gray-50 border" />;
+        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-10 w-10 bg-gray-50" />;
       },
     },
     {

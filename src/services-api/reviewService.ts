@@ -39,11 +39,12 @@ export const reviewApi = {
   },
 
   // Inside reviewService.ts
-  async updateDetails(
+async updateDetails(
     id: string,
     rating: number,
     comment: string,
     images: string[],
+    createdAt?: string, // 🚀 Added
   ) {
     const token = await getAdminTokenAction();
     const res = await apiFetch(`/reviews/admin/${id}/update`, {
@@ -52,7 +53,7 @@ export const reviewApi = {
         Authorization: `Bearer ${token || ""}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ rating, comment, images }), // Ensure this is stringified
+      body: JSON.stringify({ rating, comment, images, createdAt }), 
     });
     return res.json();
   },
