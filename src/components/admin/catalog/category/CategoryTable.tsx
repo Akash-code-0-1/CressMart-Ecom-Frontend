@@ -278,7 +278,7 @@ export default function CategoryTable() {
         const srcUrl = isValidImg 
           ? (cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`) 
           : "/images/products/product2.png";
-        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 border" />;
+        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50" />;
       },
     },
     {
