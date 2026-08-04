@@ -12,7 +12,6 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
-  Calendar,
   Barcode,
   ChevronDown,
   CheckCircle2,
@@ -325,8 +324,6 @@ export default function ProductUploadMain() {
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
-
-      // 🚀 FIXED: Send flat database scalar ID fields directly so NestJS validation picks it up smoothly
       const finalPayload: any = {
         name: formPayload.name,
         slug: cleanSlug,
@@ -400,13 +397,13 @@ export default function ProductUploadMain() {
       return createProduct(finalPayload);
     },
     onSuccess: (data, variables) => {
-      // 🚀 1. Wipe out the main products lists query cache
+      // Wipe out the main products lists query cache
       queryClient.invalidateQueries({
         queryKey: ["products-list-panel"],
         exact: false,
       });
 
-      // 🚀 2. CRITICAL: Clear out this exact single product item cache row too so it refetches cleanly next time
+      //  Clear out this exact single product item cache row too so it refetches cleanly next time
       if (isEditMode && productId) {
         queryClient.invalidateQueries({
           queryKey: ["product-single-edit-node", productId],
@@ -426,7 +423,7 @@ export default function ProductUploadMain() {
       methods.reset();
       setImages([]);
 
-      // 🚀 3. Route back to dashboard and immediately prompt Next.js to sync server component states
+      // Route back to dashboard and immediately prompt Next.js to sync server component states
       router.push("/admin/dashboard/products");
       router.refresh();
     },
