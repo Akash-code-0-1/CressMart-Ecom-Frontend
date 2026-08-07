@@ -8,6 +8,8 @@ import { fetchAllProducts, deleteProduct } from "@/services-api/productService";
 import { apiFetch } from "@/utils/api";
 import DataTable from "../common/DataTable";
 import Pagination from "../common/Pagination";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
 interface ExtendedTableColumn<T> {
   header: string;
@@ -16,6 +18,19 @@ interface ExtendedTableColumn<T> {
   headerRender?: () => React.ReactNode;
   className?: string;
   headerClassName?: string;
+}
+interface TableData {
+  id: string;
+  name: string;
+  images?: string[];
+  category?: {
+    id?: string;
+    name?: string;
+  };
+  category_id?: string;
+  sku?: string;
+  priority?: number;
+  status?: "PUBLISHED" | "DRAFT" | "active" | string;
 }
 
 export default function ProductTable() {
@@ -34,15 +49,18 @@ export default function ProductTable() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const baseStorageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
 
-// FETCH WORKFLOW: Synchronizes state updates across all dashboard screens
+  // FETCH WORKFLOW: Synchronizes state updates across all dashboard screens
   const { data: serverPayload, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products-list-panel", page, limit, search, category_id, status],
-    queryFn: () => fetchAllProducts({ page, limit, search, category_id, status }),
+    queryFn: () =>
+      fetchAllProducts({ page, limit, search, category_id, status }),
     refetchOnWindowFocus: true, // Forces immediate synchronization when returning to this page
-    refetchOnMount: "always",    // 🚀 FIXED: Enforce continuous network syncing when this layout section renders
-    staleTime: 0,               // 🚀 FIXED: Marks local dataset immediately stale to prioritize incoming PATCH responses
+    refetchOnMount: "always", // 🚀 FIXED: Enforce continuous network syncing when this layout section renders
+    staleTime: 0, // 🚀 FIXED: Marks local dataset immediately stale to prioritize incoming PATCH responses
   });
 
   // 🚀 FETCH WORKFLOW: Get the exact categories deep multi-level tree mapping
@@ -57,25 +75,38 @@ export default function ProductTable() {
   // 🚀 FIXED RESOLUTION MAP: Deep scan every child node level recursively to build an unambiguous dictionary matching ids to absolute sub/child category names
   const categoryLookupMap = useMemo(() => {
     const lookup: Record<string, string> = {};
-    
+
     const parsedNodes = (() => {
       if (!treeResponse) return [];
       if (Array.isArray(treeResponse)) return treeResponse;
-      if (treeResponse.data && Array.isArray(treeResponse.data)) return treeResponse.data;
-      if (treeResponse.data?.data && Array.isArray(treeResponse.data.data)) return treeResponse.data.data;
+      if (treeResponse.data && Array.isArray(treeResponse.data))
+        return treeResponse.data;
+      if (treeResponse.data?.data && Array.isArray(treeResponse.data.data))
+        return treeResponse.data.data;
       return [];
     })();
 
-    const traverseDeepTree = (nodes: any[]) => {
+    const traverseDeepTree = (
+      nodes: {
+        id: string;
+        name: string;
+        children?: [];
+      }[],
+    ) => {
       if (!Array.isArray(nodes)) return;
-      
+
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
         if (node && node.id && node.name) {
           lookup[node.id] = node.name;
         }
         // Recursively trace through deep subcategories / children branches down to the lowest leaf node
-        if (node && node.children && Array.isArray(node.children) && node.children.length > 0) {
+        if (
+          node &&
+          node.children &&
+          Array.isArray(node.children) &&
+          node.children.length > 0
+        ) {
           traverseDeepTree(node.children);
         }
       }
@@ -93,10 +124,10 @@ export default function ProductTable() {
     mutationFn: (id: string) => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products-list-panel"] });
-      alert("Product successfully deleted from catalog.");
+      toast.success("Product successfully deleted from catalog.");
       setActiveMenuId(null);
     },
-    onError: (err: any) => alert(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const handlePageChange = (targetPage: number) => {
@@ -106,18 +137,20 @@ export default function ProductTable() {
   };
 
   const handleSelectRow = (id: string) => {
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]);
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
+    );
   };
 
   const handleSelectAll = () => {
     if (selectedIds.length === productList.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(productList.map((product: any) => product.id));
+      setSelectedIds(productList.map((product: { id: string }) => product.id));
     }
   };
 
-  const productColumns: ExtendedTableColumn<any>[] = [
+  const productColumns: ExtendedTableColumn<TableData>[] = [
     {
       header: "",
       key: "checkbox-selection",
@@ -127,7 +160,9 @@ export default function ProductTable() {
         <input
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.length === productList.length && productList.length > 0}
+          checked={
+            selectedIds.length === productList.length && productList.length > 0
+          }
           onChange={handleSelectAll}
         />
       ),
@@ -161,9 +196,20 @@ export default function ProductTable() {
         const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
         const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
         const srcUrl = isValidImg
-          ? cleanImg.startsWith("http") ? cleanImg : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
+          ? cleanImg.startsWith("http")
+            ? cleanImg
+            : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
           : "/images/products/product2.png";
-        return <img src={srcUrl} alt="" className="rounded-[8px] object-cover h-11 w-11 bg-gray-50 " />;
+        return (
+          <Image
+            src={srcUrl}
+            alt="Product Image"
+            width={50}
+            height={50}
+            className="rounded-lg object-cover h-11 w-11 bg-gray-50"
+            unoptimized
+          />
+        );
       },
     },
     {
@@ -172,7 +218,10 @@ export default function ProductTable() {
       headerClassName: "px-4 py-3 text-left",
       className: "px-4 py-3 align-middle",
       render: (product) => (
-        <span className="text-[15px] text-[#1D1A1A] font-normal block max-w-[300px] truncate" title={product.name}>
+        <span
+          className="text-[15px] text-[#1D1A1A] font-normal block max-w-[300px] truncate"
+          title={product.name}
+        >
           {product.name}
         </span>
       ),
@@ -184,7 +233,10 @@ export default function ProductTable() {
       className: "px-4 py-3 align-middle",
       render: (product) => {
         // 🚀 RESOLVED: Evaluates the specific category_id string value against the deep parsed map dictionary entries
-        const targetCategoryString = product.category?.name || categoryLookupMap[product.category_id] || "Uncategorized";
+        const targetCategoryString =
+          product.category?.name ||
+          categoryLookupMap[product.category_id || ""] ||
+          "Uncategorized";
         return (
           <span className="text-[13px] xl:text-[15px] text-black font-normal">
             {targetCategoryString}
@@ -220,9 +272,12 @@ export default function ProductTable() {
       headerClassName: "px-4 py-3 text-left",
       className: "px-4 py-3 align-middle",
       render: (product) => {
-        const isPublished = product.status === "PUBLISHED" || product.status === "active";
+        const isPublished =
+          product.status === "PUBLISHED" || product.status === "active";
         return (
-          <div className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}>
+          <div
+            className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}
+          >
             {isPublished ? "Publish" : product.status}
           </div>
         );
@@ -235,15 +290,33 @@ export default function ProductTable() {
       className: "px-4 py-3 align-middle text-right",
       render: (product) => (
         <div className="relative inline-block text-left">
-          <button onClick={() => setActiveMenuId(activeMenuId === product.id ? null : product.id)} className="text-black p-1 cursor-pointer">
+          <button
+            onClick={() =>
+              setActiveMenuId(activeMenuId === product.id ? null : product.id)
+            }
+            className="text-black p-1 cursor-pointer"
+          >
             <MoreVertical size={20} />
           </button>
           {activeMenuId === product.id && (
             <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50 text-left">
-              <button type="button" onClick={() => router.push(`/admin/dashboard/products/add?id=${product.id}`)} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/admin/dashboard/products/add?id=${product.id}`)
+                }
+                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
+              >
                 <Edit3 size={12} /> Edit Item
               </button>
-              <button type="button" onClick={() => { if (confirm("Delete this product?")) deleteMutation.mutate(product.id); }} className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Delete this product?"))
+                    deleteMutation.mutate(product.id);
+                }}
+                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
+              >
                 <Trash2 size={12} /> Delete Item
               </button>
             </div>
@@ -264,10 +337,19 @@ export default function ProductTable() {
 
   return (
     <div className="bg-white font-poppins">
-      <DataTable data={productList} columns={productColumns} rowKey="id" gradiant={true} />
+      <DataTable
+        data={productList}
+        columns={productColumns}
+        rowKey="id"
+        gradiant={true}
+      />
       {productList.length > 0 && (
         <div className="py-5 md:mx-10 mx-2">
-          <Pagination currentPage={page} totalPages={meta.totalPages} onPageChange={handlePageChange} />
+          <Pagination
+            currentPage={page}
+            totalPages={meta.totalPages}
+            onPageChange={handlePageChange}
+          />
         </div>
       )}
     </div>

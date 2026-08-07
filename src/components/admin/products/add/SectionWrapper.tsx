@@ -1,7 +1,7 @@
 import { ChevronUp } from "lucide-react";
 
 export const SectionWrapper = ({ title, children, description }: { title: string, children: React.ReactNode, description?: string }) => (
-    <div className="bg-white rounded-[8px] px-4 py-5 mb-4">
+    <div className="bg-white rounded-lg px-4 py-5 mb-4">
         <div className="flex justify-between items-center mb-4">
             <h3 className="text-[#003032] font-medium text-xl">{title}</h3>
             <ChevronUp size={24}  color="black" strokeWidth={2.5} />

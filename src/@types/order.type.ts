@@ -61,6 +61,7 @@ export interface CartItem {
   name?: string;
   price?: number | string;
   image?: string | null;
+  sell_price?: number | string;
   variantInfo?:
     | Array<{ label?: string; value?: string; type?: string }>
     | Record<string, unknown>;

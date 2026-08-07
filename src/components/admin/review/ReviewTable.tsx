@@ -681,7 +681,19 @@ export default function ReviewTable() {
   });
 
   const updateReviewMutation = useMutation({
-    mutationFn: async ({ id, rating, comment, images, createdAt }: any) => {
+    mutationFn: async ({
+      id,
+      rating,
+      comment,
+      images,
+      createdAt,
+    }: {
+      id: string;
+      rating: number;
+      comment: string;
+      images: string[];
+      createdAt: string;
+    }) => {
       return await reviewApi.updateDetails(
         id,
         rating,

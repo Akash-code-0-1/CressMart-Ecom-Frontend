@@ -13,9 +13,29 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/utils/api";
 import DataTable from "../common/DataTable";
+import Image from "next/image";
+import toast from "react-hot-toast";
+
+interface Column<T> {
+  header: string;
+  key: string;
+  render: (item: T) => React.ReactNode;
+}
+
+type AdminItem = {
+  id: string;
+  name: string;
+  role: string;
+  last_login: string;
+  created_at: string;
+  status: string;
+  avatar: string;
+  index: number;
+};
 
 // 🚀 Safe transparent fallback SVG from your working file
-const FALLBACK_AVATAR = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='45' height='45' viewBox='0 0 45 45'><rect width='45' height='45' fill='%23F3F4F6'/><circle cx='22.5' cy='18' r='7' fill='%239CA3AF'/><path d='M10,38 C10,30 16,26 22.5,26 C29,26 35,30 35,38' fill='%239CA3AF'/></svg>";
+const FALLBACK_AVATAR =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='45' height='45' viewBox='0 0 45 45'><rect width='45' height='45' fill='%23F3F4F6'/><circle cx='22.5' cy='18' r='7' fill='%239CA3AF'/><path d='M10,38 C10,30 16,26 22.5,26 C29,26 35,30 35,38' fill='%239CA3AF'/></svg>";
 
 export default function AdminControlTable() {
   const router = useRouter();
@@ -25,7 +45,8 @@ export default function AdminControlTable() {
   const [isStatusSubMenuOpen, setIsStatusSubMenuOpen] = useState(false);
 
   // Derive Backend URL exactly as you did in CustomerTable
-  const baseApiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
+  const baseApiUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
   const BACKEND_URL = baseApiUrl.replace("/api/v1", "");
 
   // Modern Date Formatting Helper
@@ -53,7 +74,10 @@ export default function AdminControlTable() {
     },
   });
 
-  const handleStatusUpdate = async (id: string, uiStatus: "PUBLISH" | "DRAFT") => {
+  const handleStatusUpdate = async (
+    id: string,
+    uiStatus: "PUBLISH" | "DRAFT",
+  ) => {
     const backendStatus = uiStatus === "PUBLISH" ? "active" : "blocked";
     try {
       const res = await apiFetch(`/users/admin-update/${id}`, {
@@ -66,9 +90,10 @@ export default function AdminControlTable() {
         await queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
         setActiveMenuId(null);
         setIsStatusSubMenuOpen(false);
+        toast.success("Status updated successfully");
       }
-    } catch (error) {
-      alert("Network error updating status");
+    } catch {
+      toast.error("Network error updating status");
     }
   };
 
@@ -78,36 +103,45 @@ export default function AdminControlTable() {
     if (res.ok) {
       queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
       setActiveMenuId(null);
+      toast.success("Admin deleted successfully");
+    } else {
+      toast.error("Network error deleting admin");
     }
   };
 
-  const columns = [
+  const columns: Column<AdminItem>[] = [
     {
-      header: "",
-      key: "checkbox",
-      headerRender: () => <input type="checkbox" className="accent-[#1DA1F2]" />,
-      render: () => <input type="checkbox" className="accent-[#1DA1F2]" />,
+      header: "SL",
+      key: "sl",
+      render: (item: AdminItem, i?: number) => (i !== undefined ? i + 1 : 1),
     },
-    { header: "SL", key: "sl", render: (_: any, i: number) => i + 1 },
     {
       header: "Picture",
       key: "picture",
-      render: (item: any) => {
+      render: (item: { avatar: string }) => {
         // EXACT IMAGE LOGIC FROM YOUR CUSTOMERTABLE
         let finalAvatar = FALLBACK_AVATAR;
 
         if (item.avatar && item.avatar.trim() !== "") {
-          if (item.avatar.startsWith("http") || item.avatar.startsWith("data:")) {
+          if (
+            item.avatar.startsWith("http") ||
+            item.avatar.startsWith("data:")
+          ) {
             finalAvatar = item.avatar;
           } else {
-            const cleanPath = item.avatar.startsWith("/") ? item.avatar : `/${item.avatar}`;
+            const cleanPath = item.avatar.startsWith("/")
+              ? item.avatar
+              : `/${item.avatar}`;
             finalAvatar = `${BACKEND_URL}${cleanPath}`;
           }
         }
 
         return (
-          <img
+          <Image
             src={finalAvatar}
+            width={10}
+            height={10}
+            unoptimized
             className="w-10 h-10 rounded-full object-cover"
             alt="admin"
             onError={(e) => {
@@ -120,22 +154,30 @@ export default function AdminControlTable() {
         );
       },
     },
-    { header: "Name", key: "name", render: (item: any) => item.name },
-    { header: "Role", key: "role", render: (item: any) => item.role },
+    {
+      header: "Name",
+      key: "name",
+      render: (item: { name: string }) => item.name,
+    },
+    {
+      header: "Role",
+      key: "role",
+      render: (item: { role: string }) => item.role,
+    },
     {
       header: "Last Login",
       key: "last_login",
-      render: (item: any) => formatDate(item.last_login),
+      render: (item: { last_login: string }) => formatDate(item.last_login),
     },
     {
       header: "Registration At",
       key: "created_at",
-      render: (item: any) => formatDate(item.created_at),
+      render: (item: { created_at: string }) => formatDate(item.created_at),
     },
     {
       header: "Status",
       key: "status",
-      render: (item: any) => (
+      render: (item: { status: string }) => (
         <span
           className={`px-3 py-1 rounded-full text-xs font-medium ${
             item.status === "active"
@@ -150,7 +192,7 @@ export default function AdminControlTable() {
     {
       header: "Action",
       key: "action",
-      render: (item: any) => (
+      render: (item: { id: string }) => (
         <div className="relative flex justify-end">
           <button
             onClick={(e) => {
@@ -164,10 +206,17 @@ export default function AdminControlTable() {
 
           {activeMenuId === item.id && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setActiveMenuId(null)} />
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setActiveMenuId(null)}
+              />
               <div className="absolute right-0 mt-8 w-48 bg-white border border-gray-100 shadow-2xl rounded-xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
                 <button
-                  onClick={() => router.push(`/admin/dashboard/admin-control/edit/${item.id}`)}
+                  onClick={() =>
+                    router.push(
+                      `/admin/dashboard/admin-control/edit/${item.id}`,
+                    )
+                  }
                   className="w-full px-4 py-2.5 text-xs flex items-center gap-3 hover:bg-gray-50 font-medium text-gray-700 cursor-pointer"
                 >
                   <Edit3 size={14} /> Edit
@@ -216,13 +265,17 @@ export default function AdminControlTable() {
   ];
 
   return (
-    <div className="bg-white p-5 rounded-lg border border-gray-100 shadow-sm">
+    <div className="">
       {isLoading ? (
         <div className="flex justify-center p-10">
           <Loader2 className="animate-spin" />
         </div>
       ) : (
-        <DataTable data={data?.data?.data || []} columns={columns} rowKey="id" />
+        <DataTable
+          data={data?.data?.data || []}
+          columns={columns}
+          rowKey="id"
+        />
       )}
     </div>
   );

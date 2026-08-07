@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <PermissionGuard permission="Orders">
       <div className="flex h-screen">
-        <main className="flex-1 overflow-y-auto focus:outline-none">
+        <main className="flex-1">
           <div className="p-2 md:p-0">
             <div className="mt-2">
               <OrderHeader />

@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useWatch } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
 import PrimaryButton from "../common/PrimaryButton";
+import toast from "react-hot-toast";
 
 const PERMISSIONS = [
   "Dashboard",
@@ -21,6 +22,23 @@ const PERMISSIONS = [
   "Admin Control",
 ];
 
+interface AdminFormValues {
+  name: string;
+  email: string;
+  phone: string;
+  role: "ADMIN" | "MANAGER";
+  password: string;
+  permissions: string[];
+}
+
+interface AdminData {
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: "ADMIN" | "MANAGER";
+  permissions?: string[];
+}
+
 export default function AddRoleMain() {
   const router = useRouter();
   const params = useParams();
@@ -30,7 +48,7 @@ export default function AddRoleMain() {
   const queryClient = useQueryClient();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  const methods = useForm({
+  const methods = useForm<AdminFormValues>({
     defaultValues: {
       name: "",
       email: "",
@@ -40,16 +58,21 @@ export default function AddRoleMain() {
     },
   });
 
-  const [selectedPerms, setSelectedPerms] = useState<string[]>(["Dashboard"]);
+  // const [selectedPerms, setSelectedPerms] = useState<string[]>(["Dashboard"]);
+  const selectedPerms =
+    useWatch({
+      control: methods.control,
+      name: "permissions",
+    }) || [];
 
   // Load existing data if editing
-  const { data: adminData, isLoading } = useQuery({
+  const { data: adminData, isLoading } = useQuery<AdminData>({
     queryKey: ["admin-detail", adminId],
     queryFn: async () => {
       const res = await apiFetch(`/users/${adminId}`);
       if (!res.ok) throw new Error("Failed to fetch user");
       const json = await res.json();
-      return json.data || json; 
+      return json.data || json;
     },
     enabled: isEdit && !!adminId,
   });
@@ -62,11 +85,8 @@ export default function AddRoleMain() {
         email: adminData.email || "",
         phone: adminData.phone || "",
         role: adminData.role || "ADMIN",
+        permissions: adminData.permissions || ["Dashboard"],
       });
-
-      if (adminData.permissions) {
-        setSelectedPerms(adminData.permissions);
-      }
     }
   }, [adminData, methods]);
 
@@ -82,8 +102,15 @@ export default function AddRoleMain() {
     }
   };
 
-  const onSubmit = async (formData: any) => {
-    const payload: any = {
+  const onSubmit = async (formData: AdminFormValues) => {
+    const payload: {
+      name: string;
+      email: string;
+      phone: string;
+      role: "ADMIN" | "MANAGER";
+      permissions: string[];
+      password?: string;
+    } = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
@@ -108,20 +135,40 @@ export default function AddRoleMain() {
       router.push("/admin/dashboard/admin-control");
     } else {
       const err = await res.json();
-      alert(err.message || "Failed to save changes");
+      toast.error(err.message || "Failed to save changes");
     }
   };
 
   if (isEdit && isLoading)
-    return <div className="p-10 text-center text-[#023337] font-bold text-xl">Loading Admin Data...</div>;
+    return (
+      <div className="p-10 text-center text-[#023337] font-bold text-xl">
+        Loading Admin Data...
+      </div>
+    );
+
+  const togglePermission = (p: string) => {
+    const current = methods.getValues("permissions");
+    const updated = current.includes(p)
+      ? current.filter((x) => x !== p)
+      : [...current, p];
+
+    methods.setValue("permissions", updated);
+  };
 
   return (
-    <div className="pt-8 px-6 bg-[#F9FAFB] min-h-screen">
+    <div className="bg-[#F9FAFB] min-h-screen">
       <style jsx>{`
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-10px);
+          }
+          75% {
+            transform: translateX(10px);
+          }
         }
         .animate-shake {
           animation: shake 0.3s ease-in-out;
@@ -131,12 +178,12 @@ export default function AddRoleMain() {
       <FormProvider {...methods}>
         <form
           onSubmit={methods.handleSubmit(onSubmit)}
-          className="flex gap-6 max-w-6xl mx-auto items-start"
+          className="flex gap-6 mt-6 items-start font-lato"
         >
           {/* Permission Sidebar */}
           <div
             ref={sidebarRef}
-            className="w-1/3 bg-white p-6 rounded-xl border border-gray-100 shadow-sm transition-all"
+            className="w-1/3 bg-white p-6 rounded-xl transition-all"
           >
             <h3 className="font-bold text-[#023337] mb-4">Permissions</h3>
             <div className="space-y-1">
@@ -148,13 +195,7 @@ export default function AddRoleMain() {
                   <input
                     type="checkbox"
                     checked={selectedPerms.includes(p)}
-                    onChange={() =>
-                      setSelectedPerms((prev) =>
-                        prev.includes(p)
-                          ? prev.filter((x) => x !== p)
-                          : [...prev, p],
-                      )
-                    }
+                    onChange={() => togglePermission(p)}
                     className="w-4 h-4 accent-[#1DA1F2]"
                   />
                   <span className="text-sm text-gray-700 font-medium">{p}</span>
@@ -164,7 +205,7 @@ export default function AddRoleMain() {
           </div>
 
           {/* Form Content */}
-          <div className="w-2/3 bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
+          <div className="w-2/3 bg-white p-8 rounded-xl">
             <div className="flex items-center gap-4 mb-8">
               <ArrowLeft
                 className="cursor-pointer text-[#023337]"
@@ -182,7 +223,7 @@ export default function AddRoleMain() {
                 </label>
                 <input
                   {...methods.register("name")}
-                  className="w-full p-3 bg-[#F9F9F9] rounded-lg border outline-none focus:border-[#1DA1F2] transition-all"
+                  className="w-full p-3 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2] transition-all"
                   placeholder="Enter name"
                 />
               </div>
@@ -192,7 +233,7 @@ export default function AddRoleMain() {
                 </label>
                 <input
                   {...methods.register("email")}
-                  className="w-full p-3 bg-[#F9F9F9] rounded-lg border outline-none focus:border-[#1DA1F2] transition-all"
+                  className="w-full p-3 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2] transition-all"
                   placeholder="Enter email"
                 />
               </div>
@@ -202,7 +243,7 @@ export default function AddRoleMain() {
                 </label>
                 <input
                   {...methods.register("phone")}
-                  className="w-full p-3 bg-[#F9F9F9] rounded-lg border outline-none focus:border-[#1DA1F2] transition-all"
+                  className="w-full p-3 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2] transition-all"
                   placeholder="Enter phone number"
                 />
               </div>
@@ -212,7 +253,7 @@ export default function AddRoleMain() {
                 </label>
                 <select
                   {...methods.register("role")}
-                  className="w-full p-3 bg-[#F9F9F9] rounded-lg border outline-none focus:border-[#1DA1F2] transition-all appearance-none"
+                  className="w-full p-3 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2] transition-all appearance-none"
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="MANAGER">Manager</option>
@@ -231,7 +272,9 @@ export default function AddRoleMain() {
                   <span className="text-sm text-gray-600 font-medium">
                     {selectedPerms.length} Permissions Selected
                   </span>
-                  <span className="text-[10px] bg-[#1DA1F2] text-white px-2 py-1 rounded">View</span>
+                  <span className="text-[10px] bg-[#1DA1F2] text-white px-2 py-1 rounded">
+                    View
+                  </span>
                 </div>
               </div>
             </div>
@@ -254,7 +297,7 @@ export default function AddRoleMain() {
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="px-6 py-2.5 font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-6 py-2.5 font-semibold text-black bg-gray-100 rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>

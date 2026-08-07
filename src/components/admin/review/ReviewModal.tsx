@@ -273,9 +273,6 @@
 //   );
 // }
 
-
-
-
 import { UseMutationResult } from "@tanstack/react-query";
 import { Star, Loader2, X, Plus } from "lucide-react";
 import Image from "next/image";
@@ -347,7 +344,7 @@ export interface UpdateReviewVariables {
   rating: number;
   comment: string;
   images: string[];
-  createdAt: string; 
+  createdAt: string;
 }
 
 export interface CreateReviewPayload {
@@ -378,7 +375,7 @@ export default function ReviewModal({
   editingReviewId,
   removeImage,
 }: {
-  activeReviewItem: any;
+  activeReviewItem: ReviewItem;
   FALLBACK_AVATAR: string;
   setIsEditModalOpen: (open: boolean) => void;
   setEditingReviewId: (id: string | null) => void;
@@ -404,7 +401,6 @@ export default function ReviewModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-[440px] relative font-poppins px-6 pb-6 pt-10 animate-in fade-in zoom-in-95 duration-200 text-left">
-
         <button
           onClick={() => {
             setIsEditModalOpen(false);
@@ -423,7 +419,8 @@ export default function ReviewModal({
               "http://localhost:8082";
 
             const cleanPath = img.startsWith("/") ? img : `/${img}`;
-            const fullImageUrl = img.startsWith("http") || img.startsWith("data:")
+            const fullImageUrl =
+              img.startsWith("http") || img.startsWith("data:")
                 ? img
                 : `${baseUrl}${cleanPath}`;
 
@@ -455,7 +452,7 @@ export default function ReviewModal({
               <Loader2 className="animate-spin text-amber-500" size={20} />
             </div>
           )}
-          
+
           <button
             type="button"
             onClick={() => modalFileRef.current?.click()}
@@ -500,11 +497,17 @@ export default function ReviewModal({
                     key={s}
                     size={16}
                     fill={s <= editRating ? "#FFA500" : "transparent"}
-                    className={s <= editRating ? "text-[#FFA500] cursor-pointer" : "text-gray-300 cursor-pointer"}
+                    className={
+                      s <= editRating
+                        ? "text-[#FFA500] cursor-pointer"
+                        : "text-gray-300 cursor-pointer"
+                    }
                     onClick={() => setEditRating(s)}
                   />
                 ))}
-                <span className="text-xs text-gray-500 font-bold ml-1">({editRating}.0)</span>
+                <span className="text-xs text-gray-500 font-bold ml-1">
+                  ({editRating}.0)
+                </span>
               </div>
             </div>
             <textarea

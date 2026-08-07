@@ -13,6 +13,7 @@ import ImportFileIcon from "@/components/store-front/svg/svg/ImportFileIcon";
 import ExportIcon from "@/components/store-front/svg/svg/ExportIcon";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
 import ViewIcon from "@/components/store-front/svg/svg/ViewIcon";
+import toast from "react-hot-toast";
 
 export default function ProductToolbar() {
   const router = useRouter();
@@ -29,10 +30,12 @@ export default function ProductToolbar() {
   // Local state to manage the immediate search string input typing value
   const [searchTerm, setSearchTerm] = useState(currentSearch);
 
-  // Keep local search text input state in sync if URL parameters alter from outside
-  useEffect(() => {
+  // Sync state during render when URL parameter changes externally
+  const [prevSearch, setPrevSearch] = useState(currentSearch);
+  if (prevSearch !== currentSearch) {
+    setPrevSearch(currentSearch);
     setSearchTerm(currentSearch);
-  }, [currentSearch]);
+  }
 
   // Async fetch categories tree for filtering
   const { data: treeRes } = useQuery({
@@ -40,7 +43,7 @@ export default function ProductToolbar() {
     queryFn: async () => {
       const res = await apiFetch("/categories/tree");
       return res.json();
-    }
+    },
   });
 
   // 🚀 FIXED: Deep scan and flatten the entire category tree structural data
@@ -52,19 +55,35 @@ export default function ProductToolbar() {
       if (!treeRes) return [];
       if (Array.isArray(treeRes)) return treeRes;
       if (treeRes.data && Array.isArray(treeRes.data)) return treeRes.data;
-      if (treeRes.data?.data && Array.isArray(treeRes.data.data)) return treeRes.data.data;
-      if (treeRes.categories && Array.isArray(treeRes.categories)) return treeRes.categories;
+      if (treeRes.data?.data && Array.isArray(treeRes.data.data))
+        return treeRes.data.data;
+      if (treeRes.categories && Array.isArray(treeRes.categories))
+        return treeRes.categories;
       return [];
     })();
 
-    const flatten = (nodes: any[], level = 0) => {
+    const flatten = (
+      nodes: {
+        id: string;
+        name: string;
+        children?: {
+          id: string;
+          name: string;
+          children?: {
+            id: string;
+            name: string;
+          }[];
+        }[];
+      }[],
+      level = 0,
+    ) => {
       if (!Array.isArray(nodes)) return;
       nodes.forEach((node) => {
         if (node && node.id && node.name) {
           const prefix = level > 0 ? `${"  ".repeat(level)}├─ ` : "";
           list.push({
             id: node.id,
-            name: `${prefix}${node.name}`
+            name: `${prefix}${node.name}`,
           });
         }
         if (node && node.children && node.children.length > 0) {
@@ -101,12 +120,15 @@ export default function ProductToolbar() {
   const handleExportExcel = async () => {
     try {
       const token = await getAdminTokenAction();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/export`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token || ""}` }
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/export`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token || ""}` },
+        },
+      );
       if (!res.ok) throw new Error("Export generation sequence failed");
-      
+
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -115,12 +137,12 @@ export default function ProductToolbar() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (err: any) {
-      alert(`Export Fault: ${err.message}`);
+    } catch (err) {
+      toast.error("Error exporting products. Please try again.");
     }
   };
 
-// 🚀 LIVE IMPORT ROUTING WITH EXTENDED REJECTION TRACING
+  // 🚀 LIVE IMPORT ROUTING WITH EXTENDED REJECTION TRACING
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -130,14 +152,18 @@ export default function ProductToolbar() {
       const multiForm = new FormData();
       multiForm.append("file", file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/import`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token || ""}` },
-        body: multiForm
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/import`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token || ""}` },
+          body: multiForm,
+        },
+      );
 
       const responseJson = await res.json();
-      if (!res.ok) throw new Error(responseJson?.message || "File processing failure.");
+      if (!res.ok)
+        throw new Error(responseJson?.message || "File processing failure.");
 
       // ── MATCH EXACT BACKEND CASING ──
       const baseSuccess = responseJson.successCount ?? 0;
@@ -147,31 +173,46 @@ export default function ProductToolbar() {
       // If the backend collected error strings inside the trace array, display them explicitly
       if (errorLogs.length > 0) {
         console.error("Excel Row Reject Summary:", errorLogs);
-        
+
         // Show up to the first 5 line errors cleanly formatted inside the dialog pop-up
         const errorSummary = errorLogs.slice(0, 5).join("\n");
-        const totalHidden = errorLogs.length > 5 ? `\n...and ${errorLogs.length - 5} more line items.` : "";
-        
+        const totalHidden =
+          errorLogs.length > 5
+            ? `\n...and ${errorLogs.length - 5} more line items.`
+            : "";
+
         alert(
           `Import Processed With Anomalies!\n\n` +
-          `✅ Successfully Added/Updated: ${baseSuccess} rows\n` +
-          `❌ Rejected / Failed Rows: ${baseFailed}\n\n` +
-          `📋 Error Logs Breakdown:\n${errorSummary}${totalHidden}`
+            `✅ Successfully Added/Updated: ${baseSuccess} rows\n` +
+            `❌ Rejected / Failed Rows: ${baseFailed}\n\n` +
+            `📋 Error Logs Breakdown:\n${errorSummary}${totalHidden}`,
         );
       } else {
-        alert(`Import Complete! Successfully processed all ${baseSuccess} product rows.`);
+        alert(
+          `Import Complete! Successfully processed all ${baseSuccess} product rows.`,
+        );
       }
-      
+
       window.location.reload();
-    } catch (err: any) {
-      alert(`Import Fault: ${err.message}`);
+    } catch (err) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unknown error occurred");
+      }
     }
   };
 
   return (
     <div className="w-full bg-white p-5 font-lato border-b border-gray-100">
-      <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleImportExcel} />
-      
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept=".xlsx, .xls"
+        onChange={handleImportExcel}
+      />
+
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <h2 className="text-[#023337] text-[22px] font-bold">Products</h2>
 
@@ -189,10 +230,14 @@ export default function ProductToolbar() {
           </div>
 
           <div className="border border-[#F7931E] rounded-[8px] px-3 py-1 flex flex-col justify-center cursor-pointer hover:bg-orange-50 transition-colors w-full sm:w-auto">
-            <span className="text-[12px] text-[#070707] font-poppins font-medium">View</span>
+            <span className="text-[12px] text-[#070707] font-poppins font-medium">
+              View
+            </span>
             <div className="flex items-center gap-2">
               <ViewIcon />
-              <span className="text-[15px] font-poppins font-normal text-[#070707]">Large icons</span>
+              <span className="text-[15px] font-poppins font-normal text-[#070707]">
+                Large icons
+              </span>
             </div>
           </div>
 
@@ -209,16 +254,22 @@ export default function ProductToolbar() {
       {/* Action and Filtering Row */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 lg:gap-4">
         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-[#161719] text-sm font-bold hover:opacity-80 cursor-pointer">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 text-[#161719] text-sm font-bold hover:opacity-80 cursor-pointer"
+          >
             <ImportFileIcon /> Import
           </button>
-          <button onClick={handleExportExcel} className="flex items-center gap-2 text-[#161719] text-sm font-bold hover:opacity-80 cursor-pointer">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 text-[#161719] text-sm font-bold hover:opacity-80 cursor-pointer"
+          >
             <ExportIcon /> Export
           </button>
 
           {/* Limit Selector */}
-          <select 
-            value={currentLimit} 
+          <select
+            value={currentLimit}
             onChange={(e) => updateSearchQuery("limit", e.target.value)}
             className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
           >
