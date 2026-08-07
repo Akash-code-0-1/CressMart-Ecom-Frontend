@@ -145,8 +145,6 @@
 //   },
 // ];
 
-
-
 import AOrderIcon from "@/components/store-front/svg/svg/AOrderIcon";
 import ADashboardIcon from "@/components/store-front/svg/svg/ADashboardIcon";
 import DashboardIcon from "@/components/store-front/svg/svg/DashboardIcon";
@@ -259,10 +257,10 @@ export const sidebarMenu = [
             label: "Faqs",
             href: "/admin/dashboard/faq",
           },
-          {
-            label: "Popups",
-            href: "/admin/dashboard/popup",
-          },
+          // {
+          //   label: "Popups",
+          //   href: "/admin/dashboard/popup",
+          // },
           {
             label: "Blogs",
             href: "/admin/dashboard/blog",
@@ -276,7 +274,7 @@ export const sidebarMenu = [
     ],
   },
 
-    {
+  {
     section: "Promotion",
     items: [
       {

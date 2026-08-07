@@ -6,9 +6,9 @@ import PermissionGuard from "@/components/admin/common/PermissionGuard";
 export default function Page() {
   return (
     <PermissionGuard permission="Admin Control">
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex">
         <main className="flex-1">
-          <div className="p-2 md:p-0">
+          <div className="">
             <AdminControlHead />
             <AdminControlTable />
           </div>

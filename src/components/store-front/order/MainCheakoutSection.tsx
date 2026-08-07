@@ -47,7 +47,6 @@ const MainCheckoutSection: React.FC = () => {
   const [orderSource, setOrderSource] = useState<string>("direct");
   useEffect(() => {
     const stored = sessionStorage.getItem("order_source");
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored) setOrderSource(stored);
   }, []);
 
@@ -148,7 +147,6 @@ const MainCheckoutSection: React.FC = () => {
 
   useEffect(() => {
     if (!isSubCityAvailable && formData.shippingArea === "sub_city") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData((prev) => ({ ...prev, shippingArea: "outside" }));
     }
   }, [isSubCityAvailable, formData.shippingArea]);
@@ -279,6 +277,9 @@ const MainCheckoutSection: React.FC = () => {
       setCouponDiscount(Number(discount));
       setAppliedCoupon(couponInput.trim());
       toast.success("Coupon applied successfully!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Something went wrong.");
     },
   });
 

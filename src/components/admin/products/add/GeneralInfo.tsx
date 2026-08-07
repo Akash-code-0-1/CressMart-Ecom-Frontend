@@ -107,15 +107,15 @@
 //   );
 // }
 
-
 "use client";
 
 import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getAdminTokenAction } from "@/app/actions/auth";
 import { apiFetch } from "@/utils/api";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
+import Image from "next/image";
 
 export default function GeneralInfo() {
   const { register, setValue, watch } = useFormContext();
@@ -123,7 +123,9 @@ export default function GeneralInfo() {
   const autoSlug = watch("autoSlug");
   const images = watch("images") || [];
 
-  const handleImageUploadStream = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUploadStream = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -141,7 +143,7 @@ export default function GeneralInfo() {
 
       if (!res.ok) throw new Error("Image server upload error");
       const data = await res.json();
-      
+
       // Update form context state securely
       setValue("images", [...images, data.image_url]);
     } catch (err) {
@@ -159,31 +161,48 @@ export default function GeneralInfo() {
             <label className="text-base font-normal text-black">
               Item Name <span className="text-[#E30000]">*</span>
             </label>
-            <div className="flex items-center gap-2 mb-1.5 cursor-pointer" onClick={() => setValue("autoSlug", !autoSlug)}>
-              <span className="text-base font-normal text-black">Auto Slug</span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${autoSlug ? 'bg-[#1DA1F2]' : 'bg-gray-200'}`}>
-                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${autoSlug ? 'left-5' : 'left-0.5'}`} />
+            <div
+              className="flex items-center gap-2 mb-1.5 cursor-pointer"
+              onClick={() => setValue("autoSlug", !autoSlug)}
+            >
+              <span className="text-base font-normal text-black">
+                Auto Slug
+              </span>
+              <div
+                className={`w-10 h-5 rounded-full relative transition-colors ${autoSlug ? "bg-[#1DA1F2]" : "bg-gray-200"}`}
+              >
+                <div
+                  className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${autoSlug ? "left-5" : "left-0.5"}`}
+                />
               </div>
             </div>
           </div>
           <input
-            {...register("name", { required: true, onChange: (e) => {
-              if (autoSlug) {
-                const computed = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-                setValue("slug", computed);
-              }
-            }})}
-            className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none placeholder:text-[#A2A2A2] text-gray-700"
+            {...register("name", {
+              required: true,
+              onChange: (e) => {
+                if (autoSlug) {
+                  const computed = e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/(^-|-$)/g, "");
+                  setValue("slug", computed);
+                }
+              },
+            })}
+            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none placeholder:text-[#A2A2A2] text-gray-700"
             placeholder="Ex: Samsung Galaxy S23 Ultra"
           />
         </div>
 
         <div>
-          <label className="text-base font-normal text-black mb-1.5 block">Product Link Slug (URL Path)</label>
+          <label className="text-base font-normal text-black mb-1.5 block">
+            Product Link Slug (URL Path)
+          </label>
           <input
             {...register("slug")}
             disabled={autoSlug}
-            className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none placeholder:text-[#A2A2A2] text-gray-500 disabled:opacity-60"
+            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none placeholder:text-[#A2A2A2] text-gray-500 disabled:opacity-60"
             placeholder="auto-computed-url-slug"
           />
         </div>
@@ -192,28 +211,50 @@ export default function GeneralInfo() {
           <label className="text-base font-normal text-black mb-1.5 block">
             Media <span className="text-[#E30000]">*</span>
           </label>
-          <div className="bg-[#F9F9F9] rounded-[8px] py-12 flex flex-col items-center justify-center text-center relative border border-dashed border-gray-200">
+          <div className="bg-[#F9F9F9] rounded-lg py-12 flex flex-col items-center justify-center text-center relative border border-dashed border-gray-200">
             {images.length > 0 && (
               <div className="flex flex-wrap gap-2.5 mb-4 px-4">
                 {images.map((src: string, i: number) => (
-                  <img key={i} src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "")}${src}`} className="w-16 h-16 object-cover border rounded bg-white" alt="" />
+                  <Image
+                    key={i}
+                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "")}${src}`}
+                    width={64}
+                    height={64}
+                    className="object-cover border rounded bg-white"
+                    alt=""
+                    unoptimized
+                  />
                 ))}
               </div>
             )}
             <label className="cursor-pointer flex flex-col items-center">
               <IamgeIcon color="#A2A2A2" size="76" />
-              <p className="text-base text-[#A2A2A2] mb-1 font-normal">Drag and drop image here, or click add image.</p>
-              <input type="file" className="hidden" accept="image/*" onChange={handleImageUploadStream} disabled={uploading} />
+              <p className="text-base text-[#A2A2A2] mb-1 font-normal">
+                Drag and drop image here, or click add image.
+              </p>
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageUploadStream}
+                disabled={uploading}
+              />
             </label>
-            {uploading && <div className="absolute inset-0 bg-white/70 flex items-center justify-center"><Loader2 className="animate-spin text-orange-500" /></div>}
+            {uploading && (
+              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <Loader2 className="animate-spin text-orange-500" />
+              </div>
+            )}
           </div>
         </div>
 
         <div>
-          <label className="text-base font-normal text-black mb-1.5 block">Short Description</label>
+          <label className="text-base font-normal text-black mb-1.5 block">
+            Short Description
+          </label>
           <textarea
             {...register("short_description")}
-            className="w-full bg-[#F9FAFB] rounded-[8px] px-4 py-3 text-sm min-h-[88px] outline-none placeholder:text-[#A2A2A2] text-gray-700 resize-none"
+            className="w-full bg-[#F9FAFB] rounded-lg px-4 py-3 text-sm min-h-[88px] outline-none placeholder:text-[#A2A2A2] text-gray-700 resize-none"
             placeholder="Ex: Short Description"
           />
         </div>
@@ -222,7 +263,7 @@ export default function GeneralInfo() {
           <label className="text-base font-normal text-black mb-1.5 block">
             Product Description <span className="text-[#E30000]">*</span>
           </label>
-          <div className="bg-[#F9FAFB] rounded-[8px] overflow-hidden border">
+          <div className="bg-[#F9FAFB] rounded-lg overflow-hidden border">
             <div className="flex flex-wrap items-center gap-4 p-3 border-b border-white bg-gray-50/50">
               <span className="text-xs font-bold text-[#4F4D4D]">Normal</span>
             </div>

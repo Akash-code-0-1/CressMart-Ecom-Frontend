@@ -69,14 +69,13 @@
 
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useFormContext, useFieldArray } from "react-hook-form";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
-import SeconderyButton from "../../common/SeconderyButton";
 
 export default function ProductVariant() {
-  const { control, register, watch, setValue } = useFormContext();
+  const { control, watch, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({ control, name: "variants" });
   const isMandatory = watch("is_variant_mandatory");
 
@@ -97,11 +96,11 @@ export default function ProductVariant() {
   };
 
   return (
-    <div className="bg-white rounded-[8px] px-4 py-5 mb-4 border border-gray-100">
+    <div className="bg-white rounded-lg px-4 py-5 mb-4 border border-gray-100">
       <h3 className="text-[#003032] font-medium text-xl mb-1">Product Variants</h3>
       <p className="text-xs text-[#A2A2A2] mb-5 leading-tight">Add dynamic configurations (Color, Size) mapped to Prisma rows.</p>
 
-      <div className="bg-white border border-[#38BDF8] rounded-[16px] px-4 py-6 mb-5">
+      <div className="bg-white border border-[#38BDF8] rounded-2xl px-4 py-6 mb-5">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h4 className="text-xl font-medium text-black">Make this variant mandatory</h4>
@@ -123,10 +122,10 @@ export default function ProductVariant() {
         ))}
 
         <div className="grid grid-cols-2 gap-3 mt-4">
-          <input value={attr} onChange={(e) => setAttr(e.target.value)} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none" placeholder="Option Name (e.g. Red, Large)" />
-          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none" placeholder="Price Override" />
-          <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none" placeholder="Stock Level" />
-          <input value={sku} onChange={(e) => setSku(e.target.value)} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none" placeholder="Variant SKU" />
+          <input value={attr} onChange={(e) => setAttr(e.target.value)} className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none" placeholder="Option Name (e.g. Red, Large)" />
+          <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none" placeholder="Price Override" />
+          <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none" placeholder="Stock Level" />
+          <input value={sku} onChange={(e) => setSku(e.target.value)} className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none" placeholder="Variant SKU" />
         </div>
 
         <div className="mt-4">

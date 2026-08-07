@@ -1,93 +1,95 @@
+import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
+import { SectionWrapper } from "./SectionWrapper";
+import PrimaryButton from "../../common/PrimaryButton";
+import { Trash2 } from "lucide-react";
+import { useFieldArray, useFormContext } from "react-hook-form";
 
-// import { Toggle } from './Toggle'
-// import { Label } from './Label'
-// import { Input } from './Input'
+export default function ShippingSection({ isEditMode }: { isEditMode: boolean }) {
+  const { control, watch, setValue, register } = useFormContext();
+  const shippingMode = watch("shippingMode") as "DEFAULT" | "CUSTOM" | "FREE";
 
-// export default function ShippingSection() {
-//     return (
-//         <div className="mb-12">
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "customShippingRows",
+  });
 
-//             <div className="mb-6">
-//                 <h4 className="text-[20px] font-medium text-black mb-1">Delivery Charge</h4>
-//                 <p className="text-[12px] text-[#A2A2A2] leading-tight">
-//                     You can add specific delivery charge for this product or use the default charges
-//                 </p>
-//             </div>
-
-//             <div className="flex justify-between items-center mb-8">
-//                 <span className="text-base font-normal text-[#000000]">Apply default delivery charges</span>
-//                 <div className="flex items-center gap-3">
-//                     <span className="text-base font-normal text-[#000000]">[Not Applied]</span>
-//                     <Toggle checked={false} />
-//                 </div>
-//             </div>
-
-
-//             <div className="mb-8">
-//                 <Label>Delivery Charge (Default)</Label>
-//                 <Input placeholder='120' />
-//             </div>
-
-//             <div className="mb-12">
-//                 <Label>Specific Delivery Charge</Label>
-//                 <div className="flex gap-4">
-//                     <div className="flex-[2]">
-//                         <Input placeholder='60' />
-//                     </div>
-//                     <div className="flex-[1]">
-//                         <Input placeholder='80' />
-//                     </div>
-//                 </div>
-//             </div>
-//         </div>
-//     )
-// }
-
-
-"use client";
-
-import React from "react";
-import { useFormContext } from "react-hook-form";
-
-export default function ShippingSection() {
-  const { register, watch, setValue } = useFormContext();
-  const applyDefault = watch("applyDefaultDelivery");
+  const modes: { value: "DEFAULT" | "CUSTOM" | "FREE"; label: string }[] = [
+    { value: "DEFAULT", label: "Default" },
+    { value: "CUSTOM", label: "Custom" },
+    { value: "FREE", label: "Free" },
+  ];
 
   return (
-    <div className="mb-12">
-      <div className="mb-6">
-        <h4 className="text-[20px] font-medium text-black mb-1">Delivery Charge</h4>
-        <p className="text-[12px] text-[#A2A2A2] leading-tight">Configure shipping zone price overrides.</p>
-      </div>
+    <SectionWrapper
+      title="Shipping Configuration"
+      description="Choose how delivery charges apply to this product."
+    >
+      <div className="space-y-4">
+        <div className="flex gap-2 flex-wrap">
+          {modes.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              onClick={() => setValue("shippingMode", m.value)}
+              className={`px-4 py-2 rounded-[8px] text-xs font-semibold border transition-colors cursor-pointer ${
+                shippingMode === m.value
+                  ? "bg-[#FF9F1C] text-white border-[#FF9F1C]"
+                  : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex justify-between items-center mb-8">
-        <span className="text-base font-normal text-[#000000]">Apply default delivery charges</span>
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setValue("applyDefaultDelivery", !applyDefault)}>
-          <span className="text-base font-normal text-[#000000]">{applyDefault ? "[Applied]" : "[Not Applied]"}</span>
-          <div className={`w-10 h-5 rounded-full relative transition-colors ${applyDefault ? 'bg-[#1DA1F2]' : 'bg-gray-200'}`}>
-            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-xs ${applyDefault ? 'left-5' : 'left-0.5'}`} />
+        {shippingMode === "DEFAULT" && (
+          <div className="bg-gray-50 border border-gray-200 text-gray-600 text-xs px-3 py-2.5 rounded-[8px]">
+            This product will use the system&apos;s global default delivery
+            rate.
           </div>
-        </div>
-      </div>
+        )}
 
-      {applyDefault ? (
-        <div className="mb-8">
-          <label className="text-base font-normal text-black mb-1.5 block">Delivery Charge (Default)</label>
-          <input type="number" {...register("deliveryChargeDefault")} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-700" placeholder="120" />
-        </div>
-      ) : (
-        <div className="mb-12">
-          <label className="text-base font-normal text-black mb-1.5 block">Specific Delivery Overrides</label>
-          <div className="flex gap-4">
-            <div className="flex-[2]">
-              <input type="number" {...register("deliveryChargeSpecificInside")} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-700" placeholder="Inside Dhaka (e.g. 60)" />
-            </div>
-            <div className="flex-[1]">
-              <input type="number" {...register("deliveryChargeSpecificOutside")} className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-700" placeholder="Outside Dhaka (e.g. 120)" />
-            </div>
+        {shippingMode === "FREE" && (
+          <div className="bg-green-50 border border-green-200 text-green-700 text-xs px-3 py-2.5 rounded-[8px]">
+            This product will ship free of charge to all zones (৳0).
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {shippingMode === "CUSTOM" && (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-400">
+              Add as many delivery zones as needed with their own charge.
+            </p>
+            {fields.map((field, idx) => (
+              <div key={field.id} className="flex gap-2 items-center">
+                <input
+                  {...register(`customShippingRows.${idx}.zone`)}
+                  className="flex-1 bg-[#F9F9F9] px-2.5 py-3 text-xs rounded outline-none"
+                  placeholder="Zone (e.g. Dhaka, Chittagong, Sylhet)"
+                />
+                <input
+                  type="number"
+                  {...register(`customShippingRows.${idx}.charge`)}
+                  className="w-32 bg-[#F9F9F9] px-2.5 py-3 text-xs rounded outline-none"
+                  placeholder="Charge (৳)"
+                />
+                <button
+                  type="button"
+                  onClick={() => remove(idx)}
+                  className="text-red-500 hover:text-red-700 shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+            <PrimaryButton
+              label="Add Zone"
+              onClick={() => append({ zone: "", charge: "" })}
+              icon={<PluseIcon />}
+            />
+          </div>
+        )}
+      </div>
+    </SectionWrapper>
   );
 }
