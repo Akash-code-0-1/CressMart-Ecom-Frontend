@@ -21,6 +21,7 @@ import {
   searchProductsService,
 } from "@/services-api/orderService";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
 type orderItem = {
   productId: string;
@@ -28,20 +29,32 @@ type orderItem = {
   sell_price: number;
   quantity: number;
   variantId?: string | null;
+  image?: string;
 };
 
 type Product = {
   id: string;
   name: string;
   sell_price: number | string;
+  images?: string[];
+  image?: string;
 };
 
 type OrderItemFromApi = {
-  product_id: number;
+  product_id: number | string;
   product_name: string;
   unit_price: number;
   quantity: number;
-  variant_id: number | null;
+  variant_id: number | string | null;
+  external_image?: string | null;
+  product?: {
+    id?: string;
+    images?: string[];
+  } | null;
+  variant?: {
+    id?: string;
+    images?: string[];
+  } | null;
 };
 
 type ExistingOrder = {
@@ -56,6 +69,7 @@ type ExistingOrder = {
   status?: string;
   payment_status?: string;
   discount_amount?: number | string;
+  advance_amount?: number | string;
   courier_city_id?: number | null;
   courier_zone_id?: number | null;
   courier_area_id?: number | null;
@@ -74,6 +88,7 @@ type OrderPayload = {
   status: string;
   paymentStatus: string;
   manualDiscount: number;
+  advanceAmount: number;
   courier_city_id?: number;
   courier_zone_id?: number;
   courier_area_id?: number;
@@ -92,6 +107,8 @@ type ShippingState = {
   status: string;
   paymentStatus: string;
   manualDiscount: number;
+  advanceAmount: number;
+  actualShippingFee: number | null; // stores real fee from API in edit mode
   courier_city_id: number | null;
   courier_zone_id: number | null;
   courier_area_id: number | null;
@@ -122,6 +139,8 @@ export default function AddOrderMain() {
     status: "PENDING",
     paymentStatus: "UNPAID",
     manualDiscount: 0,
+    advanceAmount: 0,
+    actualShippingFee: null,
     courier_city_id: null,
     courier_zone_id: null,
     courier_area_id: null,
@@ -130,6 +149,19 @@ export default function AddOrderMain() {
   // --- Product Search State ---
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+
+  const getImgUrl = (rawImg?: string) => {
+    const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+    return cleanImg !== ""
+      ? cleanImg.startsWith("http")
+        ? cleanImg
+        : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
+      : "/images/products/product2.png";
+  };
 
   // --- 1. FETCH DATA (Edit Mode) ---
   const { data: existingOrder, isLoading: isFetchingOrder } =
@@ -150,27 +182,37 @@ export default function AddOrderMain() {
       customerNote: existingOrder.customer_note || "",
     });
 
+    const realShippingFee = Number(existingOrder.shipping_fee) || 0;
     setShipping({
-      shippingArea:
-        Number(existingOrder.shipping_fee) > 60 ? "outside" : "inside",
+      shippingArea: realShippingFee > 60 ? "outside" : "inside",
       paymentMethod: existingOrder.payment_method || "COD",
       source: existingOrder.source || "admin_panel",
       status: existingOrder.status || "PENDING",
       paymentStatus: existingOrder.payment_status || "UNPAID",
       manualDiscount: Number(existingOrder.discount_amount) || 0,
+      advanceAmount: Number(existingOrder.advance_amount) || 0,
+      actualShippingFee: realShippingFee,
       courier_city_id: existingOrder.courier_city_id ?? null,
       courier_zone_id: existingOrder.courier_zone_id ?? null,
       courier_area_id: existingOrder.courier_area_id ?? null,
     });
 
     const mappedItems = existingOrder.order_items.map(
-      (item: OrderItemFromApi) => ({
-        productId: String(item.product_id),
-        name: item.product_name,
-        sell_price: Number(item.unit_price),
-        quantity: item.quantity,
-        variantId: item.variant_id !== null ? String(item.variant_id) : null,
-      }),
+      (item: OrderItemFromApi) => {
+        const itemImage =
+          item.variant?.images?.[0] ||
+          item.product?.images?.[0] ||
+          item.external_image ||
+          "";
+        return {
+          productId: String(item.product_id),
+          name: item.product_name,
+          sell_price: Number(item.unit_price),
+          quantity: item.quantity,
+          variantId: item.variant_id !== null ? String(item.variant_id) : null,
+          image: itemImage,
+        };
+      },
     );
     setItems(mappedItems);
   }
@@ -181,8 +223,16 @@ export default function AddOrderMain() {
       acc + item.sell_price * item.quantity,
     0,
   );
-  const shippingFee = shipping.shippingArea === "inside" ? 60 : 120;
-  const total = subtotal + shippingFee - shipping.manualDiscount;
+  // In edit mode, use the real shipping fee from the API; in create mode derive from area
+  const shippingFee =
+    isEditMode && shipping.actualShippingFee !== null
+      ? shipping.actualShippingFee
+      : shipping.shippingArea === "inside"
+        ? 60
+        : 120;
+  const totalDue = subtotal + shippingFee - shipping.manualDiscount;
+  // Remaining amount after advance payment
+  const remainingDue = totalDue - shipping.advanceAmount;
 
   const handleSearch = async (val: string) => {
     setSearchTerm(val);
@@ -195,6 +245,7 @@ export default function AddOrderMain() {
 
   const addItem = (product: Product) => {
     const existing = items.find((i) => i.productId === product?.id);
+    const prodImg = product.images?.[0] || product.image || "";
     if (existing) {
       updateQuantity(product?.id, existing.quantity + 1);
     } else {
@@ -206,6 +257,7 @@ export default function AddOrderMain() {
           sell_price: Number(product.sell_price),
           quantity: 1,
           variantId: null,
+          image: prodImg,
         },
       ]);
     }
@@ -232,14 +284,21 @@ export default function AddOrderMain() {
     setLoading(true);
     try {
       const payload: OrderPayload = {
-        ...customer,
-        ...shipping,
-        items: items.map((i) => ({
-          productId: i.productId,
-          variantId: i.variantId ?? undefined,
-          quantity: i.quantity,
-        })),
+        // Customer fields
+        customerName: customer.customerName,
+        customerPhone: customer.customerPhone,
+        customerAddress: customer.customerAddress,
+        customerNote: customer.customerNote,
+        // Shipping & order config
+        shippingArea: shipping.shippingArea,
+        paymentMethod: shipping.paymentMethod,
+        source: shipping.source,
+        status: shipping.status,
+        paymentStatus: shipping.paymentStatus,
+        // Financial fields — explicitly named to avoid confusion
         manualDiscount: Number(shipping.manualDiscount),
+        advanceAmount: Number(shipping.advanceAmount),
+        // Courier IDs (optional)
         courier_city_id: shipping.courier_city_id
           ? Number(shipping.courier_city_id)
           : undefined,
@@ -249,6 +308,12 @@ export default function AddOrderMain() {
         courier_area_id: shipping.courier_area_id
           ? Number(shipping.courier_area_id)
           : undefined,
+        // Items
+        items: items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId ?? undefined,
+          quantity: i.quantity,
+        })),
       };
 
       if (isEditMode) {
@@ -293,7 +358,7 @@ export default function AddOrderMain() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-[#1DA1F2] text-white px-6 py-2.5 rounded-[8px] font-semibold flex items-center gap-2"
+            className="bg-[#1DA1F2] text-white px-6 py-2.5 rounded-lg font-semibold flex items-center gap-2 cursor-pointer"
           >
             {loading ? (
               <Loader2 className="animate-spin" size={18} />
@@ -309,7 +374,7 @@ export default function AddOrderMain() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             {/* 1. Products */}
-            <div className="bg-white p-5 rounded-[12px]">
+            <div className="bg-white p-5 rounded-xk">
               <div className="flex items-center gap-2 mb-4 text-[#1DA1F2]">
                 <ShoppingBag size={20} />
                 <h2 className="text-lg font-medium text-gray-800">
@@ -332,27 +397,42 @@ export default function AddOrderMain() {
 
                 {searchResults.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border rounded-[8px] shadow-xl max-h-[250px] overflow-y-auto">
-                    {searchResults.map((product: Product) => (
-                      <div
-                        key={product.id}
-                        onClick={() => addItem(product)}
-                        className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between border-b last:border-0"
-                      >
-                        <span className="font-medium text-gray-700">
-                          {product.name}
-                        </span>
-                        <span className="text-[#1DA1F2] font-bold">
-                          ৳{product.sell_price}
-                        </span>
-                      </div>
-                    ))}
+                    {searchResults.map((product: Product) => {
+                      const img = product.images?.[0] || product.image;
+                      return (
+                        <div
+                          key={product.id}
+                          onClick={() => addItem(product)}
+                          className="p-3 hover:bg-blue-50 cursor-pointer flex items-center justify-between border-b last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            {img && (
+                              <Image
+                                src={getImgUrl(img)}
+                                alt={product.name}
+                                width={36}
+                                height={36}
+                                unoptimized
+                                className="w-9 h-9 object-cover rounded border bg-gray-50"
+                              />
+                            )}
+                            <span className="font-medium text-gray-700">
+                              {product.name}
+                            </span>
+                          </div>
+                          <span className="text-[#1DA1F2] font-bold">
+                            ৳{product.sell_price}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
-                  <thead className="text-gray-400 text-xs uppercase font-bold border-b">
+                  <thead className="text-gray-400 text-sm font-medium border-b border-gray-200">
                     <tr>
                       <th className="pb-3">Item</th>
                       <th className="pb-3 text-center">Qty</th>
@@ -362,8 +442,24 @@ export default function AddOrderMain() {
                   </thead>
                   <tbody className="divide-y text-sm">
                     {items.map((item) => (
-                      <tr key={item.productId}>
-                        <td className="py-4 font-medium">{item.name}</td>
+                      <tr key={item.productId} className="border-b border-gray-200">
+                        <td className="py-4 font-medium flex items-center gap-3">
+                          {item.image ? (
+                            <Image
+                              src={getImgUrl(item.image)}
+                              alt={item.name}
+                              width={40}
+                              height={40}
+                              unoptimized
+                              className="w-10 h-10 object-cover rounded-lg border bg-gray-50"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg border bg-gray-100 flex items-center justify-center text-xs text-gray-400 font-bold">
+                              N/A
+                            </div>
+                          )}
+                          <span>{item.name}</span>
+                        </td>
                         <td className="py-4">
                           <div className="flex items-center justify-center gap-2">
                             <button
@@ -373,7 +469,7 @@ export default function AddOrderMain() {
                                   item.quantity - 1,
                                 )
                               }
-                              className="w-6 h-6 border rounded hover:bg-gray-100"
+                              className="w-6 h-6 border rounded hover:bg-gray-100 cursor-pointer"
                             >
                               -
                             </button>
@@ -387,7 +483,7 @@ export default function AddOrderMain() {
                                   item.quantity + 1,
                                 )
                               }
-                              className="w-6 h-6 border rounded hover:bg-gray-100"
+                              className="w-6 h-6 border rounded hover:bg-gray-100 cursor-pointer"
                             >
                               +
                             </button>
@@ -399,7 +495,7 @@ export default function AddOrderMain() {
                         <td className="py-4 text-right">
                           <button
                             onClick={() => removeItem(item.productId)}
-                            className="text-red-400 hover:text-red-600"
+                            className="text-red-400 hover:text-red-600 cursor-pointer"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -412,7 +508,7 @@ export default function AddOrderMain() {
             </div>
 
             {/* 2. Customer */}
-            <div className="bg-white p-5 rounded-[12px]">
+            <div className="bg-white p-5 rounded-xl">
               <div className="flex items-center gap-2 mb-4 text-[#1DA1F2]">
                 <User size={20} />
                 <h2 className="text-lg font-bold text-gray-800">
@@ -430,7 +526,7 @@ export default function AddOrderMain() {
                     onChange={(e) =>
                       setCustomer({ ...customer, customerName: e.target.value })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] outline-none focus:border-[#1DA1F2]"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2]"
                     placeholder="Customer name"
                   />
                 </div>
@@ -447,7 +543,7 @@ export default function AddOrderMain() {
                         customerPhone: e.target.value,
                       })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] outline-none focus:border-[#1DA1F2]"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2]"
                     placeholder="01XXXXXXXXX"
                   />
                 </div>
@@ -463,7 +559,7 @@ export default function AddOrderMain() {
                         customerAddress: e.target.value,
                       })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] outline-none focus:border-[#1DA1F2]"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg outline-none focus:border-[#1DA1F2]"
                     rows={2}
                     placeholder="Shipping address"
                   />
@@ -475,7 +571,7 @@ export default function AddOrderMain() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* 3. Settings */}
-            <div className="bg-white p-5 rounded-[12px]">
+            <div className="bg-white p-5 rounded-xl">
               <div className="flex items-center gap-2 mb-4 text-[#1DA1F2]">
                 <RefreshCw size={20} />
                 <h2 className="text-lg font-medium text-gray-800">
@@ -494,12 +590,19 @@ export default function AddOrderMain() {
                     onChange={(e) =>
                       setShipping({ ...shipping, status: e.target.value })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] text-sm"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
                   >
                     <option value="PENDING">Pending</option>
                     <option value="CONFIRMED">Confirmed</option>
                     <option value="ON_HOLD">On Hold</option>
+                    <option value="SHIPPED">Shipped</option>
+                    <option value="SENT_TO_COURIER">Sent to Courier</option>
+                    <option value="DELIVERED">Delivered</option>
+                    <option value="PARTIAL_DELIVERED">Partial Delivered</option>
                     <option value="CANCELED">Canceled</option>
+                    <option value="RETURNED">Returned</option>
+                    <option value="RETURN_RECEIVED">Return Received</option>
+                    <option value="REFUNDED">Refunded</option>
                   </select>
                 </div>
 
@@ -515,10 +618,12 @@ export default function AddOrderMain() {
                         paymentStatus: e.target.value,
                       })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] text-sm"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
                   >
                     <option value="UNPAID">Unpaid</option>
                     <option value="PAID">Paid</option>
+                    <option value="PARTIAL">Partial</option>
+                    <option value="REFUNDED">Refunded</option>
                   </select>
                 </div>
 
@@ -531,7 +636,7 @@ export default function AddOrderMain() {
                     onChange={(e) =>
                       setShipping({ ...shipping, shippingArea: e.target.value })
                     }
-                    className="w-full p-2.5 bg-gray-100 rounded-[8px] text-sm"
+                    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
                   >
                     <option value="inside">Inside Dhaka (৳60)</option>
                     <option value="outside">Outside Dhaka (৳120)</option>
@@ -541,7 +646,7 @@ export default function AddOrderMain() {
             </div>
 
             {/* 4. Financials */}
-            <div className="bg-white p-5 rounded-[12px]">
+            <div className="bg-white p-5 rounded-xl">
               <div className="flex items-center gap-2 mb-4 text-[#1DA1F2]">
                 <CreditCard size={20} />
                 <h2 className="text-lg font-medium text-gray-800">
@@ -562,6 +667,7 @@ export default function AddOrderMain() {
                   <span>Manual Discount</span>
                   <input
                     type="number"
+                    min={0}
                     value={shipping.manualDiscount}
                     onChange={(e) =>
                       setShipping({
@@ -572,9 +678,28 @@ export default function AddOrderMain() {
                     className="w-20 p-1 border rounded text-right bg-red-50"
                   />
                 </div>
-                <div className="pt-3 border-t flex justify-between items-center text-lg font-bold text-[#023337]">
+                <div className="pt-2 border-t flex justify-between items-center text-base font-semibold text-gray-700 border-gray-200">
                   <span>Total Due</span>
-                  <span>৳{total}</span>
+                  <span>৳{totalDue}</span>
+                </div>
+                <div className="flex justify-between items-center gap-4 text-green-600">
+                  <span className="font-medium">Advance Payment</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={shipping.advanceAmount}
+                    onChange={(e) =>
+                      setShipping({
+                        ...shipping,
+                        advanceAmount: Number(e.target.value),
+                      })
+                    }
+                    className="w-20 p-1 border border-green-300 rounded text-right bg-green-50"
+                  />
+                </div>
+                <div className="pt-2 border-t flex justify-between items-center text-lg font-bold text-[#023337] border-gray-200">
+                  <span>Remaining Due</span>
+                  <span>৳{remainingDue}</span>
                 </div>
               </div>
 
@@ -582,7 +707,7 @@ export default function AddOrderMain() {
                 <label className="text-sm font-medium text-gray-500">
                   Payment Method
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-2">
                   {["COD", "ONLINE"].map((m) => (
                     <button
                       key={m}

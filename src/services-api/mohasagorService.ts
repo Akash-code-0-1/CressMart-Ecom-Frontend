@@ -29,6 +29,7 @@ interface RawMohasagorVariant {
   qty?: number | string;
   sku?: string | number;
   price?: number | string;
+  sale_price?: number | string;
   attributes?:
     | string
     | RawMohasagorVariantAttribute[]
@@ -53,6 +54,35 @@ interface RawMohasagorProduct {
   product_variants?: RawMohasagorVariant[];
   variants?: RawMohasagorVariant[];
 }
+
+const normalizeAttributeLabel = (label: string, type?: string): string => {
+  const source = (type && type.trim()) || label || "";
+  const normalized = source.trim().toLowerCase();
+
+  const knownLabels: Record<string, string> = {
+    color: "Color",
+    colour: "Color",
+    size: "Size",
+    variant: "Variant",
+    material: "Material",
+    style: "Style",
+    capacity: "Capacity",
+    weight: "Weight",
+    model: "Model",
+  };
+
+  if (knownLabels[normalized]) return knownLabels[normalized];
+
+  if (!source) return "Attribute";
+
+  return source
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
 
 const mapRawProduct = (item: RawMohasagorProduct): Product => {
   const regularPrice = item.price

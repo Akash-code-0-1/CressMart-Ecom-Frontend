@@ -15,6 +15,7 @@ import {
 } from "@/hooks/useProfile";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import Image from "next/image";
 
 interface AddressItem {
   id?: string;
@@ -48,6 +49,7 @@ const ProfileDetailsForm = () => {
   useEffect(() => {
     if (profile) {
       const rawUser = profile.user || profile.data || profile;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(rawUser.name || "");
       setEmail(rawUser.email || "");
 
@@ -117,11 +119,13 @@ const ProfileDetailsForm = () => {
             text: t.profileDetails.success.profileUpdated,
           });
         },
-        onError: (err: any) => {
-          setStatus({
-            type: "error",
-            text: err.message || t.profileDetails.error.saveFailed,
-          });
+        onError: (err: unknown) => {
+          if (err instanceof Error) {
+            setStatus({
+              type: "error",
+              text: err.message || t.profileDetails.error.saveFailed,
+            });
+          }
         },
       },
     );
@@ -135,13 +139,18 @@ const ProfileDetailsForm = () => {
     addAddress.mutate(cleanAddress, {
       onSuccess: () => {
         setNewAddressInput("");
-        setStatus({ type: "success", text: t.profileDetails.success.addressAdded });
-      },
-      onError: (err: any) => {
         setStatus({
-          type: "error",
-          text: err.message || t.profileDetails.error.addressFailed,
+          type: "success",
+          text: t.profileDetails.success.addressAdded,
         });
+      },
+      onError: (err: unknown) => {
+        if (err instanceof Error) {
+          setStatus({
+            type: "error",
+            text: err.message || t.profileDetails.error.addressFailed,
+          });
+        }
       },
     });
   };
@@ -170,11 +179,13 @@ const ProfileDetailsForm = () => {
             text: t.profileDetails.success.avatarUpdated,
           });
         },
-        onError: (err: any) => {
-          setStatus({
-            type: "error",
-            text: err.message || t.profileDetails.error.uploadFailed,
-          });
+        onError: (err: unknown) => {
+          if (err instanceof Error) {
+            setStatus({
+              type: "error",
+              text: err.message || t.profileDetails.error.uploadFailed,
+            });
+          }
         },
       });
     }
@@ -200,7 +211,9 @@ const ProfileDetailsForm = () => {
   return (
     <div className="bg-white rounded-[12px] border border-[#D2D2D2] overflow-hidden font-poppins">
       <div className="p-6 border-b border-gray-100">
-        <h2 className="text-lg font-semibold text-black">{t.profileDetails.title}</h2>
+        <h2 className="text-lg font-semibold text-black">
+          {t.profileDetails.title}
+        </h2>
         <p className="text-sm text-gray-400 mt-2">
           {t.profileDetails.subtitle}
         </p>
@@ -229,10 +242,13 @@ const ProfileDetailsForm = () => {
           <div className="relative group w-16 h-16 shrink-0">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FF9F1C] flex items-center justify-center text-white text-xl font-bold overflow-hidden border-2 border-white shadow-xs relative">
               {avatarPreview ? (
-                <img
+                <Image
+                  width={64}
+                  height={64}
                   src={avatarPreview}
                   alt="Profile Avatar"
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 name.charAt(0).toUpperCase() || "U"
@@ -341,7 +357,7 @@ const ProfileDetailsForm = () => {
             className="flex flex-col gap-2"
           >
             <label className="text-base font-semibold text-[#727272]">
-              Address {index + 2}
+              {t.Address} {index + 2}
             </label>
             <div className="flex flex-col md:flex-row gap-4 items-center">
               <input

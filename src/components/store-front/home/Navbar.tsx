@@ -49,7 +49,9 @@ type CartItem = {
   id: string;
   image?: string | null;
   name?: string;
-  variantInfo?: Record<string, unknown>;
+  variantInfo?:
+    | Record<string, unknown>
+    | { label?: string; value?: string; type?: string }[];
   price?: string | number;
   quantity: number;
 };
@@ -135,13 +137,6 @@ const Navbar = () => {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  // const handleProfileNav = (e: React.MouseEvent) => {
-  //   e.preventDefault();
-  //   if (isStoreReady && user) router.push("/profile");
-  //   else router.push("/signin");
-  // };
-
   const handleProfileNav = (e: React.MouseEvent) => {
     e.preventDefault();
 
@@ -153,9 +148,17 @@ const Navbar = () => {
     if (user.role === "ADMIN") {
       router.push("/settings/profile");
     } else {
-      // MANAGER (or CUSTOMER if applicable)
       router.push("/profile");
     }
+  };
+
+  const handleWishlistClick = () => {
+    if (!isStoreReady || !user) {
+      router.push("/signin");
+      return;
+    }
+
+    router.push("/profile/wishlist");
   };
 
   const handleSearch = (e?: React.FormEvent) => {
@@ -314,11 +317,9 @@ const Navbar = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <Link href={"/profile/wishlist"}>
-                <button className="cursor-pointer">
-                  <WishIcon className="w-8 md:w-10" />
-                </button>
-              </Link>
+              <button onClick={handleWishlistClick} className="cursor-pointer">
+                <WishIcon className="w-8 md:w-10" />
+              </button>
               {/* Fixed profile container to prevent layout breaking */}
               <div
                 onClick={handleProfileNav}
@@ -344,13 +345,13 @@ const Navbar = () => {
               <div className="hidden lg:flex items-center gap-4 uppercase font-semibold">
                 <button
                   onClick={() => router.push("/signin")}
-                  className="bg-[#F0F0F0] rounded-[8px] px-8 py-4"
+                  className="bg-[#F0F0F0] rounded-[8px] px-8 py-4 cursor-pointer"
                 >
                   {t.navbar.signIn}
                 </button>
                 <button
                   onClick={() => router.push("/signup")}
-                  className="bg-[#FF7050] text-white rounded-[8px] px-8 py-4"
+                  className="bg-[#FF7050] text-white rounded-[8px] px-8 py-4 cursor-pointer"
                 >
                   {t.navbar.signUp}
                 </button>

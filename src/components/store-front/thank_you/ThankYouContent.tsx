@@ -37,8 +37,6 @@ export default function ThankYouContent() {
   });
   const settingsdata = setting?.data;
 
-  console.log("🚀 ~ ThankYouContent ~ setting:", settingsdata);
-
   const {
     data: apiResponse,
     isLoading,

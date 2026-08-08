@@ -20,15 +20,23 @@ const ProductDetailsTabs = ({ product }: Props) => {
   const t = translations[language];
   const [activeTab, setActiveTab] = useState<TabType>("Description");
 
+  const isThirdPartyProduct = product.slug
+    ?.toLowerCase()
+    .startsWith("mohasagor");
+
   const tabs: { label: string; id: TabType; count?: number }[] = [
     { label: t.productDetails.description, id: "Description" },
     { label: t.productDetails.specification, id: "Specification" },
     { label: t.productDetails.faqs, id: "FAQs" },
-    {
-      label: t.productDetails.review,
-      id: "Review",
-      count: product.total_reviews,
-    },
+    ...(!isThirdPartyProduct
+      ? [
+          {
+            label: t.productDetails.review,
+            id: "Review" as TabType,
+            count: product.total_reviews,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -63,6 +71,7 @@ const ProductDetailsTabs = ({ product }: Props) => {
                 <SpecificationSection specs={product?.specifications} />
               )}
               {activeTab === "FAQs" && <FAQsSection faqs={product.faqs} />}
+
               {activeTab === "Review" && (
                 <ReviewSection productId={product.id} />
               )}

@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaRegUser, FaRegHeart, FaCamera, FaSpinner } from "react-icons/fa";
+import {
+  FaRegUser,
+  FaRegHeart,
+  FaCamera,
+  FaSpinner,
+  FaTruck,
+} from "react-icons/fa";
 import { BiUser } from "react-icons/bi";
 import { SlHandbag } from "react-icons/sl";
 import { IoLogOutOutline } from "react-icons/io5";
@@ -13,6 +19,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import Image from "next/image";
+import toast from "react-hot-toast";
+
+const emptySubscribe = () => () => {};
 
 const ProfileSidebar = () => {
   const { language } = useLanguage();
@@ -26,9 +36,13 @@ const ProfileSidebar = () => {
   const setAuthUser = useAuthStore((state) => state.setAuthUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  const [hydrated, setHydrated] = useState(false);
+  const hydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const [uploading, setUploading] = useState(false);
-  const [cacheBuster, setCacheBuster] = useState<number>(Date.now());
+  const [cacheBuster, setCacheBuster] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sidebarLinks = [
@@ -47,11 +61,12 @@ const ProfileSidebar = () => {
       href: "/profile/wishlist",
       icon: FaRegHeart,
     },
+    {
+      name: t.profileSidebar.trackOrder,
+      href: "/profile/track-order",
+      icon: FaTruck,
+    },
   ];
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
 
   const handleLogout = async () => {
     queryClient.clear();
@@ -120,8 +135,9 @@ const ProfileSidebar = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (err: any) {
-      alert(err.message || "Could not upload image.");
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error?.message || "Could not upload image.");
     } finally {
       setUploading(false);
     }
@@ -134,7 +150,9 @@ const ProfileSidebar = () => {
   let avatarUrl = null;
   if (user?.avatar) {
     const cleanPath = user.avatar.replace(/^\/+/, "");
-    avatarUrl = `${backendBaseUrl}/${cleanPath}?t=${cacheBuster}`;
+    avatarUrl = cacheBuster
+      ? `${backendBaseUrl}/${cleanPath}?t=${cacheBuster}`
+      : `${backendBaseUrl}/${cleanPath}`;
   }
 
   if (!hydrated || !isStoreReady) {
@@ -168,13 +186,16 @@ const ProfileSidebar = () => {
         <div className="relative group w-24 h-24 mb-4">
           <div className="w-full h-full bg-[#F2F2F2] rounded-full overflow-hidden border border-gray-100 flex items-center justify-center text-gray-300 relative">
             {avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 alt="Profile Avatar"
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
+                unoptimized
               />
             ) : (
               <FaRegUser size={40} />

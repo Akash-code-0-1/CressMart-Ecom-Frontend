@@ -19,8 +19,6 @@
 //   items: OrderItemInput[];
 // }
 
-
-
 // export interface OrderQuery {
 //   page?: number | string;
 //   limit?: number | string;
@@ -99,7 +97,7 @@
 //     const token = await getAdminTokenAction();
 //     const response = await apiFetch(`/orders/${id}`, {
 //       method: "PATCH",
-//       headers: { 
+//       headers: {
 //         "Content-Type": "application/json",
 //         Authorization: `Bearer ${token || ""}`
 //       },
@@ -196,7 +194,6 @@
 //   return Promise.all(promises);
 // };
 
-
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 
@@ -238,6 +235,7 @@ export interface UpdateOrderRequest {
   status?: string;
   paymentStatus?: string;
   manualDiscount?: number;
+  advanceAmount?: number;
   customerName?: string;
   customerPhone?: string;
   customerAddress?: string;
@@ -267,7 +265,7 @@ export interface OrderQuery {
   source?: string;
   startDate?: string;
   endDate?: string;
-  refresh?: boolean; 
+  refresh?: boolean;
 }
 
 // 🚀 1. Create order (Added Auth Token)
@@ -276,9 +274,9 @@ export const createOrderService = async (orderData: CreateOrderRequest) => {
     const token = await getAdminTokenAction();
     const response = await apiFetch("/orders", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token || ""}`
+        Authorization: `Bearer ${token || ""}`,
       },
       body: JSON.stringify(orderData),
     });
@@ -336,14 +334,17 @@ export const editOrderInvoiceService = async (
 };
 
 // 🚀 3. Update Full Order / Status (Admin Action)
-export const updateOrderStatusService = async (id: string, updateData: UpdateOrderRequest) => {
+export const updateOrderStatusService = async (
+  id: string,
+  updateData: UpdateOrderRequest,
+) => {
   try {
     const token = await getAdminTokenAction();
     const response = await apiFetch(`/orders/${id}`, {
       method: "PATCH",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token || ""}`
+        Authorization: `Bearer ${token || ""}`,
       },
       body: JSON.stringify(updateData),
     });
@@ -354,9 +355,12 @@ export const updateOrderStatusService = async (id: string, updateData: UpdateOrd
       throw new Error(result.message || "Failed to update order");
     }
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update Order Error:", error);
-    throw error.message || error || "An unexpected error occurred";
+    if (error instanceof Error) {
+      throw error.message || error || "An unexpected error occurred";
+    }
+    throw "An unexpected error occurred";
   }
 };
 
@@ -365,7 +369,12 @@ export const getAllOrdersService = async (query: OrderQuery) => {
   try {
     const params = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "" && key !== "refresh") {
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        key !== "refresh"
+      ) {
         params.append(key, String(value));
       }
     });
@@ -380,7 +389,8 @@ export const getAllOrdersService = async (query: OrderQuery) => {
     });
 
     const result = await response.json();
-    if (!response.ok) throw new Error(result.message || "Failed to fetch orders");
+    if (!response.ok)
+      throw new Error(result.message || "Failed to fetch orders");
     return result;
   } catch (error: unknown) {
     console.error("Fetch All Orders Error:", error);
@@ -426,8 +436,14 @@ export const searchProductsService = async (query: string) => {
 export const fetchOrderCounts = async (tabs: string[]) => {
   const promises = tabs.map(async (tab) => {
     const status = tab === "All order" ? "" : tab.toUpperCase();
-    const res = await getAllOrdersService({ page: 1, limit: 1, status, refresh: true });
+    const res = await getAllOrdersService({
+      page: 1,
+      limit: 1,
+      status,
+      refresh: true,
+    });
     return { tab, count: res.data?.meta?.total || 0 };
   });
   return Promise.all(promises);
 };
+

@@ -239,12 +239,17 @@ import { BsDot } from "react-icons/bs";
 import { format } from "date-fns";
 import StatusBadge from "@/components/store-front/profile/StatusBadge";
 import { getMyOrdersService } from "@/services-api/orderService";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const backendBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
   "http://localhost:8082";
 
 // --- Strict TypeScript Interfaces ---
+
+// const { language } = useLanguage();
+// const t = translations[language];
 
 export interface VariantAttribute {
   type: string;
@@ -380,11 +385,14 @@ const OrdersPage = () => {
     return pages;
   };
 
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <div className="bg-white rounded-[12px] border border-[#D2D2D2] overflow-hidden font-poppins">
       <div className="p-6 border-b border-[#F2F2F2]">
         <h2 className="text-[20px] font-medium text-black">
-          Orders ({meta?.total || 0})
+          {t.order} ({meta?.total || 0})
         </h2>
       </div>
 
@@ -392,13 +400,13 @@ const OrdersPage = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-[#F9FAFB] text-[#727272] text-[14px] font-medium">
-              <th className="p-5 pl-8">No.</th>
-              <th className="p-5">Order Id</th>
-              <th className="p-5">Product Details</th>
-              <th className="p-5">Date</th>
-              <th className="p-5">Price</th>
-              <th className="p-5">Payment</th>
-              <th className="p-5">Status</th>
+              <th className="p-5 pl-8">{t.orderId}</th>
+              <th className="p-5">{t.orderNumber}</th>
+              <th className="p-5">{t.orderItems}</th>
+              <th className="p-5">{t.orderDate}</th>
+              <th className="p-5">{t.orderPrice}</th>
+              <th className="p-5">{t.orderPayment}</th>
+              <th className="p-5">{t.orderStatus}</th>
             </tr>
           </thead>
           <tbody className="text-[14px] text-[#4D4D4D]">
@@ -503,7 +511,7 @@ const OrdersPage = () => {
             ) : (
               <tr>
                 <td colSpan={7} className="p-20 text-center text-gray-400">
-                  No orders found
+                  {t.emptyordertext}
                 </td>
               </tr>
             )}

@@ -10,7 +10,23 @@ export default {
 
   storeLocation: "Store Locations",
   trackOrder: "Track Your Order",
-
+  trackOrderDesc:
+    "Enter your unique order ID below to check live status and shipment updates of your package.",
+  orderButton: "Track Order",
+  orderIdLabel: "Order ID",
+  trackButton: "Track Order",
+  trackPlaceholder: "Please enter your order ID (e.g. ORD-1786178764113)",
+  trackLoading: "Tracking...",
+  downloadInvoice: "Download Invoice",
+  customerInfo: "Customer Information",
+  orderIdReference: "Order ID / Reference",
+  orderItems: "Order Items",
+  orderTimeline: "Order Timeline",
+  noTimelineRecordsFound: "No timeline records found for this order.",
+  orderIdEnter:
+    "Enter an Order ID above to display tracking details and timeline.",
+  orderPlacing:
+    "Enter your unique order ID below to check live status and shipment updates of your package.",
   features: [
     {
       title: "Cash On Delivery",
@@ -156,11 +172,13 @@ export default {
     profileDetails: "Profile Details",
     orders: "Orders",
     wishList: "Wish List",
+    trackOrder: "Track Order",
     userAccount: "User Account",
     noPhoneInfo: "No Phone Info",
     updateProfilePicture: "Update Profile Picture",
     logout: "Logout",
   },
+  Address: "Address",
 
   profileDetails: {
     title: "Profile Details",
@@ -380,6 +398,11 @@ export default {
     reset: "Reset Filter",
   },
 
+  noProductsFound: "No Products Found",
+  products: "Products",
+  noProductsFoundDesc:
+    "We couldn't find any products in this category matching your selected filters. Try resetting your filter settings.",
+
   price: {
     title: "Price",
     popularRange: "Popular Price Range",
@@ -466,6 +489,21 @@ export default {
     user: "User",
     brand: "Brand",
   },
+
+  // wishlist
+  wishlist: "Wishlist",
+  wishlistEmptytext: "You have not added any products to your wishlist yet. ",
+  placeOrder: "Place Order",
+
+  // profile order
+  order: "Order",
+  orderNumber: "Order Number",
+  orderId: "Order Id",
+  orderDate: "Order Date",
+  orderPrice: "Order Price",
+  orderPayment: "Order Payment",
+  orderStatus: "Order Status",
+  emptyordertext: "You have not placed any orders yet. ",
 
   checkout: {
     shoppingDetails: "Shopping Details",

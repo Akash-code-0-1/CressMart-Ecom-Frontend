@@ -333,6 +333,11 @@ const MainCheckoutSection: React.FC = () => {
   };
 
   const handlePlaceOrder = () => {
+    if (!user) {
+      toast.error("Please login/signup to place an order");
+      router.push("/signin?redirect=/order");
+      return;
+    }
     if (!formData.name || !formData.phone || !formData.address) {
       toast.error("Please fill in all required fields");
       return;

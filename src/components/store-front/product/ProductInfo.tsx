@@ -325,6 +325,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     ? rowImage
     : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
+  const isThirdPartyProduct = product.slug
+    ?.toLowerCase()
+    .startsWith("mohasagor");
+
   return (
     <div className="flex flex-col gap-4 font-poppins px-1 sm:px-0 md:mt-0 mt-4">
       {/* SKU and Unit */}
@@ -598,17 +602,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full sm:flex-1">
-          <button
-            className="cursor-pointer w-[52px] h-[52px] border border-[#FF7050] rounded-lg text-[#FF7050] text-2xl flex items-center justify-center hover:bg-[#FF7050]/5 transition-all"
-            onClick={handleWishlistToggle}
-            disabled={isAdding || isRemoving}
-          >
-            {isWishlisted ? (
-              <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
-            ) : (
-              <AiOutlineHeart />
-            )}
-          </button>
+          {!isThirdPartyProduct && (
+            <button
+              className="cursor-pointer w-[52px] h-[52px] border border-[#FF7050] rounded-lg text-[#FF7050] text-2xl flex items-center justify-center hover:bg-[#FF7050]/5 transition-all"
+              onClick={handleWishlistToggle}
+              disabled={isAdding || isRemoving}
+            >
+              {isWishlisted ? (
+                <FaHeart className="w-5 h-5 md:w-6 md:h-6 text-[#FF7050]" />
+              ) : (
+                <AiOutlineHeart />
+              )}
+            </button>
+          )}
+
           <button
             disabled={currentStock <= 0}
             className="cursor-pointer flex-1 h-[52px] border-[1.5px] border-[#FF7050] text-[#FF7050] font-semibold rounded-[8px] hover:bg-[#FF7050]/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
