@@ -330,8 +330,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
           type="button"
           onClick={() => {
             const newDate = new Date(year, month, d);
-            setSelectedDate(newDate); 
-            setActiveFilter("Custom"); 
+            setSelectedDate(newDate);
+            setActiveFilter("Custom");
             setShowCalendar(false);
           }}
           className={`h-8 w-8 text-xs rounded-full flex items-center justify-center transition-all cursor-pointer outline-none ${
@@ -348,7 +348,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
   };
 
   return (
-    <div className="px-6 py-2 bg-white rounded-[8px] font-poppins relative shadow-sm border border-gray-50">
+    <div className="px-6 py-2 bg-white rounded-[8px] font-poppins relative border border-gray-50">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-4">
         <h2 className="text-base font-semibold text-black">Overview</h2>
 
@@ -404,7 +404,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                       }
                       className="p-1 hover:bg-gray-100 rounded cursor-pointer"
                     >
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <svg
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
                         <path d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
@@ -417,7 +424,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                       }
                       className="p-1 hover:bg-gray-100 rounded cursor-pointer"
                     >
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <svg
+                        width="16"
+                        height="16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                      >
                         <path d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -425,7 +439,10 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                 </div>
                 <div className="grid grid-cols-7 mb-2 text-center">
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
-                    <span key={`${day}-${i}`} className="text-[10px] font-bold text-gray-400">
+                    <span
+                      key={`${day}-${i}`}
+                      className="text-[10px] font-bold text-gray-400"
+                    >
                       {day}
                     </span>
                   ))}
@@ -444,14 +461,14 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
         <StatCard
           label="Total Products"
           value={
-            isLoading ? "..." : (stats?.totalProducts?.toLocaleString() || "0")
+            isLoading ? "..." : stats?.totalProducts?.toLocaleString() || "0"
           }
           icon={<TotalProductIcon />}
         />
         <StatCard
           label="Total Orders"
           value={
-            isLoading ? "..." : (stats?.totalOrders?.toLocaleString() || "0")
+            isLoading ? "..." : stats?.totalOrders?.toLocaleString() || "0"
           }
           icon={<FileIcon />}
         />
@@ -473,7 +490,11 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
           </h3>
           <div className="space-y-1">
             <NotificationItem
-              text={isLoading ? "Syncing..." : `${stats?.totalProducts || 0} Catalog Items`}
+              text={
+                isLoading
+                  ? "Syncing..."
+                  : `${stats?.totalProducts || 0} Catalog Items`
+              }
             />
             <NotificationItem text="Inventory data updated" />
           </div>

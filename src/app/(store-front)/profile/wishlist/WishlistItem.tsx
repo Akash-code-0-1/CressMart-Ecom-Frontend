@@ -5,6 +5,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteWishlist } from "@/services-api/wishlistService";
 import toast from "react-hot-toast";
 import { WishlistProduct } from "@/@types/wishlist.type";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 export default function WishlistItem({ item }: { item: WishlistProduct }) {
   const queryClient = useQueryClient();
@@ -27,6 +29,9 @@ export default function WishlistItem({ item }: { item: WishlistProduct }) {
       },
       onError: (error) => toast.error(error.message),
     });
+
+  const { language } = useLanguage();
+  const t = translations[language];
 
   return (
     <div className="bg-[#F9F9F9] rounded-[16px] p-4 flex flex-col gap-4 group border border-transparent hover:border-[#FF7050]/20 hover:shadow-lg hover:shadow-gray-100 transition-all duration-300">
@@ -68,7 +73,7 @@ export default function WishlistItem({ item }: { item: WishlistProduct }) {
         <div className="flex items-center gap-2.5 mt-1">
           <Link href={`/product/${item?.product?.slug}`} className="flex-1">
             <button className="w-full bg-[#FF7050] hover:bg-[#ff5d39] text-white py-3 rounded-[10px] text-sm font-bold transition-all cursor-pointer active:scale-95 shadow-sm shadow-orange-50">
-              Place Order
+              {t.placeOrder}
             </button>
           </Link>
           <button

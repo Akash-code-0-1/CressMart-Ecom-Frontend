@@ -74,34 +74,56 @@ const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
       addToWishlist();
     }
   };
-
-  // Add to cart mutation
   const {
     mutateAsync: handleAddToCartAsync,
     mutate: handleAddToCart,
     isPending: isAddingToCart,
   } = useMutation({
     mutationFn: async () => {
-      const guestId = localStorage.getItem("guestId") || "";
-
-      return createCart(product.id.toString(), 1, user ? null : guestId);
+      let guestId = localStorage.getItem("guestId");
+      if (!user) {
+        if (!guestId || guestId === "undefined" || guestId === "null") {
+          guestId =
+            "guest_" +
+            Date.now() +
+            "_" +
+            Math.random().toString(36).substring(2, 9);
+          localStorage.setItem("guestId", guestId);
+        }
+      }
+      const firstVariantId =
+        product.variants && product.variants.length > 0
+          ? product.variants[0].id.toString()
+          : null;
+      return createCart(
+        product.id.toString(),
+        1,
+        firstVariantId,
+        user ? null : guestId,
+      );
     },
     onSuccess: () => {
       toast.success("Added to cart!");
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to add to cart");
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to add to cart");
+      } else {
+        toast.error("Failed to add to cart");
+      }
     },
   });
-
+  // order handler
   const handleOrderNow = async (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!inStock) return;
+
     try {
       await handleAddToCartAsync();
       router.push("/order");
-    } catch {
-      // handled in onError
+    } catch (err) {
+      console.log(err);
     }
   };
 

@@ -88,7 +88,12 @@ interface CategoryData {
 }
 
 interface SalesAnalyticsProps {
-  performanceData?: any[];
+  performanceData?: {
+    label: string;
+    placed: number;
+    delivered: number;
+    canceled: number;
+  }[];
   categoryData?: CategoryData[];
   isLoading?: boolean;
 }
@@ -116,7 +121,7 @@ const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2 font-poppins mr-1">
       {/* 1. Sale Performance */}
-      <div className="lg:col-span-2 bg-white p-6 rounded-[8px] shadow-sm border border-gray-50">
+      <div className="lg:col-span-2 bg-white p-6 rounded-lg">
         <div className="flex flex-col gap-4 mb-6">
           <h2 className="text-[18px] font-lato font-bold text-black text-left">
             Sale Performance
@@ -145,7 +150,7 @@ const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
       </div>
 
       {/* 2. Sale By Category */}
-      <div className="bg-white p-6 rounded-[8px] shadow-sm border border-gray-50 overflow-hidden">
+      <div className="bg-white p-6 rounded-[8px] border border-gray-50 overflow-hidden">
         <h2 className="text-[18px] font-lato font-bold text-black mb-6 text-left">
           Sale By Category
         </h2>

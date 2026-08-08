@@ -9,7 +9,27 @@ export default {
   ///////////////////////
 
   storeLocation: "স্টোর লোকেশন",
+
+  // track order page
+  orderButton: "অর্ডার ট্র্যাক করুন",
   trackOrder: "অর্ডার ট্র্যাক করুন",
+  trackOrderDesc:
+    "আপনার পণ্যের লাইভ স্ট্যাটাস এবং শিপিং আপডেট জানতে নিচের অর্ডার আইডিটি প্রবেশ করান।",
+  orderIdLabel: "অর্ডার আইডি",
+  trackButton: "অর্ডার ট্র্যাক করুন",
+  trackPlaceholder: "আপনার অর্ডার আইডি লিখুন (যেমন: ORD-1786178764113)",
+  trackLoading: "ট্র্যাকিং হচ্ছে...",
+  downloadInvoice: "ইনভয়েস ডাউনলোড করুন",
+  customerInfo: "গ্রাহকের তথ্য",
+  orderIdReference: "অর্ডার আইডি / রেফারেন্স",
+  orderItems: "অর্ডার আইটেম",
+  orderTimeline: "অর্ডার টাইমলাইন",
+  noTimelineRecordsFound:
+    "এই অর্ডারের জন্য কোনো টাইমলাইন রেকর্ড পাওয়া যায়নি।",
+  orderIdEnter:
+    "উপরের অর্ডার আইডিটি প্রবেশ করালে ট্র্যাকিং বিবরণ এবং টাইমলাইন দেখতে পারবেন।",
+  orderPlacing:
+    "আপনার পণ্যের লাইভ স্ট্যাটাস এবং শিপিং আপডেট জানতে নিচের অর্ডার আইডিটি প্রবেশ করান।",
 
   ////////////////////////
   // Feature Section
@@ -162,12 +182,28 @@ export default {
     profileDetails: "প্রোফাইল তথ্য",
     orders: "অর্ডারসমূহ",
     wishList: "ইচ্ছার তালিকা",
+    trackOrder: "অর্ডার ট্র্যাক করুন",
     userAccount: "ব্যবহারকারী অ্যাকাউন্ট",
     noPhoneInfo: "ফোন নম্বর নেই",
     updateProfilePicture: "প্রোফাইল ছবি পরিবর্তন করুন",
     logout: "লগআউট",
   },
 
+  // wishlist
+  wishlist: "ইচ্ছার তালিকা",
+  wishlistEmptytext: "আপনি এখনো কোনো পণ্য আপনার উইশলিস্টে যোগ করেননি। ",
+  placeOrder: "অর্ডার করুন",
+
+  // profile order
+  order: "অর্ডার",
+  orderNumber: "অর্ডার নাম্বার",
+  orderId: "অর্ডার আইডি",
+  orderDate: "অর্ডার তারিখ",
+  orderPrice: "অর্ডার মূল্য",
+  orderPayment: "অর্ডার পেমেন্ট",
+  orderStatus: "অর্ডার স্ট্যাটাস",
+  emptyordertext: "আপনি এখনো কোনো অর্ডার করেননি।",
+  Address: "ঠিকানা",
   profileDetails: {
     title: "প্রোফাইল তথ্য",
     subtitle: "আপনার ব্যক্তিগত তথ্য ও যোগাযোগের তথ্য হালনাগাদ করুন",
@@ -385,6 +421,11 @@ export default {
     title: "ফিল্টার",
     reset: "রিসেট",
   },
+
+  noProductsFound: "কোনো পণ্য পাওয়া যায়নি",
+  products: "পণ্য",
+  noProductsFoundDesc:
+    "আপনার নির্বাচিত ফিল্টারের সাথে এই ক্যাটাগরিতে কোনো পণ্য খুঁজে পাওয়া যায়নি। আপনার ফিল্টার সেটিংস রিসেট করার চেষ্টা করুন।",
 
   price: {
     title: "দাম",

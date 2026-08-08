@@ -20,6 +20,17 @@ export interface ShippingSettingsResponse {
   message?: string;
   data: ShippingSettingsData;
 }
+
+export interface ProductShippingFields {
+  shipping_type?: string;
+  shipping_config?: ShippingConfigEntry[] | string;
+}
+
+export type CartItemWithShipping = CartItem & {
+  isExternal?: boolean;
+  shipping_config?: ShippingConfigEntry[] | string;
+  product?: ProductShippingFields;
+};
 // api global settings fetch
 export const fetchShippingSettings =
   async (): Promise<ShippingSettingsData | null> => {
@@ -46,7 +57,7 @@ export interface ItemShippingBreakdown {
 }
 // calculate cart shipping details
 export const calculateCartShippingDetails = (
-  cartItems: CartItem[],
+  cartItems: CartItemWithShipping[],
   shippingArea: string, // "inside" | "outside" | "sub_city"
   shippingSettings?: ShippingSettingsData | null,
 ): { totalShippingFee: number; itemShippingFees: ItemShippingBreakdown[] } => {
@@ -72,9 +83,9 @@ export const calculateCartShippingDetails = (
   const itemShippingFees: ItemShippingBreakdown[] = cartItems.map((item) => {
     // mohasagor / external product
     const isExternal =
-      item.productId?.startsWith("mohasagor-") || (item as any).isExternal;
+      item.productId?.startsWith("mohasagor-") || item.isExternal;
 
-    const prod = (item.product || {}) as any;
+    const prod: ProductShippingFields = item.product || {};
     const sType = String(prod.shipping_type || "DEFAULT").toUpperCase();
     const rawConfig = prod.shipping_config || item.shipping_config;
 

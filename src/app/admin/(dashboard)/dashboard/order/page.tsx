@@ -5,16 +5,14 @@ import OrderTable from "@/components/admin/order/OrderTable";
 export default function Page() {
   return (
     <PermissionGuard permission="Orders">
-      <div className="flex h-screen">
+      <div className="flex">
         <main className="flex-1">
           <div className="p-2 md:p-0">
             <div className="mt-2">
               <OrderHeader />
             </div>
             {/* <OrderSummery /> */}
-            <div className="mx-2 md:mx-4">
-              <OrderTable />
-            </div>
+            <OrderTable />
           </div>
         </main>
       </div>

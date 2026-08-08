@@ -1,7 +1,17 @@
 import { apiFetch } from "@/utils/api";
 import { getMohasagorProductBySlug } from "./mohasagorService";
+import { CartItem } from "@/@types/order.type";
 
-const getLocalMohasagorItems = (): any[] => {
+const getLocalMohasagorItems = (): {
+  id: string;
+  productId: string;
+  variantId?: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  variantInfo: { label: string; value: string; type?: string }[];
+}[] => {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem("mohasagor_cart_items");
@@ -11,7 +21,18 @@ const getLocalMohasagorItems = (): any[] => {
   }
 };
 
-const saveLocalMohasagorItems = (items: any[]) => {
+const saveLocalMohasagorItems = (
+  items: {
+    id: string;
+    productId: string;
+    variantId?: string;
+    name: string;
+    price: number;
+    image: string;
+    quantity: number;
+    variantInfo: { label: string; value: string; type?: string }[];
+  }[],
+) => {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem("mohasagor_cart_items", JSON.stringify(items));
@@ -27,44 +48,52 @@ export const createCart = async (
 ) => {
   if (productId.startsWith("mohasagor-")) {
     const localItems = getLocalMohasagorItems();
-    const productObj =
-      (await getMohasagorProductBySlug(productId)) ??
-      ({
-        id: productId,
-        name: "Mohasagor Product",
-        sell_price: "0",
-        regular_price: "0",
-        images: ["/images/placeholder.svg"],
-        variants: [],
-      } as any);
+    const productObj = (await getMohasagorProductBySlug(productId)) ?? {
+      id: productId,
+      name: "Mohasagor Product",
+      sell_price: "0",
+      regular_price: "0",
+      images: ["/images/placeholder.svg"],
+      variants: [],
+    };
 
     const safeName = productObj.name || "Mohasagor Product";
     const safePrice = Number(productObj.sell_price) || 0;
-    const safeImage = Array.isArray(productObj.images) && productObj.images.length > 0
-      ? productObj.images[0]
-      : "/images/placeholder.svg";
+    const safeImage =
+      Array.isArray(productObj.images) && productObj.images.length > 0
+        ? productObj.images[0]
+        : "/images/placeholder.svg";
 
-    const matchingVariant = variantId && Array.isArray(productObj.variants)
-      ? productObj.variants.find(
-          (variant: any) => String(variant.id) === String(variantId),
-        )
-      : null;
+    const matchingVariant =
+      variantId && Array.isArray(productObj.variants)
+        ? productObj.variants.find(
+            (variant: { id: string }) =>
+              String(variant.id) === String(variantId),
+          )
+        : null;
 
     const variantImage = matchingVariant?.images?.[0];
     const itemImage = variantImage || safeImage;
 
     const variantInfo = Array.isArray(matchingVariant?.attributes)
-      ? matchingVariant.attributes.map((attr: any) => ({
-          label:
-            attr.label || attr.name || attr.type || attr.key || "Variant",
-          value: attr.value || attr.val || attr.name || "",
-          type: attr.type || undefined,
-        }))
+      ? matchingVariant.attributes.map(
+          (attr: {
+            label?: string;
+            name?: string;
+            type?: string;
+            key?: string;
+            value?: string;
+            val?: string;
+          }) => ({
+            label:
+              attr.label || attr.name || attr.type || attr.key || "Variant",
+            value: attr.value || attr.val || attr.name || "",
+            type: attr.type || undefined,
+          }),
+        )
       : [];
 
-    const newItemId = variantId
-      ? `${productId}:${variantId}`
-      : productId;
+    const newItemId = variantId ? `${productId}:${variantId}` : productId;
 
     const existingIndex = localItems.findIndex(
       (i) =>
@@ -157,7 +186,7 @@ export const updateCartItem = async (cartItemId: string, quantity: number) => {
 // fetch cart
 export const fetchCart = async (guestId?: string | null) => {
   const url = guestId ? `cart?guestId=${guestId}` : `cart`;
-  let serverItems: any[] = [];
+  let serverItems: CartItem[] = [];
   let serverSubTotal = 0;
 
   try {

@@ -86,7 +86,7 @@ export default function HomePageWrapper() {
   const stats = serverResponse?.data || serverResponse;
 
   return (
-    <div className="p-2 md:p-4 bg-[#F9F9F9] min-h-screen">
+    <div className="bg-[#F9F9F9]">
       <div className="mt-2">
         <OverviewSection
           stats={stats?.overview}

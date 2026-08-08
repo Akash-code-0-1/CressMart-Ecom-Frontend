@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "http",
+        hostname: "mohasagor.com.bd",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
         hostname: "localhost",
         port: "8082",
         pathname: "/**",

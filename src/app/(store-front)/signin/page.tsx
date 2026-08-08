@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useAuthStore } from "@/store/useAuthStore";
 import { apiFetch } from "@/utils/api";
 import { setSessionToken } from "@/app/actions/auth";
+import { mergeCart } from "@/services-api/cartService";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
-
 const SignInPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const setAuthUser = useAuthStore((state) => state.setAuthUser);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,18 @@ const SignInPage = () => {
       // 1. Offload token management securely to Server-side HTTP-only cookies
       await setSessionToken(targetToken);
 
+      // Merge guest cart items into logged-in user's server cart
+      const guestId =
+        typeof window !== "undefined" ? localStorage.getItem("guestId") : null;
+      if (guestId) {
+        try {
+          await mergeCart(guestId);
+          localStorage.removeItem("guestId");
+        } catch (mergeErr) {
+          console.error("Failed to merge guest cart on signin:", mergeErr);
+        }
+      }
+
       // 2. Clear state formatting structural payload and commit to Zustand
       const targetUser = {
         id: rawUser.id || rawUser._id,
@@ -62,14 +76,15 @@ const SignInPage = () => {
         phone: rawUser.phone || "",
         role: rawUser.role || "USER",
         avatar: rawUser.avatar || data.avatar || data.data?.avatar || null,
+        permissions: rawUser.permissions || [],
       };
 
       setAuthUser(targetUser);
 
       router.refresh();
-      router.push("/profile");
-    } catch (err: any) {
-      setError(err.message || t.errors.somethingWentWrong);
+      router.push(redirectUrl || "/profile");
+    } catch (err: unknown) {
+      setError((err as Error).message || t.errors.somethingWentWrong);
     } finally {
       setLoading(false);
     }
@@ -83,9 +98,7 @@ const SignInPage = () => {
       <div className="w-full max-w-[460px] bg-white rounded-[12px] border border-[#D2D2D2] p-8 shadow-sm">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-black">{t.signIn.title}</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            {t.signIn.subtitle}
-          </p>
+          <p className="text-sm text-gray-400 mt-1">{t.signIn.subtitle}</p>
         </div>
 
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>

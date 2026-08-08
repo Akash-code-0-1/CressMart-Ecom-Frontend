@@ -16,6 +16,8 @@ import { filterProducts } from "@/services-api/productService";
 import { getBrands } from "@/services-api/brandService";
 import { Product } from "@/@types/product.type";
 import React from "react";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -27,6 +29,8 @@ const CategoryPage = () => {
   const activeBrandId = searchParams.get("brand_id") || "";
   const activeCategoryId = searchParams.get("category_id") || "";
   const maxPrice = searchParams.get("max") || "100000";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   // category data fetch
   const { data: category, isLoading: categoryLoading } = useQuery({
@@ -154,10 +158,10 @@ const CategoryPage = () => {
                   <FaBoxOpen size={32} />
                 </div>
                 <h3 className="font-poppins text-xl md:text-2xl font-semibold text-black mb-2">
-                  No Products Found
+                  {t.noProductsFound}
                 </h3>
                 <p className="font-poppins text-sm md:text-base text-[#727272] max-w-md">
-                  We couldn&apos;t find any products in this category matching your selected filters. Try resetting your filter settings.
+                  {t.noProductsFoundDesc}
                 </p>
               </div>
             ) : (

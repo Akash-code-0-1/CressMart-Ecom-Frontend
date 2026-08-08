@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
@@ -6,7 +5,7 @@ import { sidebarMenu } from "@/config/sidebar";
 import { SidebarHeader } from "./SidebarHeader";
 import { NavMenuGroup } from "./NavMenuGroup";
 import { NavSingleItem } from "./NavSingleItem";
-import { useAdminProfileData } from "@/hooks/useProfile"; 
+import { useAdminProfileData } from "@/hooks/useProfile";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -22,9 +21,9 @@ const activeItemStyle: React.CSSProperties = {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  
+
   // Update this line inside the component:
-  const { data: userData } = useAdminProfileData(); 
+  const { data: userData } = useAdminProfileData();
 
   // The rest of the logic remains the same...
   const user = userData?.data || userData;
@@ -34,7 +33,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     return sidebarMenu
       .map((section) => ({
         ...section,
-        items: section.items.filter((item: any) => {
+        items: section.items.filter((item: { permission: string }) => {
           // if (user.role === "ADMIN") return true;
           return user.permissions?.includes(item.permission);
         }),
@@ -42,26 +41,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       .filter((section) => section.items.length > 0);
   }, [user]);
 
-  // State for handling submenu expansion
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  // User toggles for submenus
+  const [userToggledMenus, setUserToggledMenus] = useState<
+    Record<string, boolean>
+  >({});
 
-  // 2. Initialize open menus based on the current pathname and filtered menu
-  useEffect(() => {
-    const initialStates: Record<string, boolean> = {};
+  // Derived state: calculate which submenus contain the active route
+  const activeMenus = useMemo(() => {
+    const active: Record<string, boolean> = {};
     filteredMenu.forEach((section) => {
-      section.items.forEach((item: any) => {
+      section.items.forEach((item) => {
         if (item.submenu) {
           const isActive = item.submenu.some(
-            (sub: any) =>
+            (sub: { href: string }) =>
               pathname === sub.href || pathname.startsWith(`${sub.href}/`),
           );
           if (isActive) {
-            initialStates[item.label] = true;
+            active[item.label] = true;
           }
         }
       });
     });
-    setOpenMenus(initialStates);
+    return active;
   }, [pathname, filteredMenu]);
 
   useEffect(() => {
@@ -76,7 +77,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [isOpen]);
 
   const toggleMenu = (menuName: string) => {
-    setOpenMenus((prev) => ({ ...prev, [menuName]: !prev[menuName] }));
+    const currentlyOpen = userToggledMenus[menuName] ?? !!activeMenus[menuName];
+    setUserToggledMenus((prev) => ({ ...prev, [menuName]: !currentlyOpen }));
   };
 
   const sidebarContent = (
@@ -91,13 +93,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               {section.section}
             </p>
 
-            {section.items.map((item: any) => {
+            {section.items.map((item) => {
               if (item.submenu) {
+                const isMenuOpen =
+                  userToggledMenus[item.label] ?? !!activeMenus[item.label];
                 return (
                   <NavMenuGroup
                     key={item.label}
                     item={item}
-                    isOpen={!!openMenus[item.label]}
+                    isOpen={isMenuOpen}
                     pathname={pathname}
                     activeItemStyle={activeItemStyle}
                     onToggle={() => toggleMenu(item.label)}

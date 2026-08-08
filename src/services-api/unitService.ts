@@ -18,7 +18,10 @@ export const createUnit = async (payload: any) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch("/units", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Failed to create unit.");
@@ -29,7 +32,10 @@ export const updateUnit = async (id: string, payload: any) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/units/${id}`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Failed to update unit.");
