@@ -187,6 +187,7 @@
 import { useState, useEffect } from "react";
 import { RotateCcw, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
 import {
   fetchChatSettings,
   updateChatSettings,
@@ -202,7 +203,27 @@ import PhoneIcon from "@/components/store-front/svg/svg/PhoneIcon";
 import WhatsappIcon from "@/components/store-front/svg/svg/WhatsappIcon";
 import MessangerIcon from "@/components/store-front/svg/svg/MessangerIcon";
 
-const InputField = ({ label, placeholder, value, onChange, subLabel }: any) => (
+interface ChatSettingsData {
+  enableLiveChat: boolean;
+  whatsappFallback: boolean;
+  welcomeMessage: string;
+  offlineMessage: string;
+  supportHourFrom: string;
+  supportHourTo: string;
+  phone: string;
+  whatsappUrl: string;
+  messengerUrl: string;
+}
+
+interface InputFieldProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+  subLabel?: string;
+}
+
+const InputField = ({ label, placeholder, value, onChange, subLabel }: InputFieldProps) => (
   <div className="flex flex-col gap-2 w-full">
     <label className="text-[14px] font-bold text-[#003032] font-lato">
       {label}
@@ -219,12 +240,12 @@ const InputField = ({ label, placeholder, value, onChange, subLabel }: any) => (
 );
 
 export default function ChatSettingsPage() {
-  const [activeSupport, setActiveSupport] = useState("Phone");
+  const [activeSupport, setActiveSupport] = useState<"Phone" | "WhatsApp" | "Messenger">("Phone");
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ChatSettingsData>({
     enableLiveChat: false,
     whatsappFallback: false,
     welcomeMessage: "",
@@ -236,43 +257,51 @@ export default function ChatSettingsPage() {
     messengerUrl: "",
   });
 
-  const { data: settings } = useQuery({
+  const { data: settings } = useQuery<ChatSettingsData>({
     queryKey: ["chatSettings"],
     queryFn: fetchChatSettings,
   });
 
   useEffect(() => {
-    if (settings && settings.data) {
+    if (settings) {
       setFormData({
-        enableLiveChat: settings.data.enableLiveChat ?? false,
-        whatsappFallback: settings.data.whatsappFallback ?? false,
-        welcomeMessage: settings.data.welcomeMessage ?? "",
-        offlineMessage: settings.data.offlineMessage ?? "",
-        supportHourFrom: settings.data.supportHourFrom ?? "",
-        supportHourTo: settings.data.supportHourTo ?? "",
-        phone: settings.data.phone ?? "",
-        whatsappUrl: settings.data.whatsappUrl ?? "",
-        messengerUrl: settings.data.messengerUrl ?? "",
+        enableLiveChat: settings.enableLiveChat ?? false,
+        whatsappFallback: settings.whatsappFallback ?? false,
+        welcomeMessage: settings.welcomeMessage ?? "",
+        offlineMessage: settings.offlineMessage ?? "",
+        supportHourFrom: settings.supportHourFrom ?? "",
+        supportHourTo: settings.supportHourTo ?? "",
+        phone: settings.phone ?? "",
+        whatsappUrl: settings.whatsappUrl ?? "",
+        messengerUrl: settings.messengerUrl ?? "",
       });
     }
   }, [settings]);
-
-  console.log("Raw API Response:", settings);
 
   const mutation = useMutation({
     mutationFn: updateChatSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatSettings"] });
-      alert("Settings saved successfully!");
+      queryClient.invalidateQueries({ queryKey: ["chat-settings"] });
+      toast.success("Chat settings saved successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to save settings. Please try again.");
     },
   });
 
-  const handleSave = () => mutation.mutate(formData);
+  const handleSave = () => mutation.mutate(formData as unknown as Record<string, unknown>);
 
   const getPlatformValue = () => {
     if (activeSupport === "Phone") return formData.phone;
     if (activeSupport === "WhatsApp") return formData.whatsappUrl;
     return formData.messengerUrl;
+  };
+
+  const getPlatformPlaceholder = () => {
+    if (activeSupport === "Phone") return "+8801712345678 or 01712345678";
+    if (activeSupport === "WhatsApp") return "https://wa.me/8801712345678 or 01712345678";
+    return "https://m.me/yourpage or www.facebook.com/messages/t/yourpage";
   };
 
   const setPlatformValue = (val: string) => {
@@ -432,12 +461,13 @@ export default function ChatSettingsPage() {
         <div className="flex flex-col gap-4">
           <div className="flex gap-3">
             {[
-              { id: "Phone", icon: PhoneIcon },
-              { id: "WhatsApp", icon: WhatsappIcon },
-              { id: "Messenger", icon: MessangerIcon },
+              { id: "Phone" as const, icon: PhoneIcon },
+              { id: "WhatsApp" as const, icon: WhatsappIcon },
+              { id: "Messenger" as const, icon: MessangerIcon },
             ].map((plat) => (
               <button
                 key={plat.id}
+                type="button"
                 onClick={() => setActiveSupport(plat.id)}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-[8px] border transition-all cursor-pointer font-medium text-base ${activeSupport === plat.id ? "border-[#38BDF8] bg-[#F9F9F9]" : "border-[#F9F9F9] bg-[#F9F9F9]"}`}
               >
@@ -450,11 +480,21 @@ export default function ChatSettingsPage() {
               type="text"
               value={getPlatformValue()}
               onChange={(e) => setPlatformValue(e.target.value)}
+              placeholder={getPlatformPlaceholder()}
               className="flex-1 bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none font-poppins"
             />
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={mutation.isPending}
+              className="bg-[#1E90FF] text-white px-10 py-3 rounded-[8px] text-sm font-semibold cursor-pointer hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {mutation.isPending ? "Saving..." : "Save"}
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

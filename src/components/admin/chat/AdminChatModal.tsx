@@ -126,59 +126,74 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
       "http://localhost:8082";
 
-    if (!adminSocketInstance) {
-      adminSocketInstance = io(`${backendUrl}/chat`, {
-        withCredentials: true,
-        transports: ["websocket"],
-        query: { isAdmin: "true" },
-      });
-    }
+    // 🔑 Async init: get admin JWT before opening socket so backend can authenticate
+    const initSocket = async () => {
+      const adminToken = await getAdminTokenAction();
 
-    adminSocketInstance.on("newMessage", (message: Message) => {
-      // Tracks if the administrator is currently looking at this room thread
-      let isViewingThisRoomActive = false;
+      // If a socket exists but was created without a token, disconnect and recreate it
+      if (adminSocketInstance && !adminSocketInstance.auth?.token) {
+        adminSocketInstance.disconnect();
+        adminSocketInstance = null;
+      }
 
-      setActiveRoom((currentActive) => {
-        if (message.conversation_id === currentActive?.id) {
-          isViewingThisRoomActive = true;
-
-          // 🚀 AUTO-READ TRIGGER:
-          // Since the admin has this chat window wide open, hit the backend to mark it read in the DB instantly
-          apiFetch(`/chat/conversations/${currentActive.id}/messages`, {
-            method: "GET",
-          }).catch((err) =>
-            console.error("Auto-read database sync failed:", err),
-          );
-
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === message.id)) return prev;
-            return [...prev, message];
-          });
-        }
-
-        // Update the rooms list array state variables dynamically
-        setRooms((prevRooms) => {
-          const updatedRooms = prevRooms.map((room) => {
-            if (room.id === message.conversation_id) {
-              return {
-                ...room,
-                lastMessage: message.text || "[Attachment]",
-                // If actively viewing, keep badge at 0, otherwise increment
-                unreadCount: isViewingThisRoomActive
-                  ? 0
-                  : (room.unreadCount || 0) + 1,
-              };
-            }
-            return room;
-          });
-
-          syncGlobalStoreCount(updatedRooms);
-          return updatedRooms;
+      if (!adminSocketInstance) {
+        adminSocketInstance = io(`${backendUrl}/chat`, {
+          withCredentials: true,
+          transports: ["websocket"],
+          auth: { token: adminToken || "" },
+          query: { isAdmin: "true" },
         });
+      }
 
-        return currentActive;
+      adminSocketInstance.on("newMessage", (message: Message) => {
+        setActiveRoom((currentActive) => {
+          if (message.conversation_id === currentActive?.id) {
+            // 🚀 AUTO-READ TRIGGER
+            apiFetch(`/chat/conversations/${currentActive.id}/messages`, {
+              method: "GET",
+            }).catch((err) =>
+              console.error("Auto-read database sync failed:", err),
+            );
+
+            setMessages((prev) => {
+              // Replace optimistic temp message if it exists, otherwise append
+              const hasTempMsg = prev.some((m) => m.id.startsWith("temp-"));
+              if (hasTempMsg && message.sender?.role === "ADMIN") {
+                return prev.map((m) =>
+                  m.id.startsWith("temp-") ? message : m,
+                );
+              }
+              if (prev.some((m) => m.id === message.id)) return prev;
+              return [...prev, message];
+            });
+          }
+
+          // Update rooms list
+          setRooms((prevRooms) => {
+            const isViewing = message.conversation_id === currentActive?.id;
+            const updatedRooms = prevRooms.map((room) => {
+              if (room.id === message.conversation_id) {
+                return {
+                  ...room,
+                  lastMessage: message.text || "[Attachment]",
+                  unreadCount: isViewing
+                    ? 0
+                    : (room.unreadCount || 0) + 1,
+                };
+              }
+              return room;
+            });
+
+            syncGlobalStoreCount(updatedRooms);
+            return updatedRooms;
+          });
+
+          return currentActive;
+        });
       });
-    });
+    };
+
+    initSocket();
 
     return () => {
       if (adminSocketInstance) {
@@ -220,9 +235,10 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
         );
         if (res.ok) {
           const cleanMsgs = await res.json();
-          setMessages(
-            Array.isArray(cleanMsgs) ? cleanMsgs : cleanMsgs?.data || [],
-          );
+          console.log("AdminChatModal Fetched Messages API response:", cleanMsgs);
+          const rawData = cleanMsgs?.data !== undefined ? cleanMsgs.data : cleanMsgs;
+          const messageArray = Array.isArray(rawData) ? rawData : rawData?.messages || [];
+          setMessages(messageArray);
         }
       } catch (err) {
         console.error("Failed to load message strings:", err);
@@ -293,18 +309,38 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
     if (!activeRoom || !adminSocketInstance) return;
 
     const currentText = replyText.trim();
+    const currentAttachments = pendingAttachments.length > 0 ? [...pendingAttachments] : null;
+
     setReplyText("");
+    setPendingAttachments([]);
+
+    // 🚀 OPTIMISTIC UPDATE: Instantly render admin reply in chat history UI
+    const tempMsg: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: activeRoom.id,
+      sender_id: "ADMIN",
+      text: currentText || null,
+      attachments: currentAttachments,
+      created_at: new Date().toISOString(),
+      sender: {
+        id: "ADMIN",
+        name: "Admin",
+        avatar: null,
+        role: "ADMIN",
+      },
+    };
+
+    setMessages((prev) => [...prev, tempMsg]);
 
     adminSocketInstance.emit("sendMessage", {
       conversationId: activeRoom.id,
       text: currentText || null,
-      attachments: pendingAttachments.length > 0 ? pendingAttachments : [],
+      attachments: currentAttachments || [],
     });
-
-    setPendingAttachments([]);
   };
 
-  const renderAttachmentFile = (att: any, isAdminMsg: boolean) => {
+
+  const renderAttachmentFile = (att: Attachment, isAdminMsg: boolean) => {
     const absoluteAssetUrl = `${baseStorageUrl}${att.url}`;
 
     if (att.type === "IMAGE") {
