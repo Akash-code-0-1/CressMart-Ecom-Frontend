@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Trash2, Edit3, Plus, Loader2, CirclePlus } from "lucide-react";
+import { MoreVertical, Trash2, Edit3, Loader2, CirclePlus } from "lucide-react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import DataTable from "../common/DataTable";

@@ -52,8 +52,8 @@ export function useChatEngine(isOpen: boolean) {
       });
       if (!res.ok) throw new Error("Failed to sync structural messaging metrics.");
       const json = await res.json();
-      const responseData = json?.data ?? json;
-      return Array.isArray(responseData) ? responseData : responseData?.data || [];
+      const rawData = json?.data !== undefined ? json.data : json;
+      return Array.isArray(rawData) ? rawData : rawData?.messages || [];
     },
     enabled: !!roomId && isOpen,
   });
