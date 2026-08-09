@@ -148,6 +148,12 @@ export interface Category {
   parent_id?: string | null;
   image_url?: string | null;
   children?: Category[];
+  image?: File;
+  created_at?: string;
+  updated_at?: string;
+  _count?: { products: number };
+  status?: string;
+  sl?: number;
 }
 
 export interface CategoryDetail extends Category {
@@ -165,7 +171,9 @@ export const getCategory = async (slug: string): Promise<CategoryDetail> => {
 };
 
 // Flat list of all categories for filter sidebar
-export const getAllcategoryFlatList = async (): Promise<{ data: Category[] }> => {
+export const getAllcategoryFlatList = async (): Promise<{
+  data: Category[];
+}> => {
   const res = await apiFetch("/categories?limit=200");
   if (!res.ok) throw new Error("Failed to fetch category list");
   const json = await res.json();

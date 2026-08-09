@@ -176,9 +176,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
 // 🚀 FIXED: Imports correctly matched from our single category service architecture layer
-import { fetchAllSubCategories, deleteCategory } from "@/services-api/categoryService";
+import {
+  fetchAllSubCategories,
+  deleteCategory,
+} from "@/services-api/categoryService";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
+import toast from "react-hot-toast";
 
 interface TableColumn<T> {
   header: string;
@@ -188,6 +192,21 @@ interface TableColumn<T> {
   className?: string;
   headerClassName?: string;
 }
+type subcategories = {
+  id: string;
+  name: string;
+  parentCategory: string;
+  products: number;
+  priority: number;
+  status: string;
+  parent?: {
+    id: string;
+    name: string;
+  };
+  _count?: {
+    products: number;
+  };
+};
 
 export default function SubCategoryTable() {
   const queryClient = useQueryClient();
@@ -212,7 +231,12 @@ export default function SubCategoryTable() {
       if (status === "PUBLISHED") mappedStatus = "active";
       if (status === "DRAFT") mappedStatus = "draft";
 
-      return fetchAllSubCategories({ page, limit, search, status: mappedStatus });
+      return fetchAllSubCategories({
+        page,
+        limit,
+        search,
+        status: mappedStatus,
+      });
     },
   });
 
@@ -223,11 +247,13 @@ export default function SubCategoryTable() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteCategory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["catalog-subcategories-list"] });
-      alert("Subcategory deleted successfully.");
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-subcategories-list"],
+      });
+      toast.success("Subcategory deleted successfully.");
       setActiveMenuId(null);
     },
-    onError: (err: any) => alert(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const handlePageChange = (targetPage: number) => {
@@ -238,7 +264,7 @@ export default function SubCategoryTable() {
 
   const handleSelectRow = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
     );
   };
 
@@ -246,11 +272,11 @@ export default function SubCategoryTable() {
     if (selectedIds.length === subCategoryList.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(subCategoryList.map((item: any) => item.id));
+      setSelectedIds(subCategoryList.map((item: { id: string }) => item.id));
     }
   };
 
-  const columns: TableColumn<any>[] = [
+  const columns: TableColumn<subcategories>[] = [
     {
       header: "",
       key: "checkbox-selection",
@@ -259,7 +285,10 @@ export default function SubCategoryTable() {
         <input
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.length === subCategoryList.length && subCategoryList.length > 0}
+          checked={
+            selectedIds.length === subCategoryList.length &&
+            subCategoryList.length > 0
+          }
           onChange={handleSelectAll}
         />
       ),
@@ -321,11 +350,16 @@ export default function SubCategoryTable() {
       header: "Status",
       key: "status",
       render: (item) => {
-        const isPublished = item.status === "PUBLISHED" || item.status === "active" || item.status === "Publish";
+        const isPublished =
+          item.status === "PUBLISHED" ||
+          item.status === "active" ||
+          item.status === "Publish";
         return (
           <div
             className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${
-              isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"
+              isPublished
+                ? "bg-[#C1FFBC] text-[#085E00]"
+                : "bg-gray-100 text-gray-500"
             }`}
           >
             {isPublished ? "Publish" : "Draft"}
@@ -338,25 +372,32 @@ export default function SubCategoryTable() {
       key: "action",
       render: (item) => (
         <div className="relative">
-          <button 
-            onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)} 
+          <button
+            onClick={() =>
+              setActiveMenuId(activeMenuId === item.id ? null : item.id)
+            }
             className="text-black p-1 transition-colors cursor-pointer"
           >
             <MoreVertical size={20} />
           </button>
-          
+
           {activeMenuId === item.id && (
             <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50">
               <button
                 type="button"
-                onClick={() => router.push(`/admin/dashboard/sub-category/add?id=${item.id}`)}
+                onClick={() =>
+                  router.push(`/admin/dashboard/sub-category/add?id=${item.id}`)
+                }
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
               >
                 <Edit3 size={12} /> Edit Sub
               </button>
               <button
                 type="button"
-                onClick={() => { if (confirm("Delete this sub-category permanently?")) deleteMutation.mutate(item.id); }}
+                onClick={() => {
+                  if (confirm("Delete this sub-category permanently?"))
+                    deleteMutation.mutate(item.id);
+                }}
                 className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-medium"
               >
                 <Trash2 size={12} /> Delete Sub
@@ -372,7 +413,9 @@ export default function SubCategoryTable() {
     return (
       <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
         <Loader2 className="animate-spin text-gray-400" size={24} />
-        <span className="text-xs">Synchronizing active subcategories dataset...</span>
+        <span className="text-xs">
+          Synchronizing active subcategories dataset...
+        </span>
       </div>
     );
   }

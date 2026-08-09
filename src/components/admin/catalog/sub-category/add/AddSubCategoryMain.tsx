@@ -4,14 +4,34 @@ import React, { useState, useRef, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowLeft, CheckCircle, Trash2, ChevronDown } from "lucide-react";
-import { apiFetch } from "@/utils/api";
-import { uploadCategoryImage, fetchSingleCategory, fetchRootCategoriesOnly } from "@/services-api/categoryService";
-import { createSubCategory, updateSubCategory } from "@/services-api/subcategoryService";
+import {
+  Loader2,
+  ArrowLeft,
+  CheckCircle,
+  Trash2,
+  ChevronDown,
+} from "lucide-react";
+import {
+  uploadCategoryImage,
+  fetchSingleCategory,
+  fetchRootCategoriesOnly,
+} from "@/services-api/categoryService";
+import {
+  createSubCategory,
+  updateSubCategory,
+} from "@/services-api/subcategoryService";
 import PrimaryButton from "../../../common/PrimaryButton";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
-const Label = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
+const Label = ({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
   <label className="block text-sm font-medium text-gray-700 mb-1.5 select-none">
     {children} {required && <span className="text-red-500">*</span>}
   </label>
@@ -29,7 +49,9 @@ export default function AddSubCategoryMain() {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const baseStorageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
 
   const methods = useForm({
     defaultValues: {
@@ -42,7 +64,14 @@ export default function AddSubCategoryMain() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = methods;
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = methods;
   const autoSlugActive = watch("autoSlug");
 
   // QUERY: Pull current data values to pre-populate inputs if editing
@@ -59,10 +88,15 @@ export default function AddSubCategoryMain() {
         slug: existingSubCategory.slug || "",
         parent_id: existingSubCategory.parent_id || "",
         description: existingSubCategory.description || "",
-        status: existingSubCategory.status === "active" || existingSubCategory.status === "PUBLISHED" ? "active" : "draft",
+        status:
+          existingSubCategory.status === "active" ||
+          existingSubCategory.status === "PUBLISHED"
+            ? "active"
+            : "draft",
         autoSlug: false,
       });
-      if (existingSubCategory.image_url) setImageUrl(existingSubCategory.image_url);
+      if (existingSubCategory.image_url)
+        setImageUrl(existingSubCategory.image_url);
     }
   }, [existingSubCategory, isEditMode, reset]);
 
@@ -72,15 +106,21 @@ export default function AddSubCategoryMain() {
     queryFn: fetchRootCategoriesOnly,
   });
 
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       setUploading(true);
       const data = await uploadCategoryImage(file);
       if (data.image_url) setImageUrl(data.image_url);
-    } catch (err: any) {
-      alert(`Upload Failure: ${err.message}`);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Upload Failure: Please try again.";
+      toast.error(`Upload Failure: ${message}`);
     } finally {
       setUploading(false);
     }
@@ -94,26 +134,47 @@ export default function AddSubCategoryMain() {
       return createSubCategory(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["catalog-subcategories-list"] });
-      alert(isEditMode ? "Sub Category updates saved successfully!" : "Sub Category created successfully!");
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-subcategories-list"],
+      });
+      toast.success(
+        isEditMode
+          ? "Sub Category updates saved successfully!"
+          : "Sub Category created successfully!",
+      );
       router.push("/admin/dashboard/sub-category");
     },
-    onError: (err: any) => {
-      alert(`Validation Failure: ${err.message}`);
+    onError: (err: unknown) => {
+      if (err instanceof Error) {
+        toast.error(`Validation Failure: ${err.message}`);
+      }
     },
   });
 
-  const onSubmitFormHandler = (data: any) => {
+  const onSubmitFormHandler = (data: {
+    name: string;
+    slug: string;
+    parent_id: string;
+    description: string;
+    status: string;
+  }) => {
     if (!data.name.trim()) return;
 
     if (!data.parent_id || data.parent_id === "") {
-      alert("Validation Error: Subcategories must have a valid parent category relationship.");
+      alert(
+        "Validation Error: Subcategories must have a valid parent category relationship.",
+      );
       return;
     }
 
     subCategoryMutation.mutate({
       name: data.name,
-      slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      slug:
+        data.slug ||
+        data.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, ""),
       parent_id: data.parent_id,
       description: data.description || "",
       image_url: imageUrl || "",
@@ -125,14 +186,16 @@ export default function AddSubCategoryMain() {
     return (
       <div className="h-64 w-full flex items-center justify-center text-gray-400 gap-2 bg-[#F9FAFB]">
         <Loader2 className="animate-spin text-gray-500" />
-        <span className="text-xs">Synchronizing baseline subcategory files...</span>
+        <span className="text-xs">
+          Synchronizing baseline subcategory files...
+        </span>
       </div>
     );
   }
 
   return (
     <FormProvider {...methods}>
-      <div className="w-full min-h-screen font-lato pb-12 p-4 bg-[#F9FAFB]">
+      <div className="w-full min-h-screen font-lato pb-12 bg-[#F9FAFB]">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 p-4 bg-white border border-gray-100 rounded-[8px]">
           <div className="flex items-center gap-3">
             <button
@@ -147,7 +210,8 @@ export default function AddSubCategoryMain() {
                 {isEditMode ? "Edit Sub Category" : "Add Sub Category"}
               </h1>
               <p className="text-xs text-gray-400">
-                Add nested child taxonomy nodes attached directly to root categories
+                Add nested child taxonomy nodes attached directly to root
+                categories
               </p>
             </div>
           </div>
@@ -164,7 +228,7 @@ export default function AddSubCategoryMain() {
           className="grid grid-cols-1 lg:grid-cols-12 gap-6"
         >
           <div className="lg:col-span-8 bg-white rounded-[8px] p-5 border border-gray-100 space-y-5">
-            <h3 className="text-[#003032] font-semibold text-lg border-b pb-2">
+            <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
               General Info
             </h3>
 
@@ -174,15 +238,16 @@ export default function AddSubCategoryMain() {
               <div className="relative w-full">
                 <select
                   {...register("parent_id", {
-                    required: "Parent category linkage configuration is mandatory",
+                    required:
+                      "Parent category linkage configuration is mandatory",
                   })}
                   className="w-full bg-[#F9F9F9] rounded-[8px] p-3 text-sm text-black outline-none border border-transparent focus:border-gray-200 cursor-pointer appearance-none"
                 >
                   <option value="">Select Parent Category Mapping Node*</option>
                   {Array.isArray(parentCategoriesList) &&
                     parentCategoriesList
-                      .filter((cat: any) => cat.id !== subCategoryId)
-                      .map((cat: any) => (
+                      .filter((cat: { id: string }) => cat.id !== subCategoryId)
+                      .map((cat: { id: string; name: string }) => (
                         <option key={cat.id} value={cat.id}>
                           {cat.name}
                         </option>
@@ -247,7 +312,8 @@ export default function AddSubCategoryMain() {
               <input
                 type="text"
                 {...register("slug", {
-                  required: "Tracking slug pathway index parameters verified required",
+                  required:
+                    "Tracking slug pathway index parameters verified required",
                 })}
                 disabled={autoSlugActive}
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-800 disabled:opacity-60"
@@ -266,7 +332,7 @@ export default function AddSubCategoryMain() {
 
           <div className="lg:col-span-4 space-y-4">
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">
+              <h3 className="text-black font-semibold text-lg border-b border-gray-200 pb-2">
                 Visibility Settings
               </h3>
               <div>
@@ -275,13 +341,13 @@ export default function AddSubCategoryMain() {
                 </label>
                 <select
                   {...register("status")}
-                  className="w-full bg-[#F9FAFB] border text-xs px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer"
+                  className="w-full bg-[#F9FAFB] border border-gray-200 text-sm px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer"
                 >
                   <option value="active">Published</option>
                   <option value="draft">Draft / Inactive</option>
                 </select>
               </div>
-              
+
               {/* 🚀 FIXED: Trigger functions are managed using custom click routines to comply with custom interfaces */}
               <PrimaryButton
                 onClick={handleSubmit(onSubmitFormHandler)}
@@ -304,16 +370,23 @@ export default function AddSubCategoryMain() {
             </div>
 
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">
+              <h3 className="text-black font-semibold text-lg border-b border-gray-200 pb-2">
                 Sub Category Branding Icon
               </h3>
               <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
                 {imageUrl ? (
                   <div className="relative group w-24 h-24 rounded-[8px] border overflow-hidden bg-white shadow-xs">
-                    <img
-                      src={imageUrl.startsWith("http") ? imageUrl : `${baseStorageUrl}${imageUrl}`}
+                    <Image
+                      width={100}
+                      height={100}
+                      src={
+                        imageUrl.startsWith("http")
+                          ? imageUrl
+                          : `${baseStorageUrl}${imageUrl}`
+                      }
                       className="w-full h-full object-cover"
-                      alt=""
+                      alt="Sub Category Image"
+                      unoptimized
                     />
                     <button
                       type="button"
