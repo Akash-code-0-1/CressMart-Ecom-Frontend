@@ -20,6 +20,8 @@ import {
 } from "@/services-api/brandService";
 import PrimaryButton from "../../../common/PrimaryButton";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
+import toast from "react-hot-toast";
+import Image from "next/image";
 
 const Label = ({
   children,
@@ -109,28 +111,48 @@ export default function AddBrandMain() {
       setUploading(true);
       const data = await uploadBrandImage(file);
       if (data.logo_url) setLogoUrl(data.logo_url);
-    } catch (err: any) {
-      alert(`Upload Failure: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Upload Failure: ${err.message}`);
+      } else {
+        toast.error("Upload Failure: Unknown error");
+      }
     } finally {
       setUploading(false);
     }
   };
 
   const brandMutation = useMutation({
-    mutationFn: (payload: any) => {
+    mutationFn: (payload: {
+      name: string;
+      slug: string;
+      priority: number;
+      status: "active" | "draft";
+      meta_title: string | null;
+      meta_tags: string | null;
+      meta_description: string | null;
+      logo_url: string;
+    }) => {
       return isEditMode ? updateBrand(brandId!, payload) : createBrand(payload);
     },
     onSuccess: (updatedBrand) => {
       // 🚀 1. INSTANT UPDATE: Manually update the list cache to show change in UI
-      queryClient.setQueryData(["catalog-brands-list"], (oldData: any) => {
-        if (!oldData || !oldData.data) return oldData;
-        return {
-          ...oldData,
-          data: oldData.data.map((b: any) =>
-            b.id === brandId ? { ...b, ...updatedBrand } : b,
-          ),
-        };
-      });
+      queryClient.setQueryData(
+        ["catalog-brands-list"],
+        (oldData: {
+          data: {
+            id: string;
+          }[];
+        }) => {
+          if (!oldData || !oldData.data) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((b: { id: string }) =>
+              b.id === brandId ? { ...b, ...updatedBrand } : b,
+            ),
+          };
+        },
+      );
 
       // 2. HARD RESET: Clear all brand-related queries to ensure next fetch is fresh
       queryClient.invalidateQueries({
@@ -138,13 +160,28 @@ export default function AddBrandMain() {
         exact: false,
       });
 
-      alert("Brand updated successfully!");
+      toast.success("Brand updated successfully!");
       router.push("/admin/dashboard/brand");
     },
-    onError: (err: any) => alert(`Validation Failure: ${err.message}`),
+    onError: (err: unknown) => {
+      if (err instanceof Error) {
+        toast.error(`Validation Failure: ${err.message}`);
+      } else {
+        toast.error("Validation Failure: Unknown error");
+      }
+    },
   });
 
-  const onSubmitFormHandler = (data: any) => {
+  const onSubmitFormHandler = (data: {
+    name: string;
+    slug: string;
+    priority: string;
+    status: "active" | "draft";
+    meta_title: string;
+    meta_tags: string;
+    meta_description: string;
+    autoSlug: boolean;
+  }) => {
     if (!data.name.trim()) return;
 
     // 🚀 FIXED: All dynamic Prisma Schema fields attached securely to serialization hooks
@@ -178,7 +215,7 @@ export default function AddBrandMain() {
 
   return (
     <FormProvider {...methods}>
-      <div className="w-full min-h-screen font-lato pb-12 p-4 bg-[#F9FAFB]">
+      <div className="w-full min-h-screen font-lato pb-12 bg-[#F9FAFB]">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 p-4 bg-white border border-gray-100 rounded-[8px]">
           <div className="flex items-center gap-3">
             <button
@@ -210,7 +247,7 @@ export default function AddBrandMain() {
           <div className="lg:col-span-8 space-y-4">
             {/* Core Generic Information Card */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-5">
-              <h3 className="text-[#003032] font-semibold text-lg border-b pb-2">
+              <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
                 General Info
               </h3>
 
@@ -343,7 +380,7 @@ export default function AddBrandMain() {
           {/* RIGHT PANELS SYSTEM CONTROLLERS */}
           <div className="lg:col-span-4 space-y-4">
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">
+              <h3 className="text-black font-semibold text-lg border-b border-gray-200 pb-2">
                 Visibility Settings
               </h3>
               <div>
@@ -352,7 +389,7 @@ export default function AddBrandMain() {
                 </label>
                 <select
                   {...register("status")}
-                  className="w-full bg-[#F9FAFB] border text-xs px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer"
+                  className="w-full bg-[#F9FAFB] border text-sm border-gray-200 px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer"
                 >
                   <option value="active">Published</option>
                   <option value="draft">Draft / Inactive</option>
@@ -379,20 +416,23 @@ export default function AddBrandMain() {
             </div>
 
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">
+              <h3 className="text-black font-semibold text-lg border-b border-gray-200 pb-2">
                 Brand Graphic Logo
               </h3>
               <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
                 {logoUrl ? (
                   <div className="relative group w-24 h-24 rounded-[8px] border overflow-hidden bg-white shadow-xs">
-                    <img
+                    <Image
                       src={
                         logoUrl.startsWith("http")
                           ? logoUrl
                           : `${baseStorageUrl}${logoUrl}`
                       }
-                      className="w-full h-full object-cover"
-                      alt=""
+                      className="w-full h-full object-contain"
+                      alt="Brand Logo"
+                      width={100}
+                      height={100}
+                      unoptimized
                     />
                     <button
                       type="button"

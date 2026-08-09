@@ -4,13 +4,26 @@ import React, { useState, useRef, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowLeft, CheckCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Trash2 } from "lucide-react";
 import { apiFetch } from "@/utils/api";
-import { uploadCategoryImage, createCategory, updateCategory, fetchSingleCategory } from "@/services-api/categoryService";
+import {
+  uploadCategoryImage,
+  createCategory,
+  updateCategory,
+  fetchSingleCategory,
+} from "@/services-api/categoryService";
 import PrimaryButton from "../../../common/PrimaryButton";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
-const Label = ({ children, required }: { children: React.ReactNode; required?: boolean }) => (
+const Label = ({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) => (
   <label className="block text-sm font-medium text-gray-700 mb-1.5 select-none">
     {children} {required && <span className="text-red-500">*</span>}
   </label>
@@ -29,7 +42,9 @@ export default function AddCategoryMain() {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const baseStorageUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+  const baseStorageUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
 
   const methods = useForm({
     defaultValues: {
@@ -42,7 +57,14 @@ export default function AddCategoryMain() {
     },
   });
 
-  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = methods;
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = methods;
   const autoSlugActive = watch("autoSlug");
 
   // 🚀 QUERY: Fetch target entity values to pre-populate inputs if editing
@@ -60,7 +82,11 @@ export default function AddCategoryMain() {
         slug: existingCategory.slug || "",
         parent_id: existingCategory.parent_id || "",
         description: existingCategory.description || "",
-        status: existingCategory.status === "active" || existingCategory.status === "PUBLISHED" ? "active" : "draft",
+        status:
+          existingCategory.status === "active" ||
+          existingCategory.status === "PUBLISHED"
+            ? "active"
+            : "draft",
         autoSlug: false,
       });
       if (existingCategory.image_url) {
@@ -80,11 +106,14 @@ export default function AddCategoryMain() {
   const flatCategoriesList = (() => {
     if (!treeResponse) return [];
     if (Array.isArray(treeResponse)) return treeResponse;
-    if (treeResponse.data && Array.isArray(treeResponse.data)) return treeResponse.data;
+    if (treeResponse.data && Array.isArray(treeResponse.data))
+      return treeResponse.data;
     return [];
   })();
 
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -92,8 +121,12 @@ export default function AddCategoryMain() {
       const data = await uploadCategoryImage(file);
       if (data.image_url) setImageUrl(data.image_url);
       else if (data.data?.image_url) setImageUrl(data.data.image_url);
-    } catch (err: any) {
-      alert(`Upload Failure: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Upload Failure: ${err.message}`);
+      } else {
+        toast.error("Upload Failure: An unknown error occurred");
+      }
     } finally {
       setUploading(false);
     }
@@ -101,7 +134,7 @@ export default function AddCategoryMain() {
 
   // 🚀 MUTATION WORKFLOW ROUTER: Switches targets cleanly between POST or PATCH methods
   const categoryMutation = useMutation({
-    mutationFn: (payload: any) => {
+    mutationFn: (payload: unknown) => {
       if (isEditMode && categoryId) {
         return updateCategory(categoryId, payload);
       }
@@ -109,19 +142,39 @@ export default function AddCategoryMain() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog-categories-list"] });
-      alert(isEditMode ? "Category changes saved successfully!" : "Category created successfully!");
+      toast.success(
+        isEditMode
+          ? "Category changes saved successfully!"
+          : "Category created successfully!",
+      );
       router.push("/admin/dashboard/category");
     },
-    onError: (err: any) => {
-      alert(`Execution Rejection: ${err.message}`);
+    onError: (err: unknown) => {
+      if (err instanceof Error) {
+        toast.error(`Execution Rejection: ${err.message}`);
+      } else {
+        toast.error("Execution Rejection: An unknown error occurred");
+      }
     },
   });
 
-  const onSubmitFormHandler = (data: any) => {
+  const onSubmitFormHandler = (data: {
+    name: string;
+    slug: string;
+    parent_id: string;
+    description: string;
+    status: string;
+    autoSlug: boolean;
+  }) => {
     if (!data.name.trim()) return;
     categoryMutation.mutate({
       name: data.name,
-      slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+      slug:
+        data.slug ||
+        data.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, ""),
       parent_id: data.parent_id || null,
       description: data.description || "",
       image_url: imageUrl || "",
@@ -140,49 +193,76 @@ export default function AddCategoryMain() {
 
   return (
     <FormProvider {...methods}>
-      <div className="w-full min-h-screen font-lato pb-12 p-4 bg-[#F9FAFB]">
-        
+      <div className="w-full min-h-screen font-lato pb-12 bg-[#F9FAFB]">
         <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 p-4 bg-white border border-gray-100 rounded-[8px]">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full cursor-pointer text-gray-600">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full cursor-pointer text-gray-600"
+            >
               <ArrowLeft size={20} />
             </button>
             <div>
               <h1 className="text-xl font-bold text-black sm:text-2xl">
                 {isEditMode ? "Edit Category" : "Add Category"}
               </h1>
-              <p className="text-xs text-gray-400">Configure parameters mapping securely tied to server columns</p>
+              <p className="text-xs text-gray-400">
+                Configure parameters mapping securely tied to server columns
+              </p>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmitFormHandler)} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form
+          onSubmit={handleSubmit(onSubmitFormHandler)}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+        >
           <div className="lg:col-span-8 bg-white rounded-[8px] p-5 border border-gray-100 space-y-5">
-            <h3 className="text-[#003032] font-semibold text-lg border-b pb-2">General Info</h3>
-            
+            <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
+              General Info
+            </h3>
+
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <Label required>Category Name</Label>
-                <div className="flex items-center gap-1.5 cursor-pointer select-none" onClick={() => setValue("autoSlug", !autoSlugActive)}>
-                  <span className="text-xs text-gray-400">Auto Generate Slug</span>
-                  <input type="checkbox" checked={autoSlugActive} readOnly className="accent-[#1DA1F2]" />
+                <div
+                  className="flex items-center gap-1.5 cursor-pointer select-none"
+                  onClick={() => setValue("autoSlug", !autoSlugActive)}
+                >
+                  <span className="text-xs text-gray-400">
+                    Auto Generate Slug
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={autoSlugActive}
+                    readOnly
+                    className="accent-[#1DA1F2]"
+                  />
                 </div>
               </div>
               <input
                 type="text"
-                {...register("name", { 
+                {...register("name", {
                   required: "Category name input required",
                   onChange: (e) => {
                     if (autoSlugActive) {
-                      const clean = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                      const clean = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/(^-|-$)/g, "");
                       setValue("slug", clean);
                     }
-                  }
+                  },
                 })}
                 placeholder="Ex: Electronics"
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -206,21 +286,35 @@ export default function AddCategoryMain() {
 
             <div className="pt-2">
               <Label>Parent Category Node Mapping Selection</Label>
-              <select {...register("parent_id")} className="w-full bg-[#F9FAFB] border p-3 rounded-[8px] text-xs text-black outline-none cursor-pointer">
+              <select
+                {...register("parent_id")}
+                className="w-full bg-[#F9FAFB] p-3 rounded-[8px] text-sm border border-gray-200 text-black outline-none cursor-pointer"
+              >
                 <option value="">None (Treat as Top Root Node)</option>
-                {flatCategoriesList.filter((c: any) => c.id !== categoryId).map((cat: any) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
+                {flatCategoriesList
+                  .filter((c: { id: string }) => c.id !== categoryId)
+                  .map((cat: { id: string; name: string }) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
               </select>
             </div>
           </div>
 
           <div className="lg:col-span-4 space-y-4">
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">Visibility Settings</h3>
+              <h3 className="text-black font-semibold text-lg border-b border-gray-200 pb-2">
+                Visibility Settings
+              </h3>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">Category Status</label>
-                <select {...register("status")} className="w-full bg-[#F9FAFB] border text-xs px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer">
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                  Category Status
+                </label>
+                <select
+                  {...register("status")}
+                  className="w-full bg-[#F9FAFB] border border-gray-200 text-sm px-4 py-3 rounded-[8px] outline-none text-black cursor-pointer"
+                >
                   <option value="active">Published</option>
                   <option value="draft">Draft / Inactive</option>
                 </select>
@@ -228,30 +322,75 @@ export default function AddCategoryMain() {
               <PrimaryButton
                 type="submit"
                 disabled={categoryMutation.isPending}
-                icon={categoryMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
-                label={categoryMutation.isPending ? "Saving..." : isEditMode ? "Save Changes" : "Add Category"}
+                icon={
+                  categoryMutation.isPending ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <CheckCircle size={16} />
+                  )
+                }
+                label={
+                  categoryMutation.isPending
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Save Changes"
+                      : "Add Category"
+                }
                 className="w-full justify-center bg-[#085E00] hover:bg-[#064400] text-white py-3 font-semibold"
               />
             </div>
 
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
-              <h3 className="text-black font-semibold text-lg border-b pb-2">Category Icon Media</h3>
+              <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
+                Category Icon Media
+              </h3>
               <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
                 {imageUrl ? (
                   <div className="relative group w-24 h-24 rounded-[8px] border overflow-hidden bg-white shadow-xs">
-                    <img src={imageUrl.startsWith("http") ? imageUrl : `${baseStorageUrl}${imageUrl}`} className="w-full h-full object-cover" alt="" />
-                    <button type="button" onClick={() => setImageUrl("")} className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer text-xs">
+                    <Image
+                      src={
+                        imageUrl.startsWith("http")
+                          ? imageUrl
+                          : `${baseStorageUrl}${imageUrl}`
+                      }
+                      className="w-full h-full object-cover"
+                      alt="category image"
+                      width={100}
+                      height={100}
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer text-xs"
+                    >
                       <Trash2 size={16} />
                     </button>
                   </div>
                 ) : (
-                  <div onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center justify-center cursor-pointer outline-none">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center cursor-pointer outline-none"
+                  >
                     <IamgeIcon size="54" color="#A2A2A2" />
-                    <p className="text-xs text-[#A2A2A2] mt-2 font-medium">Click to select asset photo</p>
+                    <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
+                      Click to select asset photo
+                    </p>
                   </div>
                 )}
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageFileChange} disabled={uploading} />
-                {uploading && <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-[8px]"><Loader2 className="animate-spin text-sky-500" /></div>}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  disabled={uploading}
+                />
+                {uploading && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-[8px]">
+                    <Loader2 className="animate-spin text-sky-500" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
