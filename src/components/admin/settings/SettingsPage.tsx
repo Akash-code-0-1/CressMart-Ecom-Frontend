@@ -379,12 +379,12 @@ export default function SettingsPage() {
               icon: ChatInterfaceIcon,
               path: "/admin/dashboard/settings/chat",
             },
-            {
-              id: "shop",
-              label: "Manage Shop",
-              icon: ShopSettingsIcon,
-              path: "/admin/dashboard/settings/shop",
-            },
+            // {
+            //   id: "shop",
+            //   label: "Manage Shop",
+            //   icon: ShopSettingsIcon,
+            //   path: "/admin/dashboard/settings/shop",
+            // },
             {
               id: "profile",
               label: "Profile Details",
@@ -582,7 +582,7 @@ export default function SettingsPage() {
         />
       </form>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 mx-4 pb-8">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 mx-4 pb-8">
         <div className="flex flex-col gap-4">
           {[
             {
@@ -654,7 +654,9 @@ export default function SettingsPage() {
             </label>
           ))}
         </div>
-      </div>
+
+        
+      </div> */}
     </FormProvider>
   );
 }

@@ -268,15 +268,15 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             <GlobalIcon />
             <span className="text-sm font-normal text-black">View Website</span>
           </Link>
-          <button className="xl:flex hidden items-center gap-2 p-2 bg-[#F9F9F9] rounded-[8px] font-poppins cursor-pointer hover:bg-gray-100 transition-colors">
+          {/* <button className="xl:flex hidden items-center gap-2 p-2 bg-[#F9F9F9] rounded-[8px] font-poppins cursor-pointer hover:bg-gray-100 transition-colors">
             <VideoCamIcon />
             <span className="text-sm font-normal text-black">Tutorials</span>
-          </button>
+          </button> */}
         </div>
       </div>
 
       {/* CENTER: Search Bar */}
-      <div className="flex-1 max-w-[318px] mx-8 hidden md:hidden xl:block">
+      {/* <div className="flex-1 max-w-[318px] mx-8 hidden md:hidden xl:block">
         <div className="relative group font-poppins">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-black" />
@@ -292,7 +292,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             </button>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* RIGHT: Action Icons + Badge Indicators */}
       <div className="flex items-center gap-2 md:gap-4 shrink-0">

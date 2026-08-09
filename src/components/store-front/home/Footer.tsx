@@ -45,20 +45,96 @@ const Footer = () => {
   const { language } = useLanguage();
   const t = translations[language];
 
+  // const footerLinks = {
+  //   company: [
+  //     { label: t.footer.companyLinks[0], path: "/legal/about-us" },
+  //     // { label: t.footer.companyLinks[1], path: "/shipping" },
+  //     { label: t.footer.companyLinks[2], path: "/legal/return-exchange" },
+  //     { label: t.footer.companyLinks[3], path: "/legal/privacy-policy" },
+  //     { label: t.footer.companyLinks[4], path: "/legal/terms-condition" },
+  //     { label: t.footer.companyLinks[5], path: "/faq" },
+  //   ],
+
+  //   account: t.footer.accountLinks,
+
+  //   corporate: t.footer.corporateLinks,
+  // };
+
+
   const footerLinks = {
-    company: [
-      { label: t.footer.companyLinks[0], path: "/legal/about-us" },
-      { label: t.footer.companyLinks[1], path: "/shipping" },
-      { label: t.footer.companyLinks[2], path: "/legal/return-exchange" },
-      { label: t.footer.companyLinks[3], path: "/legal/privacy-policy" },
-      { label: t.footer.companyLinks[4], path: "/legal/terms-condition" },
-      { label: t.footer.companyLinks[5], path: "/faqs" },
-    ],
+  company: [
+    {
+      label: t.footer.companyLinks[0],
+      path: "/legal/about-us",
+    },
+    // {
+    //   label: t.footer.companyLinks[1],
+    //   path: "/shipping",
+    // },
+    {
+      label: t.footer.companyLinks[2],
+      path: "/legal/return-exchange",
+    },
+    {
+      label: t.footer.companyLinks[3],
+      path: "/legal/privacy-policy",
+    },
+    {
+      label: t.footer.companyLinks[4],
+      path: "/legal/terms-condition",
+    },
+    {
+      label: t.footer.companyLinks[5],
+      path: "/faq",
+    },
+  ],
 
-    account: t.footer.accountLinks,
+  account: [
+    {
+      label: t.footer.accountLinks[0],
+      path: "/signin",
+    },
+    {
+      label: t.footer.accountLinks[1],
+      path: "/cart",
+    },
+    {
+      label: t.footer.accountLinks[2],
+      path: "/profile/wishlist",
+    },
+    // {
+    //   label: t.footer.accountLinks[3],
+    //   path: "/track-order",
+    // },
+    // {
+    //   label: t.footer.accountLinks[4],
+    //   path: "/help-ticket",
+    // },
+    {
+      label: t.footer.accountLinks[5],
+      path: "/",
+    },
+  ],
 
-    corporate: t.footer.corporateLinks,
-  };
+  corporate: [
+    // {
+    //   label: t.footer.corporateLinks[0],
+    //   path: "/vendor/register",
+    // },
+    // {
+    //   label: t.footer.corporateLinks[1],
+    //   path: "/affiliate-program",
+    // },
+    {
+      label: t.footer.corporateLinks[2],
+      path: "/blog",
+    },
+    {
+      label: t.footer.corporateLinks[5],
+      path: "/suppliers",
+    },
+  ],
+};
 
   return (
     <footer className="w-full bg-white font-inter">
@@ -144,12 +220,12 @@ const Footer = () => {
             </h4>
             <ul className="space-y-4">
               {footerLinks.account.map((link) => (
-                <li key={link}>
+                <li key={link.path}>
                   <Link
-                    href="#"
+                    href={link.path}
                     className="text-[#727272] hover:text-[#FF7050] transition-colors text-[15px] font-medium"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -163,12 +239,12 @@ const Footer = () => {
             </h4>
             <ul className="space-y-4">
               {footerLinks.corporate.map((link) => (
-                <li key={link}>
+                <li key={link.path}>
                   <Link
-                    href="#"
+                    href={link.path}
                     className="text-[#727272] hover:text-[#FF7050] transition-colors text-[15px] font-medium"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
