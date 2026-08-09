@@ -58,7 +58,6 @@ const CatalogHead = () => {
       };
     }
     if (pathname.includes("/child-category")) {
-      // 🚀 FIXED: Point directly to the standalone child category creation route folder path
       return {
         label: "Add Child Category",
         route: "/admin/dashboard/child-category/add",
@@ -87,7 +86,7 @@ const CatalogHead = () => {
 
         <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full lg:w-auto">
           {/* Search Inputs */}
-          <div className="bg-[#F9F9F9] border border-gray-200 rounded-[8px] px-3 py-2 flex items-center w-full md:w-[240px]">
+          <div className="bg-[#F9F9F9]  rounded-[8px] px-3 py-2 flex items-center w-full md:w-[240px]">
             <input
               type="text"
               defaultValue={currentSearch}
@@ -107,7 +106,7 @@ const CatalogHead = () => {
           <select
             value={currentStatus}
             onChange={(e) => updateUrlParam("status", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2.5 rounded-[8px] outline-none text-gray-700 cursor-pointer border-gray-200"
+            className="bg-[#F9FAFB]  text-xs px-3 py-2.5 rounded-[8px] outline-none text-gray-700 cursor-pointer"
           >
             <option value="">All Status</option>
             <option value="PUBLISHED">Published</option>
@@ -118,7 +117,7 @@ const CatalogHead = () => {
           <select
             value={currentLimit}
             onChange={(e) => updateUrlParam("limit", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2.5 rounded-[8px] outline-none text-gray-700 cursor-pointer border-gray-200"
+            className="bg-[#F9FAFB]  text-xs px-3 py-2.5 rounded-[8px] outline-none text-gray-700 cursor-pointer"
           >
             <option value="10">10 Rows</option>
             <option value="25">25 Rows</option>

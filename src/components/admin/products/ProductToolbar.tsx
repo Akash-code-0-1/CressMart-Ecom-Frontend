@@ -271,7 +271,7 @@ export default function ProductToolbar() {
           <select
             value={currentLimit}
             onChange={(e) => updateSearchQuery("limit", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
+            className="bg-[#F9FAFB] text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
           >
             <option value="10">10 Products</option>
             <option value="25">25 Products</option>
@@ -290,7 +290,7 @@ export default function ProductToolbar() {
           <select
             value={currentCategory}
             onChange={(e) => updateSearchQuery("category_id", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer max-w-[180px]"
+            className="bg-[#F9FAFB]  text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer max-w-[180px]"
           >
             <option value="">All Categories</option>
             {flattenedCategories.map((cat) => (
@@ -304,7 +304,7 @@ export default function ProductToolbar() {
           <select
             value={currentStatus}
             onChange={(e) => updateSearchQuery("status", e.target.value)}
-            className="bg-[#F9FAFB] border text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
+            className="bg-[#F9FAFB]  text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
           >
             <option value="">All Statuses</option>
             <option value="PUBLISHED">Published</option>

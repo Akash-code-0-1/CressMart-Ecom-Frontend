@@ -299,7 +299,7 @@ export default function ProductTable() {
             <MoreVertical size={20} />
           </button>
           {activeMenuId === product.id && (
-            <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50 text-left">
+            <div className="absolute right-0 mt-1 w-32 bg-white  rounded-md shadow-lg py-1 z-50 text-left">
               <button
                 type="button"
                 onClick={() =>
