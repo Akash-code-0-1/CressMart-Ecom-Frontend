@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   useQuery,
   useQueries,
@@ -34,6 +34,8 @@ import { Product, ShippingConfig } from "@/@types/product.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { MOHASAGOR_PREFIX } from "@/constants/checkout";
+import debounce from "lodash.debounce";
+import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -434,6 +436,38 @@ const MainCheckoutSection: React.FC = () => {
 
     placeOrderMutation.mutate(payload);
   };
+
+  // 1. Ensure debouncedTrack is stable to fix "useEffect changed size" error
+  const debouncedTrack = useCallback(
+    debounce(async (data, items, source, gid) => {
+      // Only stop if the cart is completely empty
+      if (!items || items.length === 0) return;
+
+      const payload = {
+        guestId: gid, // The invisible ID that makes "nothing required" work
+        customerName: data.name || "",
+        customerPhone: data.phone || "",
+        customerAddress: data.address || "",
+        source: source || "direct",
+        items: items.map((item: any) => ({
+          productId: item.productId,
+          variantId: item.variantId !== "null" ? item.variantId : undefined,
+          qty: Number(item.quantity || 1),
+        })),
+      };
+
+      await trackIncompleteOrder(payload);
+    }, 1500),
+    [], // Keep this empty to ensure the function never changes
+  );
+
+  // 2. The Effect
+  useEffect(() => {
+    if (isStoreReady && cartItems.length > 0) {
+      // This fires IMMEDIATELY when the page loads with items
+      debouncedTrack(formData, cartItems, orderSource, guestId);
+    }
+  }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
 
   if (isLoading)
     return (

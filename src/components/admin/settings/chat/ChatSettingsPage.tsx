@@ -328,12 +328,12 @@ export default function ChatSettingsPage() {
       icon: ChatInterfaceIcon,
       path: "/admin/dashboard/settings/chat",
     },
-    {
-      id: "shop",
-      label: "Manage Shop",
-      icon: ShopSettingsIcon,
-      path: "/admin/dashboard/settings/manage-shop",
-    },
+    // {
+    //   id: "shop",
+    //   label: "Manage Shop",
+    //   icon: ShopSettingsIcon,
+    //   path: "/admin/dashboard/settings/manage-shop",
+    // },
     {
       id: "profile",
       label: "Profile Details",

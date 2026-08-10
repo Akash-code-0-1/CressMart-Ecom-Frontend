@@ -455,7 +455,7 @@ const InventoryMainSection = () => {
                 setThresholdValue(Number(e.target.value))
               }
               onBlur={() => mutation.mutate(thresholdValue)}
-              className="border p-2 rounded w-20 text-center text-sm"
+              className="bg-[#F9F9F9] p-2 rounded w-20 text-center text-sm"
             />
           </div>
         </div>
@@ -476,7 +476,7 @@ const InventoryMainSection = () => {
         </div>
 
         <div className="lg:col-span-5 bg-white rounded-[8px] p-6 shadow-[0_4px_5px_0_rgba(0,0,0,0.11)]">
-          <h3 className="text-lg font-medium mb-1">
+          <h3 className="text-lg font-bold mb-1">
             Inventory Alerts
           </h3>
 
@@ -484,7 +484,7 @@ const InventoryMainSection = () => {
             alerts.map((a: any) => (
               <div
                 key={a.id}
-                className="py-2 border-b text-sm flex justify-between"
+                className="py-2 border-b border-gray-200 text-sm flex justify-between"
               >
                 <span>{a.name}</span>
                 <span className="text-red-500 font-bold">
