@@ -34,7 +34,7 @@ import { Product, ShippingConfig } from "@/@types/product.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { MOHASAGOR_PREFIX } from "@/constants/checkout";
-import debounce from "lodash.debounce";
+import debounce from "lodash/debounce";
 import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
 
 const MainCheckoutSection: React.FC = () => {

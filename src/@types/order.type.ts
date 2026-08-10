@@ -1,3 +1,4 @@
+
 type FraudStatus = "Safe" | "Risky" | "Mediam";
 
 export interface Order {
@@ -62,10 +63,16 @@ export interface CartItem {
   price?: number | string;
   image?: string | null;
   sell_price?: number | string;
+
   variantInfo?:
     | Array<{ label?: string; value?: string; type?: string }>
     | Record<string, unknown>;
+
   product?: CartItemProduct;
+
+  // Added because checkout uses item.shipping_config
+  shipping_config?: Array<{ zone: string; charge: number }> | string;
+
   variant?: {
     id: string;
     name?: string;
@@ -82,22 +89,38 @@ export interface OrderPayload {
   customerNote?: string;
   customer_note?: string;
   paymentMethod: string;
-  shippingArea: string[] | [];
+
+  // Fixed: shippingArea is a single shipping zone, not an array
+  shippingArea: "inside" | "outside" | "sub_city";
+
   shippingFee?: number;
+  shipping_fee?: number;
+  delivery_charge?: number;
+
   couponCode?: string;
   source?: string;
+
   items: (
     | {
         productId: string;
         variantId?: string;
         quantity: number;
+        item_shipping_fee?: number;
         isExternal?: never;
       }
     | {
         isExternal: true;
         externalProductId: string;
+        externalVariantId?: string | null;
         externalName: string;
         externalPrice: number;
+        externalImage?: string;
+        externalAttributes?: Array<{
+          type: string;
+          label: string;
+          value: string;
+        }>;
+        item_shipping_fee?: number;
         quantity: number;
         productId?: never;
         variantId?: never;
@@ -122,3 +145,4 @@ export interface OrderItem {
   variantInfo: string;
   unit_price: number;
 }
+

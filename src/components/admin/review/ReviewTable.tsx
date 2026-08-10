@@ -646,15 +646,26 @@ export default function ReviewTable() {
   const rPage = Number(searchParams.get("r_page")) || 1;
   const statusFilter = searchParams.get("status") || "";
   const cSearch = searchParams.get("c_search") || "";
+  const rSort = searchParams.get("r_sort") || "desc";
 
   const { data: serverPayload } = useQuery({
-    queryKey: ["admin-reviews-list", rPage, statusFilter, cSearch, forceBypass],
+    // 🚀 2. ADD rSort TO THE QUERY KEY
+    queryKey: [
+      "admin-reviews-list",
+      rPage,
+      statusFilter,
+      cSearch,
+      rSort,
+      forceBypass,
+    ],
     queryFn: async () => {
+      // 🚀 3. PASS THE SORT TO THE API SERVICE
       const res = await reviewApi.getAll(
         rPage,
         5,
         statusFilter,
         cSearch,
+        rSort, // Added this
         forceBypass,
       );
       if (forceBypass) setForceBypass(false);

@@ -7,6 +7,13 @@ import { fetchAllUnits, deleteUnit } from "@/services-api/unitService";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
 
+type UnitRow = {
+  id: string;
+  name: string;
+  priority: string;
+  status: string;
+};
+
 export default function UnitTable() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -27,28 +34,34 @@ export default function UnitTable() {
     },
   });
 
-  const columns = [
+  const columns: {
+    header: string;
+    key: string;
+    render?: (item: UnitRow, index: number) => React.ReactNode;
+    className?: string;
+    headerClassName?: string;
+  }[] = [
     {
       header: "SL",
       key: "sl",
-      render: (_: unknown, i: number) => (page - 1) * 10 + i + 1,
+      render: (_item: UnitRow, i: number) => (page - 1) * 10 + i + 1,
     },
     {
       header: "Unit Name",
       key: "name",
-      render: (item: { name: string }) => (
+      render: (item: UnitRow) => (
         <span className="font-medium text-[#1D1A1A]">{item.name}</span>
       ),
     },
     {
       header: "Priority",
       key: "priority",
-      render: (item: { priority: string }) => item.priority,
+      render: (item: UnitRow) => item.priority,
     },
     {
       header: "Status",
       key: "status",
-      render: (item: { status: string }) => (
+      render: (item: UnitRow) => (
         <span
           className={`px-3 py-1 rounded-full text-[12px] font-medium ${item.status === "active" ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}
         >
@@ -59,7 +72,7 @@ export default function UnitTable() {
     {
       header: "Action",
       key: "action",
-      render: (item: { id: string }) => (
+      render: (item: UnitRow) => (
         <div className="relative flex justify-end">
           <button
             onClick={() =>
@@ -111,7 +124,7 @@ export default function UnitTable() {
 
   return (
     <div className="bg-white rounded-lg border border-gray-100 overflow-visible">
-      <DataTable
+      <DataTable<UnitRow>
         data={Array.isArray(response?.data?.data) ? response.data.data : []}
         columns={columns}
         rowKey="id"

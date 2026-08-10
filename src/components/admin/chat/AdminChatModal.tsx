@@ -126,12 +126,15 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
       "http://localhost:8082";
 
-    // 🔑 Async init: get admin JWT before opening socket so backend can authenticate
     const initSocket = async () => {
       const adminToken = await getAdminTokenAction();
 
       // If a socket exists but was created without a token, disconnect and recreate it
-      if (adminSocketInstance && !adminSocketInstance.auth?.token) {
+      // Narrow auth: it may be a function in some socket typings, so ensure it's not a function
+      if (
+        adminSocketInstance &&
+        (typeof adminSocketInstance.auth === "function" ? false : !adminSocketInstance.auth?.token)
+      ) {
         adminSocketInstance.disconnect();
         adminSocketInstance = null;
       }

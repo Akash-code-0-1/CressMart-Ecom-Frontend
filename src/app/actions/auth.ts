@@ -31,7 +31,7 @@ export async function setAdminSessionToken(token: string) {
     httpOnly: true, // Kept for advanced XSS defense protection
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/", // 🚀 FIXED: Set to global path so your Next.js network layer can attach it to apiFetch requests
+    path: "/",
     maxAge: 60 * 60 * 24 * 7, 
   });
 }

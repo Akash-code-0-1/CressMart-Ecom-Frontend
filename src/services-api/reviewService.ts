@@ -8,6 +8,7 @@ export const reviewApi = {
     limit: number,
     status: string,
     search: string,
+    sort: string = "desc", // 🚀 Added this parameter
     bypassCache = false,
   ) {
     const token = await getAdminTokenAction();
@@ -16,7 +17,8 @@ export const reviewApi = {
       limit: String(limit),
       status: status || "",
       search: search || "",
-      bypassCache: String(bypassCache), // 🚀 Appends bypassCache value down to the backend controller
+      sortOrder: sort.toUpperCase(), // 🚀 Standard backend parameter for ASC/DESC
+      bypassCache: String(bypassCache),
     });
 
     const res = await apiFetch(`/reviews/admin/all?${query.toString()}`, {
@@ -39,7 +41,7 @@ export const reviewApi = {
   },
 
   // Inside reviewService.ts
-async updateDetails(
+  async updateDetails(
     id: string,
     rating: number,
     comment: string,
@@ -53,7 +55,7 @@ async updateDetails(
         Authorization: `Bearer ${token || ""}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ rating, comment, images, createdAt }), 
+      body: JSON.stringify({ rating, comment, images, createdAt }),
     });
     return res.json();
   },

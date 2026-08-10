@@ -11,7 +11,6 @@ export default function OrderHeader() {
         Order List
       </h2>
       
-      {/* Wrap the button with Link */}
       <Link href="/admin/dashboard/order/add">
         <PrimaryButton label="Add Order" icon={<PluseIcon />} />
       </Link>

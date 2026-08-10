@@ -1,6 +1,11 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useEffect, useMemo } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useQueries,
+} from "@tanstack/react-query";
 import {
   Search,
   MoreVertical,
@@ -43,6 +48,11 @@ import { customerApi } from "@/services-api/customerService";
 import { useRouter } from "next/navigation";
 import { InvoicePrint } from "./InvoicePrint";
 import { useReactToPrint } from "react-to-print";
+import {
+  deleteIncompleteOrderService,
+  getAllIncompleteOrdersService,
+} from "@/services-api/incompleteOrderService";
+import { apiFetch } from "@/utils/api";
 
 type UpdateOrderStatusPayload = {
   status: string;
@@ -61,48 +71,64 @@ type User = {
 };
 
 const getStatusConfig = (status: string) => {
-  const upper = status?.toUpperCase() || "";
+  // 🚀 Safe check to prevent "Cannot read properties of undefined (reading 'replace')"
+  if (!status) {
+    return {
+      label: "Unknown",
+      icon: Info,
+      className: "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100",
+      iconColor: "text-gray-400",
+    };
+  }
+
+  const upper = status.toUpperCase();
   switch (upper) {
     case "PENDING":
       return {
         label: "Pending",
         icon: Clock,
-        className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
+        className:
+          "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
         iconColor: "text-amber-500",
       };
     case "CONFIRMED":
       return {
         label: "Confirmed",
         icon: CheckCircle2,
-        className: "bg-blue-50 text-[#1DA1F2] border-blue-200 hover:bg-blue-100",
+        className:
+          "bg-blue-50 text-[#1DA1F2] border-blue-200 hover:bg-blue-100",
         iconColor: "text-[#1DA1F2]",
       };
     case "ON_HOLD":
       return {
         label: "On Hold",
         icon: PauseCircle,
-        className: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100",
+        className:
+          "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100",
         iconColor: "text-orange-500",
       };
     case "SHIPPED":
       return {
         label: "Shipped",
         icon: Truck,
-        className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+        className:
+          "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
         iconColor: "text-purple-500",
       };
     case "SENT_TO_COURIER":
       return {
         label: "Sent to Courier",
         icon: Truck,
-        className: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100",
+        className:
+          "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100",
         iconColor: "text-indigo-500",
       };
     case "DELIVERED":
       return {
         label: "Delivered",
         icon: PackageCheck,
-        className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+        className:
+          "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
         iconColor: "text-emerald-500",
       };
     case "CANCELED":
@@ -116,7 +142,8 @@ const getStatusConfig = (status: string) => {
       return {
         label: "Returned",
         icon: RotateCcw,
-        className: "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200",
+        className:
+          "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200",
         iconColor: "text-gray-500",
       };
     case "REFUNDED":
@@ -128,7 +155,7 @@ const getStatusConfig = (status: string) => {
       };
     default:
       return {
-        label: status.replace(/_/g, " "),
+        label: status ? status.replace(/_/g, " ") : "N/A",
         icon: Info,
         className: "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100",
         iconColor: "text-gray-400",
@@ -184,14 +211,19 @@ export default function OrderTable() {
   const [activeTab, setActiveTab] = useState(0);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
+
   const tabs = [
     "All order",
     "Pending",
     "Confirmed",
+    "Incomplete", // Index 3
     "Delivered",
     "Canceled",
     "Returned",
   ];
+
+  // Helper logic to prevent routing errors
+  const isIncompleteTab = tabs[activeTab] === "Incomplete";
 
   // Action Menu States
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -209,20 +241,13 @@ export default function OrderTable() {
   }>({ open: false, id: null });
   const [detailsModal, setDetailsModal] = useState<{
     open: boolean;
-    order: Order | null;
+    order: any | null;
   }>({ open: false, order: null });
 
-  // 🚀 Logic for fetching profile image in Details Modal
-  const [fetchedCustomer, setFetchedCustomer] = useState<User | null>(null);
-
-  const [selectedOrderForPrint, setSelectedOrderForPrint] =
-    useState<Order | null>(null);
+  const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<
+    any | null
+  >(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
-
-  const [courierInfo, setCourierInfo] = useState({
-    courierName: "",
-    trackingCode: "",
-  });
   const menuRef = useRef<HTMLDivElement>(null);
 
   const baseStorageUrl =
@@ -230,12 +255,46 @@ export default function OrderTable() {
     "http://localhost:8082";
 
   // --- HELPERS ---
-  const openDetails = (order: Order) => {
+  const openDetails = (order: any) => {
     setDetailsModal({ open: true, order });
     setActiveMenuId(null);
   };
 
-  const getImgUrl = (rawImg: string) => {
+  // 1. Identify the products that need to be fetched for the modal
+  const modalItems = useMemo(() => {
+    if (!detailsModal.open || !detailsModal.order || !isIncompleteTab)
+      return [];
+    return detailsModal.order.cart_items || [];
+  }, [detailsModal.open, detailsModal.order, isIncompleteTab]);
+
+  // 2. Fetch details for each item in the abandoned cart "Like that" (frontend fetch)
+  const resolvedModalProducts = useQueries({
+    queries: modalItems.map((item: any) => ({
+      queryKey: ["product-metadata", item.productId],
+      queryFn: async () => {
+        // Using your existing search logic or a fetch single product logic
+        const res = await apiFetch(`/products/${item.productId}`, {
+          method: "GET",
+        });
+        const json = await res.json();
+        return json.data || json;
+      },
+      enabled: detailsModal.open && !!item.productId,
+    })),
+  });
+
+  // 3. Create a Map for quick lookup in the table
+  const productDetailsMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    resolvedModalProducts.forEach((query) => {
+      if (query.data) {
+        map[query.data.id] = query.data;
+      }
+    });
+    return map;
+  }, [resolvedModalProducts]);
+
+  const getImgUrl = (rawImg: any) => {
     const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
     return cleanImg !== ""
       ? cleanImg.startsWith("http")
@@ -244,52 +303,31 @@ export default function OrderTable() {
       : "/images/products/product2.png";
   };
 
-  // 🚀 Logic to find customer profile when Modal opens
-  useEffect(() => {
-    const checkCustomer = async () => {
-      if (detailsModal.open && detailsModal.order) {
-        try {
-          const res = await customerApi.getAll(
-            1,
-            1,
-            detailsModal.order.customer_phone,
-          );
-          const user = res?.data?.data?.[0];
-          if (user && user.phone === detailsModal.order.customer_phone) {
-            setFetchedCustomer(user);
-          } else {
-            setFetchedCustomer(null);
-          }
-        } catch (e) {
-          setFetchedCustomer(null);
-        }
-      } else {
-        setFetchedCustomer(null);
+  const fetchedCustomer = detailsModal.order
+    ? {
+        avatar:
+          detailsModal.order.customer_image ||
+          detailsModal.order.customer?.profile?.image ||
+          detailsModal.order.customer?.avatar ||
+          undefined,
+        name: detailsModal.order.customer_name,
+        phone: detailsModal.order.customer_phone,
       }
-    };
-    checkCustomer();
-  }, [detailsModal.open, detailsModal.order]);
-
-  // --- PRINT LOGIC ---
-  const handlePrint = useReactToPrint({
-    contentRef: invoiceRef,
-    documentTitle: `Invoice-${selectedOrderForPrint?.order_number || "Order"}`,
-    onAfterPrint: () => setSelectedOrderForPrint(null),
-  });
-
-  useEffect(() => {
-    if (selectedOrderForPrint && invoiceRef.current) {
-      handlePrint();
-    }
-  }, [selectedOrderForPrint, handlePrint]);
+    : null;
 
   // --- FETCH DATA ---
   const { data: serverData, isLoading } = useQuery({
-    queryKey: ["admin-orders", activeTab, page, searchQuery],
-    queryFn: () => {
+    queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
+    queryFn: async () => {
+      if (isIncompleteTab) {
+        // Hits: /incomplete-orders -> Returns { meta, data }
+        return await getAllIncompleteOrdersService({ page, limit: 10 });
+      }
+
+      // Hits: /orders -> Returns { data: { meta, data } }
       const status =
         tabs[activeTab] === "All order" ? "" : tabs[activeTab].toUpperCase();
-      return getAllOrdersService({
+      return await getAllOrdersService({
         page,
         limit: 10,
         status,
@@ -297,34 +335,85 @@ export default function OrderTable() {
         refresh: true,
       });
     },
+    // This keeps the UI stable while switching tabs
+    placeholderData: (previousData) => previousData,
   });
 
+  // 🚀 THE FIX: Universal Data Extractor
+  // This logic looks for the array [...] no matter where the API hides it.
+  const orderList = useMemo(() => {
+    if (!serverData) return [];
+
+    // 1. Check if it's the Regular Order structure: serverData.data.data
+    if (serverData.data && Array.isArray(serverData.data.data)) {
+      return serverData.data.data;
+    }
+
+    // 2. Check if it's the Incomplete Order structure: serverData.data
+    if (Array.isArray(serverData.data)) {
+      return serverData.data;
+    }
+
+    // 3. Fallback if the whole object is the array (unlikely but safe)
+    if (Array.isArray(serverData)) {
+      return serverData;
+    }
+
+    return []; // Always return an array to prevent .map() crash
+  }, [serverData]);
+
+  // 🚀 THE FIX: Universal Meta Extractor
+  const meta = useMemo(() => {
+    // Look for meta in serverData.data (Regular) or serverData (Incomplete)
+    const m = serverData?.data?.meta || serverData?.meta;
+    return m || { totalPages: 1, total: 0 };
+  }, [serverData]);
+
+  // --- FIXED FETCH TAB COUNTS ---
   const { data: tabCountsData } = useQuery({
     queryKey: ["order-tab-counts"],
-    queryFn: () => fetchOrderCounts(tabs),
+    queryFn: async () => {
+      // 1. Fetch standard counts from the regular Order Service
+      const standardTabs = tabs.filter((t) => t !== "Incomplete");
+      const standardCounts = await fetchOrderCounts(standardTabs);
+
+      // 2. Fetch Incomplete count from the Incomplete Order Service
+      // We set limit to 1 because we only care about the meta.total field
+      let incompleteCount = 0;
+      try {
+        const leadRes = await getAllIncompleteOrdersService({
+          page: 1,
+          limit: 1,
+        });
+        // Based on your backend, total is inside meta
+        incompleteCount =
+          leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
+      } catch (e) {
+        console.error("Failed to fetch incomplete counts", e);
+      }
+
+      // 3. Return the merged array
+      return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
+    },
     refetchOnWindowFocus: true,
   });
 
-  const orderList = serverData?.data?.data || [];
-  const meta = serverData?.data?.meta || { totalPages: 1, total: 0 };
-  const counts =
-    tabCountsData?.reduce(
-      (acc: Record<string, number>, curr: { tab: string; count: number }) => ({
-        ...acc,
-        [curr.tab]: curr.count,
-      }),
-      {},
-    ) || {};
+  // This converts the array into a Map so the UI can find the counts easily
+  const counts = useMemo(() => {
+    return (
+      tabCountsData?.reduce(
+        (acc: any, curr: any) => ({
+          ...acc,
+          [curr.tab]: curr.count,
+        }),
+        {},
+      ) || {}
+    );
+  }, [tabCountsData]);
 
   // --- MUTATIONS ---
   const statusMutation = useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: string;
-      payload: UpdateOrderStatusPayload;
-    }) => updateOrderStatusService(id, payload),
+    mutationFn: ({ id, payload }: any) => updateOrderStatusService(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-tab-counts"] });
@@ -334,67 +423,74 @@ export default function OrderTable() {
     },
   });
 
-  const blockUserMutation = useMutation({
-    mutationFn: ({ userId }: { userId: string }) =>
-      customerApi.updateStatus(userId, "blocked"),
-    onSuccess: () => {
-      toast.success("Blocked.");
-      setActiveMenuId(null);
-    },
-  });
-
-  const handleSmartBlockUser = async (order: Order) => {
-    if (!confirm(`Block ${order.customer_name}?`)) return;
-    if (order.source === "admin_panel") {
-      const res = await customerApi.getAll(1, 1, order.customer_phone);
-      const target = res?.data?.data?.[0];
-      if (target?.id) blockUserMutation.mutate({ userId: target.id });
-      else toast.error("No account found.");
-    } else {
-      blockUserMutation.mutate({ userId: order.user_id });
-    }
-  };
-
   const handleSearch = debounce((val: string) => {
     setSearchQuery(val);
     setPage(1);
   }, 500);
 
-  useEffect(() => {
-    const close = () => {
+  const deleteLeadMutation = useMutation({
+    mutationFn: (id: string) => deleteIncompleteOrderService(id),
+    onSuccess: () => {
+      // Refresh the list and the counts
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order-tab-counts"] });
+      toast.success("Lead removed successfully");
       setActiveMenuId(null);
-      setShowStatusMenu(false);
-    };
-    window.addEventListener("scroll", close, true);
-    return () => window.removeEventListener("scroll", close, true);
-  }, []);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete");
+    },
+  });
 
+  // --- COLUMNS ---
   const columns = [
     {
-      header: "Order Id",
-      key: "order_number",
-      render: (item: Order) => (
+      header: isIncompleteTab ? "Lead ID" : "Order Id",
+      key: "id",
+      render: (item: any) => (
         <span
           onClick={() => openDetails(item)}
           className="font-medium text-[14px] cursor-pointer hover:text-[#1DA1F2] transition-colors"
         >
-          {item.order_number}
+          {isIncompleteTab ? `LEAD-${item.id.slice(0, 8)}` : item.order_number}
         </span>
       ),
     },
     {
       header: "Product",
       key: "product",
-      render: (item: Order) => {
-        const firstItem = item.order_items?.[0];
+      render: (item: any) => {
+        const items = isIncompleteTab
+          ? item.cart_items || []
+          : item.order_items || [];
+        const firstItem = items[0];
+
+        // 🚀 THE FIX: We look for the 'product' object first because it now
+        // exists in BOTH regular orders and our enriched incomplete leads.
+        const productInfo = firstItem?.product || {};
+
+        // Check images array from product table first, then fallback to direct image strings
+        const img =
+          productInfo.images?.[0] ||
+          productInfo.featuredImage ||
+          firstItem?.image ||
+          firstItem?.externalImage;
+
+        // Check name from product table first, then fallback to direct name strings
+        const name =
+          productInfo.name ||
+          firstItem?.product_name ||
+          firstItem?.externalName ||
+          (isIncompleteTab ? "Guest Item" : "Untitled");
+
         return (
           <div
             onClick={() => openDetails(item)}
             className="flex items-center gap-3 cursor-pointer group"
           >
             <Image
-              src={getImgUrl(firstItem?.product?.images?.[0])}
-              alt="product image"
+              src={getImgUrl(img)}
+              alt="product"
               width={40}
               height={40}
               unoptimized
@@ -402,11 +498,11 @@ export default function OrderTable() {
             />
             <div className="flex flex-col">
               <span className="truncate max-w-[150px] text-[14px] font-medium text-black group-hover:text-[#1DA1F2] transition-colors">
-                {firstItem?.product_name || "Untitled"}
+                {name}
               </span>
-              {item.order_items?.length > 1 && (
+              {items.length > 1 && (
                 <span className="text-[10px] text-[#1DA1F2] font-bold">
-                  +{item.order_items.length - 1} more items
+                  +{items.length - 1} more items
                 </span>
               )}
             </div>
@@ -417,29 +513,13 @@ export default function OrderTable() {
     {
       header: "Customer",
       key: "customer",
-      render: (item: Order) => (
+      render: (item: any) => (
         <div onClick={() => openDetails(item)} className="cursor-pointer">
           <p className="font-medium text-[14px] text-black">
-            {item.customer_name}
+            {item.customer_name || "Anonymous Guest"}
           </p>
-          <p className="text-[12px] text-gray-500">{item.customer_phone}</p>
-        </div>
-      ),
-    },
-    {
-      header: "Date",
-      key: "date",
-      render: (item: Order) => (
-        <div
-          onClick={() => openDetails(item)}
-          className="text-[13px] text-black cursor-pointer"
-        >
-          <p>{new Date(item.created_at).toLocaleDateString()}</p>
-          <p className="text-gray-400 font-normal">
-            {new Date(item.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+          <p className="text-[12px] text-gray-500">
+            {item.customer_phone || "No Phone"}
           </p>
         </div>
       ),
@@ -447,27 +527,20 @@ export default function OrderTable() {
     {
       header: "Amount",
       key: "amount",
-      render: (item: Order) => {
-        const totalValue =
-          Number(item.total_bill) ||
-          Number(item.total_amount_due || 0) +
-            Number(item.advance_amount || 0) +
-            Number(item.discount_amount || 0) ||
-          Number(item.total_amount || 0);
-        const remainingDue = Number(item.total_amount_due);
-
+      render: (item: any) => {
+        const totalValue = isIncompleteTab
+          ? Number(item.total_amount)
+          : Number(item.total_bill) || Number(item.total_amount_due || 0);
         return (
           <div
             onClick={() => openDetails(item)}
             className="cursor-pointer space-y-0.5"
           >
             <span className="font-semibold text-[14px] text-black block">
-              ৳{totalValue}
+              ৳{totalValue || 0}
             </span>
-            {remainingDue > 0 && remainingDue !== totalValue && (
-              <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded inline-block">
-                Due: ৳{remainingDue}
-              </span>
+            {isIncompleteTab && (
+              <span className="text-[10px] text-gray-400">Potential Sale</span>
             )}
           </div>
         );
@@ -476,13 +549,21 @@ export default function OrderTable() {
     {
       header: "Status",
       key: "status",
-      render: (item: Order) => {
+      render: (item: any) => {
+        if (isIncompleteTab) {
+          return (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold bg-gray-50 text-gray-400 border-gray-200">
+              <Clock size={15} />
+              <span>Abandoned</span>
+            </div>
+          );
+        }
         const config = getStatusConfig(item.status);
         const IconComponent = config.icon;
         return (
           <div
             onClick={() => openDetails(item)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold cursor-pointer transition-all ${config.className}`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold transition-all ${config.className}`}
           >
             <IconComponent size={15} className={config.iconColor} />
             <span className="capitalize">{config.label}</span>
@@ -493,26 +574,20 @@ export default function OrderTable() {
     {
       header: "Action",
       key: "action",
-      render: (order: Order) => (
+      render: (order: any) => (
         <button
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
-            const menuHeight = 240;
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const opensUpward = spaceBelow < menuHeight;
-            const top = opensUpward
-              ? Math.max(10, rect.top - menuHeight)
-              : rect.bottom + 8;
-            const left = Math.max(
-              10,
-              Math.min(window.innerWidth - 220, rect.left - 165),
-            );
-            setMenuPos({ top, left, opensUpward });
+            setMenuPos({
+              top: rect.bottom + 8,
+              left: rect.left - 165,
+              opensUpward: false,
+            });
             setActiveMenuId(activeMenuId === order.id ? null : order.id);
             setShowStatusMenu(false);
           }}
-          className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+          className="p-1 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
         >
           <MoreVertical size={20} />
         </button>
@@ -540,20 +615,22 @@ export default function OrderTable() {
               setPage(1);
             }}
           />
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <div className="relative flex-grow lg:w-[316px]">
+
+          {/* --- CONDITIONALLY HIDE SEARCH BAR --- */}
+          {!isIncompleteTab && (
+            <div className="relative flex-grow lg:w-[316px] animate-in fade-in duration-200">
               <input
                 type="text"
-                placeholder="Search order report"
+                placeholder="Search orders..."
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full bg-[#F9FAFB] rounded-lg py-2.5 pl-4 pr-10 text-[14px] text-black border border-transparent focus:ring-2 focus:ring-[#1DA1F2]/30 focus:border-[#1DA1F2] outline-none transition-all"
               />
               <Search
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#4B5563]"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                 size={20}
               />
             </div>
-          </div>
+          )}
         </div>
 
         <DataTable data={orderList} columns={columns} rowKey="id" />
@@ -567,58 +644,56 @@ export default function OrderTable() {
         </div>
       </div>
 
+      {/* --- MODIFIED ACTION MENU --- */}
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.1)] py-2 z-[9999] w-[210px] font-lato animate-in fade-in zoom-in duration-150 text-left"
+          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
           style={{ top: menuPos.top, left: menuPos.left }}
         >
-          {/* Group 1: Core Actions */}
-          <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
-            <button
-              onClick={() =>
-                router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)
-              }
-              className="cursor-pointer w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
-            >
-              <Edit
-                size={16}
-                className="text-gray-400 group-hover:text-[#1DA1F2]"
-              />
-              <span className="font-medium">Edit Order</span>
-            </button>
+          {/* Group 1: Core Actions (Hidden for Incomplete) */}
+          {!isIncompleteTab && (
+            <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+              <button
+                onClick={() =>
+                  router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)
+                }
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+              >
+                <Edit
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
+                <span className="font-medium">Edit Order</span>
+              </button>
+            </div>
+          )}
 
-            {/* <button 
-        className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
-      >
-        <Percent size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" /> 
-        <span className="font-medium">Apply Discount</span>
-      </button> */}
-          </div>
-
-          {/* Group 2: View & Output */}
+          {/* Group 2: View & Output (Conditional Print) */}
           <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
-            <button
-              onClick={() => {
-                const o = orderList.find((x: Order) => x.id === activeMenuId);
-                setSelectedOrderForPrint(o);
-                setActiveMenuId(null);
-              }}
-              className="cursor-pointer w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
-            >
-              <Printer
-                size={16}
-                className="text-gray-400 group-hover:text-[#1DA1F2]"
-              />
-              <span className="font-medium">Print Invoice</span>
-            </button>
+            {!isIncompleteTab && (
+              <button
+                onClick={() => {
+                  const o = orderList.find((x: any) => x.id === activeMenuId);
+                  setSelectedOrderForPrint(o);
+                  setActiveMenuId(null);
+                }}
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+              >
+                <Printer
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
+                <span className="font-medium">Print Invoice</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
-                const o = orderList.find((x: Order) => x.id === activeMenuId);
+                const o = orderList.find((x: any) => x.id === activeMenuId);
                 openDetails(o);
               }}
-              className="cursor-pointer w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+              className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
             >
               <FileText
                 size={16}
@@ -626,97 +701,85 @@ export default function OrderTable() {
               />
               <span className="font-medium">View Details</span>
             </button>
-
-            {/* <button 
-        className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
-      >
-        <Copy size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" /> 
-        <span className="font-medium">Duplicate Order</span>
-      </button> */}
           </div>
 
-          {/* Group 3: Status Management */}
-          <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
-            <div className="relative group/status">
-              <button
-                onMouseEnter={() => setShowStatusMenu(true)}
-                className={`w-full cursor-pointer flex items-center justify-between px-3 py-2 text-[14px] rounded-lg transition-colors ${showStatusMenu ? "bg-blue-50 text-[#1DA1F2]" : "text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2]"}`}
-              >
-                <div className="flex items-center gap-3">
-                  <RefreshCw
-                    size={16}
-                    className={
-                      showStatusMenu ? "text-[#1DA1F2]" : "text-gray-400"
-                    }
-                  />
-                  <span className="font-medium">Update Status</span>
-                </div>
-                <ChevronLeft size={14} className="opacity-50" />
-              </button>
-
-              {showStatusMenu && (
-                <div
-                  className={`absolute right-full mr-2 w-[180px] bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-150 ${
-                    menuPos.opensUpward ? "bottom-0" : "top-[-10px]"
-                  }`}
-                  onMouseLeave={() => setShowStatusMenu(false)}
+          {/* Group 3: Status Management (Hidden for Incomplete) */}
+          {!isIncompleteTab && (
+            <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+              <div className="relative group/status">
+                <button
+                  onMouseEnter={() => setShowStatusMenu(true)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg transition-colors"
                 >
-                  <p className="px-4 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Select Status
-                  </p>
-                  {[
-                    "PENDING",
-                    "CONFIRMED",
-                    "ON_HOLD",
-                    "SHIPPED",
-                    "SENT_TO_COURIER",
-                    "DELIVERED",
-                    "CANCELED",
-                    "RETURNED",
-                    "REFUNDED",
-                  ].map((s) => (
-                    <button
-                      key={s}
-                      onClick={() =>
-                        s === "SENT_TO_COURIER"
-                          ? setShippedModal({ open: true, id: activeMenuId })
-                          : statusMutation.mutate({
-                              id: activeMenuId!,
-                              payload: { status: s },
-                            })
-                      }
-                      className="w-full cursor-pointer text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] transition-colors"
-                    >
-                      {s.replace(/_/g, " ")}
-                    </button>
-                  ))}
-                </div>
-              )}
+                  <div className="flex items-center gap-3">
+                    <RefreshCw size={16} className="text-gray-400" />
+                    <span className="font-medium">Update Status</span>
+                  </div>
+                  <ChevronLeft size={14} className="opacity-50" />
+                </button>
+
+                {showStatusMenu && (
+                  <div className="absolute right-full mr-2 w-[180px] bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[10000]">
+                    {[
+                      "PENDING",
+                      "CONFIRMED",
+                      "ON_HOLD",
+                      "SHIPPED",
+                      "DELIVERED",
+                      "CANCELED",
+                    ].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() =>
+                          statusMutation.mutate({
+                            id: activeMenuId!,
+                            payload: { status: s },
+                          })
+                        }
+                        className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2]"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Group 4: Dangerous Actions */}
           <div className="px-2">
             <button
               onClick={() => {
-                const o = orderList.find((x: Order) => x.id === activeMenuId);
-                if (o) handleSmartBlockUser(o);
-              }}
-              className="w-full cursor-pointer text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-amber-50 hover:text-amber-600 rounded-lg flex items-center gap-3 transition-colors group"
-            >
-              <UserX
-                size={16}
-                className="text-gray-400 group-hover:text-amber-600"
-              />
-              <span className="font-medium">Block User</span>
-            </button>
+                if (!activeMenuId) return;
 
-            <button className="w-full cursor-pointer text-left px-3 py-2.5 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors group mt-0.5">
-              <Trash2
-                size={16}
-                className="text-rose-400 group-hover:text-rose-600"
-              />
-              <span className="font-bold">Delete Order</span>
+                // Confirmation dialog for professionalism
+                const msg = isIncompleteTab
+                  ? "Are you sure you want to delete this incomplete lead?"
+                  : "Are you sure you want to delete this order?";
+
+                if (window.confirm(msg)) {
+                  if (isIncompleteTab) {
+                    deleteLeadMutation.mutate(activeMenuId);
+                  } else {
+                    // If you have a regular order delete mutation, call it here
+                    // orderDeleteMutation.mutate(activeMenuId);
+                    toast.error("Order deletion not implemented yet.");
+                  }
+                }
+              }}
+              className="w-full text-left px-3 py-2.5 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-bold cursor-pointer"
+            >
+              {deleteLeadMutation.isPending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Trash2 size={16} />
+              )}
+              <span>
+                {deleteLeadMutation.isPending
+                  ? "Deleting..."
+                  : `Delete ${isIncompleteTab ? "Lead" : "Order"}`}
+              </span>
             </button>
           </div>
         </div>
@@ -731,280 +794,234 @@ export default function OrderTable() {
         />
       </div>
 
-      {/* --- DETAILS MODAL WITH CUSTOMER IMAGE --- */}
-      {detailsModal.open &&
-        detailsModal.order &&
-        (console.log(detailsModal.order),
-        (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10001] p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl overflow-hidden font-lato flex flex-col text-left">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-[#F9FAFB]">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[#1DA1F2]/10 p-2 rounded-lg text-[#1DA1F2]">
-                    <Package size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-[#023337]">
-                      Order Summary
-                    </h3>
-                    <p className="text-xs text-gray-500 font-medium font-poppins">
-                      #{detailsModal.order.order_number}
-                    </p>
-                  </div>
+      {/* --- DETAILS MODAL --- */}
+      {detailsModal.open && detailsModal.order && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10001] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl overflow-hidden font-lato flex flex-col text-left">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-[#F9FAFB]">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#1DA1F2]/10 p-2 rounded-lg text-[#1DA1F2]">
+                  <Package size={20} />
                 </div>
-                <button
-                  onClick={() => setDetailsModal({ open: false, order: null })}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors cursor-pointer"
-                >
-                  <X size={20} className="text-gray-500" />
-                </button>
+                <div>
+                  <h3 className="text-lg font-bold text-[#023337]">
+                    {detailsModal.order.cart_items
+                      ? "Incomplete Lead Details"
+                      : "Order Summary"}
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {detailsModal.order.order_number
+                      ? `#${detailsModal.order.order_number}`
+                      : `LEAD-${detailsModal.order.id.slice(0, 8)}`}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* 🚀 Updated Customer Card with Profile Image */}
-                  <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex items-start gap-4">
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
-                      {fetchedCustomer?.avatar ? (
-                        <Image
-                          src={getImgUrl(fetchedCustomer.avatar)}
-                          className="w-11 h-11 object-cover"
-                          width={100}
-                          height={100}
-                          alt="profile"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="w-11 h-11 flex items-center justify-center text-blue-500">
-                          <User size={20} />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-                        Customer
-                      </p>
-                      <p className="font-bold text-[#023337]">
-                        {detailsModal.order.customer_name}
-                      </p>
-                      <p className="text-sm text-gray-600 font-poppins">
-                        {detailsModal.order.customer_phone}
-                      </p>
-                    </div>
-                  </div>
+              <button
+                onClick={() => setDetailsModal({ open: false, order: null })}
+                className="p-2 hover:bg-gray-200 rounded-full cursor-pointer transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
 
-                  <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex items-start gap-4">
-                    <div className="bg-white p-2 rounded-lg shadow-sm text-emerald-500">
-                      <MapPin size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                        Address
-                      </p>
-                      <p className="text-sm font-medium text-gray-700 leading-tight">
-                        {detailsModal.order.customer_address}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-purple-50/50 border border-purple-100 p-4 rounded-xl flex items-start gap-4">
-                    <div className="bg-white p-2 rounded-lg shadow-sm text-purple-500">
-                      <Info size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-purple-400 uppercase tracking-wider">
-                        Status
-                      </p>
-                      <p className="text-sm font-bold text-purple-700 uppercase">
-                        {detailsModal.order.status}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        via {detailsModal.order.source}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Table and Financials ... (unchanged logic) */}
-                <div className="border border-gray-100 rounded-xl overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-[#F9FAFB] text-sm font-medium text-gray-500">
-                      <tr>
-                        <th className="px-4 py-3">Product</th>
-                        <th className="px-4 py-3 text-center">Price</th>
-                        <th className="px-4 py-3 text-center">Qty</th>
-                        <th className="px-4 py-3 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {detailsModal.order.order_items.map((item: OrderItem) => (
-                        <tr key={item.id} className="text-sm">
-                          <td className="px-4 py-3 flex items-center gap-3">
-                            <Image
-                              src={getImgUrl(item.product?.images?.[0])}
-                              className="w-10 h-10 rounded-md border object-cover"
-                              width={100}
-                              height={100}
-                              alt="profile"
-                              unoptimized
-                            />
-                            <span className="font-bold text-gray-700">
-                              {item.product_name}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center font-poppins">
-                            ৳{item.unit_price}
-                          </td>
-                          <td className="px-4 py-3 text-center font-bold font-poppins">
-                            {item.quantity}
-                          </td>
-                          <td className="px-4 py-3 text-right font-bold text-[#1DA1F2] font-poppins">
-                            ৳{Number(item.unit_price) * item.quantity}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex flex-col md:row justify-between gap-6">
-                  <div className="flex-1 bg-gray-50 p-4 rounded-xl">
-                    <p className="text-xs font-bold text-gray-400 uppercase mb-2 tracking-tighter">
-                      Internal Note
-                    </p>
-                    <p className="text-sm text-gray-600 italic">
-                      {detailsModal.order.customer_note || "N/A"}
-                    </p>
-                  </div>
-                  <div className="w-full md:w-80 space-y-2 font-poppins">
-                    {/* Payment Status Badge */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">
-                        Payment Status
-                      </span>
-                      <span
-                        className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          detailsModal.order.payment_status === "PAID"
-                            ? "bg-green-100 text-green-700"
-                            : detailsModal.order.payment_status === "PARTIAL"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-600"
-                        }`}
-                      >
-                        {detailsModal.order.payment_status}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-gray-500">
-                      <span>Subtotal</span>
-                      <span className="font-bold text-black">
-                        ৳
-                        {detailsModal.order.order_items.reduce(
-                          (acc, item) =>
-                            acc + Number(item.unit_price) * item.quantity,
-                          0,
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-gray-500">
-                      <span>Shipping</span>
-                      <span className="font-bold text-black">
-                        ৳{detailsModal.order.shipping_fee}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-rose-500">
-                      <span>Discount</span>
-                      <span className="font-bold">
-                        - ৳{detailsModal.order.discount_amount}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold text-[#023337] border-t pt-2 mt-2">
-                      <span>Total Due</span>
-                      <span>৳{detailsModal.order.total_amount_due}</span>
-                    </div>
-                    {Number(detailsModal.order.advance_amount) > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>Advance Paid</span>
-                        <span className="font-bold">
-                          ৳{detailsModal.order.advance_amount}
-                        </span>
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Customer Card */}
+                <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl flex items-start gap-4">
+                  <div className="bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0 w-11 h-11 flex items-center justify-center">
+                    {/* FIXED fetchedCustomer check */}
+                    {typeof fetchedCustomer !== "undefined" &&
+                    fetchedCustomer?.avatar ? (
+                      <Image
+                        src={getImgUrl(fetchedCustomer.avatar)}
+                        className="w-full h-full object-cover"
+                        width={44}
+                        height={44}
+                        alt="avatar"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="text-blue-500">
+                        <User size={20} />
                       </div>
                     )}
                   </div>
+                  <div>
+                    <p className="text-xs font-bold text-blue-400 uppercase tracking-wider">
+                      Contact
+                    </p>
+                    <p className="font-bold text-[#023337]">
+                      {detailsModal.order.customer_name || "Guest"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {detailsModal.order.customer_phone || "No Phone"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        ))}
 
-      {/* Shipped Modal ... (unchanged logic) */}
-      {shippedModal.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10001] p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[12px] w-full max-w-sm shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-[#023337] mb-5">
-              Dispatch to Courier
-            </h3>
-            <div className="space-y-4">
-              <div className="space-y-1 text-left">
-                <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                  Select Provider
-                </label>
-                <select
-                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-400"
-                  value={courierInfo.courierName}
-                  onChange={(e) =>
-                    setCourierInfo({
-                      ...courierInfo,
-                      courierName: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">-- Choose Courier --</option>
-                  <option value="STEADFAST">Steadfast (Automatic)</option>
-                  <option value="PATHAO">Pathao (Automatic)</option>
-                  <option value="REDX">RedX (Automatic)</option>
-                  <option value="MANUAL">Manual Entry</option>
-                </select>
-              </div>
-              {courierInfo.courierName === "MANUAL" && (
-                <div className="space-y-1 animate-in slide-in-from-top-1 text-left">
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                    Manual Tracking Code
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter tracking number"
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-400"
-                    onChange={(e) =>
-                      setCourierInfo({
-                        ...courierInfo,
-                        trackingCode: e.target.value,
-                      })
-                    }
-                  />
+                <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-xl flex items-start gap-4">
+                  <div className="bg-white p-2 rounded-lg shadow-sm text-emerald-500">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                      Address
+                    </p>
+                    <p className="text-sm font-medium text-gray-700 leading-tight">
+                      {detailsModal.order.customer_address ||
+                        "No address provided"}
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => setShippedModal({ open: false, id: null })}
-                  className="cursor-pointer flex-1 py-3 border border-gray-200 rounded-lg font-bold text-gray-500 hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  disabled={
-                    !courierInfo.courierName || statusMutation.isPending
-                  }
-                  onClick={() =>
-                    statusMutation.mutate({
-                      id: shippedModal.id!,
-                      payload: { status: "SENT_TO_COURIER", ...courierInfo },
-                    })
-                  }
-                  className="cursor-pointer flex-1 py-3 bg-[#1DA1F2] text-white rounded-lg font-bold hover:bg-blue-600 transition-all disabled:bg-gray-300"
-                >
-                  {statusMutation.isPending ? (
-                    <Loader2 className="animate-spin mx-auto" size={20} />
-                  ) : (
-                    "Confirm"
-                  )}
-                </button>
+
+                <div className="bg-purple-50/50 border border-purple-100 p-4 rounded-xl flex items-start gap-4">
+                  <div className="bg-white p-2 rounded-lg shadow-sm text-purple-500">
+                    <Info size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-purple-400 uppercase tracking-wider">
+                      Status
+                    </p>
+                    <p className="text-sm font-bold text-purple-700 uppercase">
+                      {detailsModal.order.status || "Abandoned Cart"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      via {detailsModal.order.source}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Table */}
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                <table className="w-full text-left">
+                  <thead className="bg-[#F9FAFB] text-sm font-medium text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3">Product</th>
+                      <th className="px-4 py-3 text-center">Price</th>
+                      <th className="px-4 py-3 text-center">Qty</th>
+                      <th className="px-4 py-3 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {(isIncompleteTab
+                      ? detailsModal.order.cart_items
+                      : detailsModal.order.order_items || []
+                    ).map((item: any, idx: number) => {
+                      // --- RESOLUTION LOGIC ---
+                      // Look up the fetched data from our useQueries map
+                      const resolvedProduct =
+                        productDetailsMap[item.productId || item.product?.id];
+
+                      // Determine the Name: Resolved > Saved Name > Placeholder
+                      const name =
+                        resolvedProduct?.name ||
+                        item.product_name ||
+                        item.externalName ||
+                        "Loading Product...";
+
+                      // Determine the Image: Resolved > Saved Image > Placeholder
+                      const img =
+                        resolvedProduct?.featuredImage ||
+                        resolvedProduct?.images?.[0] ||
+                        item.image ||
+                        item.product?.images?.[0];
+
+                      const price = Number(
+                        item.price ||
+                          item.unit_price ||
+                          resolvedProduct?.sell_price ||
+                          0,
+                      );
+                      const qty = Number(item.quantity || item.qty || 1);
+
+                      return (
+                        <tr
+                          key={idx}
+                          className="text-sm hover:bg-gray-50 transition-all"
+                        >
+                          <td className="px-4 py-3 flex items-center gap-3">
+                            <div className="relative w-10 h-10">
+                              {/* If loading, show a small spinner overlay on the image area */}
+                              {resolvedModalProducts[idx]?.isLoading && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10 rounded-md">
+                                  <Loader2
+                                    size={12}
+                                    className="animate-spin text-blue-500"
+                                  />
+                                </div>
+                              )}
+                              <Image
+                                src={getImgUrl(img)}
+                                className={`w-10 h-10 rounded-md border object-cover transition-opacity ${resolvedModalProducts[idx]?.isLoading ? "opacity-30" : "opacity-100"}`}
+                                width={40}
+                                height={40}
+                                alt="product"
+                                unoptimized
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-gray-700">
+                                {name}
+                              </span>
+                              {resolvedProduct?.sku && (
+                                <span className="text-[10px] text-gray-400">
+                                  SKU: {resolvedProduct.sku}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center font-poppins">
+                            ৳{price}
+                          </td>
+                          <td className="px-4 py-3 text-center font-bold font-poppins">
+                            {qty}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-[#1DA1F2] font-poppins">
+                            ৳{price * qty}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Financial Summary */}
+              <div className="flex flex-col md:flex-row justify-between gap-6 border-t pt-6 mt-4">
+                <div className="flex-1 bg-gray-50 p-4 rounded-xl">
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-2 tracking-tighter">
+                    Internal Note
+                  </p>
+                  <p className="text-sm text-gray-600 italic">
+                    "{detailsModal.order.customer_note || "No notes available."}
+                    "
+                  </p>
+                </div>
+                <div className="w-full md:w-80 space-y-2">
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Subtotal</span>
+                    <span className="font-bold text-black">
+                      ৳
+                      {detailsModal.order.total_amount ||
+                        detailsModal.order.total_bill ||
+                        0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-[#023337] border-t border-dashed pt-2 mt-2">
+                    <span>
+                      {detailsModal.order.order_number
+                        ? "Total Due"
+                        : "Estimated Total"}
+                    </span>
+                    <span>
+                      ৳
+                      {detailsModal.order.total_amount ||
+                        detailsModal.order.total_amount_due ||
+                        0}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
