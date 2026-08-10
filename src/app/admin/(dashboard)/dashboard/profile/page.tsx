@@ -47,8 +47,6 @@ const AdminProfilePage = () => {
       setAvatarPreview(localUrl);
       setStatus(null);
 
-      // 🚀 FIXED: The mutation handler now passes the file down to useAdminUpdateAvatarMutation,
-      // which properly appends it with the whitelisted backend key name "image"!
       uploadAvatar.mutate(file, {
         onSuccess: () => {
           setStatus({ type: "success", text: "Admin avatar changed successfully!" });

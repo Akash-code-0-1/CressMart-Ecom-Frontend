@@ -44,12 +44,15 @@ export default function CustomerTable() {
 
   const cPage = Number(searchParams.get("c_page")) || 1;
   const cSearch = searchParams.get("c_search") || "";
+   const cSort = searchParams.get("c_sort") || "desc";
 
   const { data: serverPayload } = useQuery({
-    queryKey: ["admin-users-list", cPage, cSearch],
+    // 2. Add cSort to the queryKey so it refreshes when the button is clicked
+    queryKey: ["admin-users-list", cPage, cSearch, cSort], 
     queryFn: async () => {
       try {
-        const res = await customerApi.getAll(cPage, 5, cSearch);
+        // 3. Pass the sort parameter to your API service
+        const res = await customerApi.getAll(cPage, 5, cSearch, cSort);
         return res;
       } catch (err) {
         console.error("❌ CUSTOMER FETCH NETWORK FAULT:", err);

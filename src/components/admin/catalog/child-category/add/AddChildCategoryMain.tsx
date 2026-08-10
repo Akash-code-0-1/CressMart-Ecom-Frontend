@@ -30,17 +30,11 @@ export default function AddChildCategoryMain() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  // const fileInputRef = useRef<HTMLInputElement>(null);
 
   const childCategoryId = searchParams.get("id");
   const isEditMode = !!childCategoryId;
 
   const [imageUrl, setImageUrl] = useState<string>("");
-  // const [uploading, setUploading] = useState<boolean>(false);
-
-  // const baseStorageUrl =
-  //   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-  //   "http://localhost:8082";
 
   const methods = useForm({
     defaultValues: {
@@ -111,7 +105,7 @@ export default function AddChildCategoryMain() {
   //   }
   // };
 
-  // 🚀 FIXED MUTATION WORKFLOW: Points strictly to updateChildCategory to lock parent relationship constraints
+  // Points strictly to updateChildCategory to lock parent relationship constraints
   const childCategoryMutation = useMutation({
     mutationFn: (payload: {
       name: string;

@@ -316,7 +316,7 @@ export default function AddBrandMain() {
               </div>
             </div>
 
-            {/* 🚀 NEW SEO METADATA CARD (MAPS PRISMA SEO ATTRIBUTES PERFECTLY) */}
+            {/* 🚀 SEO METADATA CARD (MAPS PRISMA SEO ATTRIBUTES PERFECTLY) */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 transition-all">
               <div
                 className="flex justify-between items-center cursor-pointer select-none"

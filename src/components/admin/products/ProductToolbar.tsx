@@ -268,7 +268,7 @@ export default function ProductToolbar() {
           </button>
 
           {/* Limit Selector */}
-          <select
+          {/* <select
             value={currentLimit}
             onChange={(e) => updateSearchQuery("limit", e.target.value)}
             className="bg-[#F9FAFB] text-xs px-3 py-2 rounded-[6px] outline-none text-gray-700 cursor-pointer"
@@ -276,7 +276,7 @@ export default function ProductToolbar() {
             <option value="10">10 Products</option>
             <option value="25">25 Products</option>
             <option value="50">50 Products</option>
-          </select>
+          </select> */}
         </div>
 
         {/* Live Dropdown Filters */}

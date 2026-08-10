@@ -23,7 +23,7 @@ export default function AdminControlHead() {
     } else {
       params.delete(key);
     }
-    params.set("page", "1"); // Reset to page 1 on search/filter
+    params.set("page", "1"); 
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -68,9 +68,7 @@ export default function AdminControlHead() {
             className="bg-[#F9F9F9] border border-gray-200 px-4 py-3 rounded-[8px] cursor-pointer outline-none focus:border-[#1DA1F2] text-sm font-medium text-gray-700"
           >
             <option value="">All Status</option>
-            {/* Value 'active' matches your DB Enum active */}
             <option value="active">Publish</option>
-            {/* Value 'blocked' matches your DB Enum blocked */}
             <option value="blocked">Draft</option>
           </select>
 

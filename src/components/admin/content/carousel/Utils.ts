@@ -29,9 +29,7 @@ export const resolveImgSrc = (
     : `${backendBaseUrl}/${path.replace(/^\/+/, "")}`;
 };
 
-// Returns a plain Banner payload safe to send to the API, without the
-// client-only _tempId field. Copy + delete avoids unused-destructure lint
-// warnings you'd get from `const { _tempId, ...rest } = banner`.
+
 export const stripTempId = (banner: LocalBanner): Banner => {
   const payload: LocalBanner = { ...banner };
   delete payload._tempId;

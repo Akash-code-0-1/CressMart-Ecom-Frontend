@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
+import { JSX } from "react/jsx-runtime";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -44,21 +45,6 @@ const Footer = () => {
 
   const { language } = useLanguage();
   const t = translations[language];
-
-  // const footerLinks = {
-  //   company: [
-  //     { label: t.footer.companyLinks[0], path: "/legal/about-us" },
-  //     // { label: t.footer.companyLinks[1], path: "/shipping" },
-  //     { label: t.footer.companyLinks[2], path: "/legal/return-exchange" },
-  //     { label: t.footer.companyLinks[3], path: "/legal/privacy-policy" },
-  //     { label: t.footer.companyLinks[4], path: "/legal/terms-condition" },
-  //     { label: t.footer.companyLinks[5], path: "/faq" },
-  //   ],
-
-  //   account: t.footer.accountLinks,
-
-  //   corporate: t.footer.corporateLinks,
-  // };
 
 
   const footerLinks = {

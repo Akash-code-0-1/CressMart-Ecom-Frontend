@@ -42,7 +42,6 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
 
-  // Ensure we are getting the full, correct absolute URL
   const faviconUrl = info?.favicon
     ? `${baseUrl}/uploads/settings/${info.favicon.replace("/uploads/settings/", "")}`
     : "/favicon.ico";
@@ -54,10 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: [
         {
           url: faviconUrl,
-          type: "image/webp", // Explicitly define the type
+          type: "image/webp",
         },
       ],
-      shortcut: faviconUrl, // Added for broader browser compatibility
+      shortcut: faviconUrl,
     },
   };
 }
