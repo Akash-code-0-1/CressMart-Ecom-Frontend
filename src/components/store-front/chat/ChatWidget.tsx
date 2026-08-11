@@ -54,19 +54,15 @@ interface ChatMessage {
   sender?: { id: string; name: string; avatar: string | null; role: string };
 }
 
-/**
- * 🚀 SERVICE: Fetch Chat Settings via internal Next.js proxy
- * (avoids 401 — backend /admin/chat-settings requires admin auth)
- */
 const fetchChatSettings = async (): Promise<ChatSettings> => {
   try {
-    const res = await fetch("/api/chat-settings", {
+    const res = await apiFetch("/admin/chat-settings", {
       method: "GET",
       cache: "no-store",
     });
-    const data = await res.json();
-    console.log("ChatWidget Live Settings Fetched:", data);
-    return data || {};
+    
+    const json = await res.json();
+    return json?.data ?? json ?? {};
   } catch (err) {
     console.error("Error fetching chat settings:", err);
     return {};
