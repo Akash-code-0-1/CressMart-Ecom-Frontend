@@ -33,6 +33,7 @@ import {
 import toast from "react-hot-toast";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { getWishlist } from "@/services-api/wishlistService";
 
 interface SearchResponse {
   data: {
@@ -115,6 +116,12 @@ const Navbar = () => {
       return result.data?.data || [];
     },
     enabled: debouncedSearch.length >= 2,
+  });
+
+  const { data: wishlistData = [] } = useQuery({
+    queryKey: ["wishlist", user?.id],
+    queryFn: getWishlist,
+    enabled: isStoreReady, // Fetch once the store is hydrated
   });
 
   useEffect(() => {
@@ -317,9 +324,24 @@ const Navbar = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <button onClick={handleWishlistClick} className="cursor-pointer">
+              {/* <button onClick={handleWishlistClick} className="cursor-pointer">
                 <WishIcon className="w-8 md:w-10" />
+              </button> */}
+
+              <button
+                onClick={handleWishlistClick}
+                className="relative cursor-pointer group active:scale-95 transition-transform"
+              >
+                <WishIcon className="w-7 md:w-9" />
+
+                {/* 🚀 WISHLIST COUNT BADGE */}
+                {wishlistData.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white text-[10px] md:text-[11px] font-bold h-4 w-4 md:h-5 md:w-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+                    {wishlistData.length > 9 ? "9+" : wishlistData.length}
+                  </span>
+                )}
               </button>
+
               {/* Fixed profile container to prevent layout breaking */}
               <div
                 onClick={handleProfileNav}

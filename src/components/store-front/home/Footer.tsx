@@ -17,6 +17,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
 import { JSX } from "react/jsx-runtime";
+import LocationIcon from "../svg/LocationIcon";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -46,81 +47,80 @@ const Footer = () => {
   const { language } = useLanguage();
   const t = translations[language];
 
-
   const footerLinks = {
-  company: [
-    {
-      label: t.footer.companyLinks[0],
-      path: "/legal/about-us",
-    },
-    // {
-    //   label: t.footer.companyLinks[1],
-    //   path: "/shipping",
-    // },
-    {
-      label: t.footer.companyLinks[2],
-      path: "/legal/return-exchange",
-    },
-    {
-      label: t.footer.companyLinks[3],
-      path: "/legal/privacy-policy",
-    },
-    {
-      label: t.footer.companyLinks[4],
-      path: "/legal/terms-condition",
-    },
-    {
-      label: t.footer.companyLinks[5],
-      path: "/faq",
-    },
-  ],
+    company: [
+      {
+        label: t.footer.companyLinks[0],
+        path: "/legal/about-us",
+      },
+      // {
+      //   label: t.footer.companyLinks[1],
+      //   path: "/shipping",
+      // },
+      {
+        label: t.footer.companyLinks[2],
+        path: "/legal/return-exchange",
+      },
+      {
+        label: t.footer.companyLinks[3],
+        path: "/legal/privacy-policy",
+      },
+      {
+        label: t.footer.companyLinks[4],
+        path: "/legal/terms-condition",
+      },
+      {
+        label: t.footer.companyLinks[5],
+        path: "/faq",
+      },
+    ],
 
-  account: [
-    {
-      label: t.footer.accountLinks[0],
-      path: "/signin",
-    },
-    {
-      label: t.footer.accountLinks[1],
-      path: "/cart",
-    },
-    {
-      label: t.footer.accountLinks[2],
-      path: "/profile/wishlist",
-    },
-    // {
-    //   label: t.footer.accountLinks[3],
-    //   path: "/track-order",
-    // },
-    // {
-    //   label: t.footer.accountLinks[4],
-    //   path: "/help-ticket",
-    // },
-    {
-      label: t.footer.accountLinks[5],
-      path: "/",
-    },
-  ],
+    account: [
+      {
+        label: t.footer.accountLinks[0],
+        path: "/signin",
+      },
+      {
+        label: t.footer.accountLinks[1],
+        path: "/cart",
+      },
+      {
+        label: t.footer.accountLinks[2],
+        path: "/profile/wishlist",
+      },
+      // {
+      //   label: t.footer.accountLinks[3],
+      //   path: "/track-order",
+      // },
+      // {
+      //   label: t.footer.accountLinks[4],
+      //   path: "/help-ticket",
+      // },
+      {
+        label: t.footer.accountLinks[5],
+        path: "/",
+      },
+    ],
 
-  corporate: [
-    // {
-    //   label: t.footer.corporateLinks[0],
-    //   path: "/vendor/register",
-    // },
-    // {
-    //   label: t.footer.corporateLinks[1],
-    //   path: "/affiliate-program",
-    // },
-    {
-      label: t.footer.corporateLinks[2],
-      path: "/blog",
-    },
-    {
-      label: t.footer.corporateLinks[5],
-      path: "/suppliers",
-    },
-  ],
-};
+    corporate: [
+      // {
+      //   label: t.footer.corporateLinks[0],
+      //   path: "/vendor/register",
+      // },
+      // {
+      //   label: t.footer.corporateLinks[1],
+      //   path: "/affiliate-program",
+      // },
+      {
+        label: t.footer.corporateLinks[2],
+        path: "/blog",
+      },
+      {
+        label: t.footer.corporateLinks[5],
+        path: "/suppliers",
+      },
+    ],
+  };
 
   return (
     <footer className="w-full bg-white font-inter">
@@ -152,28 +152,36 @@ const Footer = () => {
               <div className="flex items-start gap-3">
                 <FiMapPin className="text-[#FF7050] text-xl shrink-0 mt-1" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">{t.footer.address}:</span>{" "}
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.address}:
+                  </span>{" "}
                   {info?.address || "Dhaka, Bangladesh"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiPhoneCall className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">{t.footer.callUs}:</span>{" "}
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.callUs}:
+                  </span>{" "}
                   {info?.contact_phone || "01904300117"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiMail className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">{t.footer.email}:</span>{" "}
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.email}:
+                  </span>{" "}
                   {info?.contact_email || "info@creasssmart.com"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiClock className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">{t.footer.hours}:</span>{" "}
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.hours}:
+                  </span>{" "}
                   {t.footer.officeHours}
                 </p>
               </div>
@@ -263,6 +271,15 @@ const Footer = () => {
                 </Link>
               ))}
             </div>
+
+            <div className="flex items-center gap-2 mt-4 cursor-pointer">
+              <LocationIcon />
+              <span className="text-[#727272] text-[12px] font-medium whitespace-nowrap hover:font-semibold transition-all">
+                {t.storeLocation}
+              </span>
+            </div>
+
+
           </div>
         </div>
 
@@ -292,7 +309,8 @@ const Footer = () => {
                 className="inline-block mr-1.5"
               />
             </Link>
-            | {t.footer.copyright} {currentYear} © Creass Mart. {t.footer.allRightsReserved}
+            | {t.footer.copyright} {currentYear} © Creass Mart.{" "}
+            {t.footer.allRightsReserved}
           </p>
         </div>
       </div>

@@ -1,8 +1,4 @@
-// src/utils/uuidFromString.ts
-/**
- * Convert any input string (e.g., "mohasagor-15") into a deterministic UUID (v4 style).
- * Uses SHA‑1 hash, takes the first 16 bytes and sets version/variant bits.
- */
+
 export const uuidFromString = async (input: string): Promise<string> => {
   const encoder = new TextEncoder();
   const data = encoder.encode(input);

@@ -21,15 +21,26 @@ export const extractOrderData = (
           backendBaseUrl,
         );
 
-        let variantInfo = it.external_variant_info || it.externalVariantInfo || "";
+        let variantInfo =
+          it.external_variant_info || it.externalVariantInfo || "";
         if (!variantInfo && it.variant?.attributes) {
           if (Array.isArray(it.variant.attributes)) {
             variantInfo = it.variant.attributes
-              .map((attr: { label?: string; name?: string; type?: string; key?: string; value?: string; val?: string }) => {
-                const label = attr.label || attr.name || attr.type || attr.key || "";
-                const value = attr.value || attr.val || "";
-                return label ? `${label}: ${value}` : value;
-              })
+              .map(
+                (attr: {
+                  label?: string;
+                  name?: string;
+                  type?: string;
+                  key?: string;
+                  value?: string;
+                  val?: string;
+                }) => {
+                  const label =
+                    attr.label || attr.name || attr.type || attr.key || "";
+                  const value = attr.value || attr.val || "";
+                  return label ? `${label}: ${value}` : value;
+                },
+              )
               .filter(Boolean)
               .join(", ");
           } else if (typeof it.variant.attributes === "object") {
