@@ -8,7 +8,7 @@ export default {
   // Top Header
   ///////////////////////
 
-  storeLocation: "Store Locations",
+  storeLocation: "Store Location",
   trackOrder: "Track Your Order",
   trackOrderDesc:
     "Enter your unique order ID below to check live status and shipment updates of your package.",

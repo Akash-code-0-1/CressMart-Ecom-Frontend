@@ -216,7 +216,7 @@ export default function OrderTable() {
     "All order",
     "Pending",
     "Confirmed",
-    "Incomplete", // Index 3
+    "Incomplete",
     "Delivered",
     "Canceled",
     "Returned",
@@ -267,28 +267,30 @@ export default function OrderTable() {
     return detailsModal.order.cart_items || [];
   }, [detailsModal.open, detailsModal.order, isIncompleteTab]);
 
-  // 2. Fetch details for each item in the abandoned cart "Like that" (frontend fetch)
+  // 2. Fetch details for each item
   const resolvedModalProducts = useQueries({
     queries: modalItems.map((item: any) => ({
       queryKey: ["product-metadata", item.productId],
       queryFn: async () => {
-        // Using your existing search logic or a fetch single product logic
         const res = await apiFetch(`/products/${item.productId}`, {
           method: "GET",
         });
         const json = await res.json();
-        return json.data || json;
+        // Ensure we return an object, even if empty, to satisfy the type
+        return (json.data || json) as Record<string, any>;
       },
       enabled: detailsModal.open && !!item.productId,
     })),
   });
 
-  // 3. Create a Map for quick lookup in the table
+  // 3. THE FIX: Cast query.data as any or a specific type to access .id
   const productDetailsMap = useMemo(() => {
     const map: Record<string, any> = {};
     resolvedModalProducts.forEach((query) => {
-      if (query.data) {
-        map[query.data.id] = query.data;
+      // Use type assertion (as any) or check if it's an object with id
+      const product = query.data as Record<string, any>;
+      if (product && product.id) {
+        map[product.id] = product;
       }
     });
     return map;
