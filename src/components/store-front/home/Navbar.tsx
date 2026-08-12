@@ -81,6 +81,14 @@ const Navbar = () => {
 
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
+  // 🚀 CHAT STATE DATA
+  const unreadMessageCount =
+    useAuthStore((state) => state.unreadMessageCount) || 0;
+  const setIsChatOpen = useAuthStore((state) => state.setIsChatOpen);
+  const setUnreadMessageCount = useAuthStore(
+    (state) => state.setUnreadMessageCount,
+  );
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -666,7 +674,7 @@ const Navbar = () => {
         />
       )}
 
-      {/* --- RESTORED ORIGINAL MOBILE BOTTOM NAV --- */}
+      {/* --- MOBILE BOTTOM NAV --- */}
       {isStoreReady && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050] font-poppins">
           {/* Home Button */}
@@ -716,12 +724,22 @@ const Navbar = () => {
             </button>
           </div>
 
-          {/* Chat Button (uses CartIcon per original design) */}
+          {/* Chat Button (uses ChatIcon) */}
           <button
-            onClick={() => useAuthStore.getState().setIsChatOpen?.(true)}
+            onClick={() => {
+              setIsChatOpen?.(true);
+              setUnreadMessageCount?.(0);
+            }}
             className="flex flex-col items-center"
           >
-            <ChatIcon className="w-6" />
+            <div className="relative">
+              <ChatIcon className="w-6" />
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-[#FF7050] text-white font-bold text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border border-white shadow-sm">
+                  {unreadMessageCount}
+                </span>
+              )}
+            </div>
             <span className="text-[10px] mt-1">Chat</span>
           </button>
 

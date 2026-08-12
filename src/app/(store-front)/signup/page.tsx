@@ -98,7 +98,7 @@ const SignUpPage = () => {
       setAuthUser(targetUser);
 
       router.refresh();
-      router.push(redirectUrl || "/profile");
+      router.push(redirectUrl || "/signin");
     } catch (err: unknown) {
       setError((err as Error).message || "An unexpected error occurred.");
     } finally {
