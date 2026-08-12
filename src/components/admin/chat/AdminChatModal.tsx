@@ -115,8 +115,8 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
   useEffect(() => {
     if (!isOpen) return;
     fetchChatRooms();
-    const interval = setInterval(fetchChatRooms, 10000);
-    return () => clearInterval(interval);
+    // const interval = setInterval(fetchChatRooms, 10000);
+    // return () => clearInterval(interval);
   }, [isOpen, fetchChatRooms]);
 
   useEffect(() => {

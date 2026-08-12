@@ -77,8 +77,8 @@ const ChatWidget = () => {
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
 
   // Zustand State for the internal message window
-  const isOpen = useAuthStore((state) => state.isChatOpen);
-  const setIsOpen = useAuthStore((state) => state.setIsChatOpen);
+  // const isOpen = useAuthStore((state) => state.isChatOpen);
+  // const setIsOpen = useAuthStore((state) => state.setIsChatOpen);
 
   // Local state for the multi-channel menu and phone popup
   const [showOptions, setShowOptions] = useState(false);
@@ -97,6 +97,33 @@ const ChatWidget = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+
+    const { 
+    unreadMessageCount, 
+    setUnreadMessageCount, 
+    isChatOpen: isOpen, 
+    setIsChatOpen: setIsOpen 
+  } = useAuthStore();
+
+  // 🚀 ACTION: Open chat and clear badge
+  const handleToggleChat = () => {
+    if (isOpen) {
+      setIsOpen(false);
+    } else {
+      setIsOpen(true);
+      setUnreadMessageCount(0); // 🚀 Clear count when opened
+      setShowOptions(false);
+      setShowPhoneInfo(false);
+    }
+  };
+
+  const handleOpenLiveChat = () => {
+    setIsOpen(true);
+    setUnreadMessageCount(0); // 🚀 Clear count when opened
+    setShowOptions(false);
+    setShowPhoneInfo(false);
+  };
 
   // 🚀 1. FETCH LIVE SETTINGS — staleTime:0 ensures admin toggle changes reflect immediately
   const { data: settings } = useQuery<ChatSettings>({
@@ -367,15 +394,17 @@ const ChatWidget = () => {
           {/* 💬 Live Chat — show only if enableLiveChat is true */}
           {enableLiveChat && (
             <button
-              onClick={() => {
-                setIsOpen(true);
-                setShowOptions(false);
-                setShowPhoneInfo(false);
-              }}
-              className="flex items-center justify-center w-12 h-12 bg-[#FF7050] text-white rounded-full shadow-lg hover:scale-110 transition-all border-none cursor-pointer"
+              onClick={handleOpenLiveChat} // 🚀 Updated
+              className="relative flex items-center justify-center w-12 h-12 bg-[#FF7050] text-white rounded-full shadow-lg hover:scale-110 transition-all border-none cursor-pointer"
               title="Live Chat"
             >
               <FiMessageSquare size={22} />
+              {/* Badge on the inner option button */}
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {unreadMessageCount}
+                </span>
+              )}
             </button>
           )}
 
@@ -535,7 +564,7 @@ const ChatWidget = () => {
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <button
+              {/* <button
                 type="button"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
@@ -546,7 +575,7 @@ const ChatWidget = () => {
                 ) : (
                   <FiPaperclip size={18} />
                 )}
-              </button>
+              </button> */}
 
               <input
                 type="text"
@@ -571,6 +600,8 @@ const ChatWidget = () => {
               </button>
             </form>
           </div>
+
+
         </div>
       )}
 
@@ -582,15 +613,25 @@ const ChatWidget = () => {
           } else {
             setShowOptions(!showOptions);
             if (showOptions) setShowPhoneInfo(false);
+            // If the user clicks this and options show, 
+            // you might want to clear badge only when they enter 'Live Chat'
           }
         }}
         type="button"
-        className="bg-[#FF7050] text-white w-14 h-14 rounded-full shadow-[0_8px_24px_rgba(255,112,80,0.35)] hover:bg-[#e66345] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center z-[100] border-none outline-none"
+        className="relative bg-[#FF7050] text-white w-14 h-14 rounded-full shadow-[0_8px_24px_rgba(255,112,80,0.35)] hover:bg-[#e66345] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center z-[100] border-none outline-none"
       >
         {isOpen || showOptions ? (
           <FiX size={28} />
         ) : (
-          <BsChatDotsFill size={28} />
+          <>
+            <BsChatDotsFill size={28} />
+            {/* 🚀 THE MAIN RED BADGE */}
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white font-bold text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in">
+                {unreadMessageCount}
+              </span>
+            )}
+          </>
         )}
       </button>
     </div>
