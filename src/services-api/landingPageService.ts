@@ -54,11 +54,25 @@ export const fetchAllProductsForLP = async () => {
   return Array.isArray(records) ? records : [];
 };
 
+// export const fetchLandingPageByProductId = async (productId: string) => {
+//   const token = await getAdminTokenAction();
+//   const res = await apiFetch(`/landing-pages/product/${productId}`, {
+//     headers: { Authorization: `Bearer ${token || ""}` },
+//   });
+//   if (!res.ok) return null;
+//   const json = await res.json();
+//   return json?.data || json;
+// };
+
+
 export const fetchLandingPageByProductId = async (productId: string) => {
-  const token = await getAdminTokenAction();
+  // 🚀 REMOVED: getAdminTokenAction and Authorization Header
   const res = await apiFetch(`/landing-pages/product/${productId}`, {
-    headers: { Authorization: `Bearer ${token || ""}` },
+    headers: { 
+      "X-Customer-Request": "true" // Use this to bypass global filters if needed
+    },
   });
+  
   if (!res.ok) return null;
   const json = await res.json();
   return json?.data || json;
@@ -71,3 +85,4 @@ export const fetchLandingPageBySlug = async (slug: string) => {
   if (!res.ok) return null;
   return await res.json();
 };
+

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
@@ -82,6 +82,28 @@ export default function BrandTable() {
       setSelectedIds(brandList.map((item: any) => item.id));
     }
   };
+
+
+    const menuRef = useRef<HTMLDivElement | null>(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        // If the menu is open and the user clicks outside the menuRef container
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setActiveMenuId(null); // Close the menu
+        }
+      };
+  
+      // Add listener when a menu is open
+      if (activeMenuId) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+  
+      // Cleanup the listener
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [activeMenuId]);
 
   // 🚀 FIXED: Added absolute string literals to className and headerClassName definitions to prevent runtime loop extraction errors
   const columns: TableColumn<any>[] = [
@@ -209,7 +231,8 @@ export default function BrandTable() {
       className: "px-4 py-3 align-middle text-right",
       headerClassName: "px-4 py-3 text-right",
       render: (item) => (
-        <div className="relative inline-block text-left">
+        <div className="relative inline-block text-left"
+          ref={activeMenuId === item.id ? menuRef : null}>
           <button
             onClick={() =>
               setActiveMenuId(activeMenuId === item.id ? null : item.id)
@@ -220,12 +243,13 @@ export default function BrandTable() {
           </button>
 
           {activeMenuId === item.id && (
-            <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50 text-left">
+            <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-50 text-left">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() =>{
+                  setActiveMenuId(null);
                   router.push(`/admin/dashboard/brand/add?id=${item.id}`)
-                }
+                }}
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
               >
                 <Edit3 size={12} /> Edit Brand
@@ -233,6 +257,7 @@ export default function BrandTable() {
               <button
                 type="button"
                 onClick={() => {
+                  setActiveMenuId(null);
                   if (window.confirm("Delete this brand record permanently?"))
                     deleteMutation.mutate(item.id);
                 }}

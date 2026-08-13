@@ -238,6 +238,7 @@ export default function OrderTable() {
   const [shippedModal, setShippedModal] = useState<{
     open: boolean;
     id: string | null;
+    targetStatus?: string | null;
   }>({ open: false, id: null });
   const [detailsModal, setDetailsModal] = useState<{
     open: boolean;
@@ -443,6 +444,8 @@ export default function OrderTable() {
       toast.error(error.message || "Failed to delete");
     },
   });
+
+  const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
   // --- COLUMNS ---
   const columns = [
@@ -719,7 +722,6 @@ export default function OrderTable() {
                   </div>
                   <ChevronLeft size={14} className="opacity-50" />
                 </button>
-
                 {showStatusMenu && (
                   <div className="absolute right-full mr-2 w-[180px] bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[10000]">
                     {[
@@ -729,22 +731,69 @@ export default function OrderTable() {
                       "SHIPPED",
                       "DELIVERED",
                       "CANCELED",
+                      "RETURNED",
+                      "REFUNDED",
+                      "SENT_TO_COURIER",
                     ].map((s) => (
                       <button
                         key={s}
-                        onClick={() =>
-                          statusMutation.mutate({
-                            id: activeMenuId!,
-                            payload: { status: s },
-                          })
-                        }
-                        className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2]"
+                        // Inside your showStatusMenu map
+                        onClick={() => {
+                          if (s === "SENT_TO_COURIER") {
+                            // 🚀 Pass the target status (s) to the modal
+                            setShippedModal({
+                              open: true,
+                              id: activeMenuId,
+                              targetStatus: s,
+                            });
+                            setActiveMenuId(null);
+                            setShowStatusMenu(false);
+                          } else {
+                            statusMutation.mutate({
+                              id: activeMenuId!,
+                              payload: { status: s },
+                            });
+                          }
+                        }}
+                        className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer"
                       >
-                        {s}
+                        {s.replace(/_/g, " ")}
                       </button>
                     ))}
                   </div>
                 )}
+
+                {/* {[
+                  "PENDING",
+                  "CONFIRMED",
+                  "ON_HOLD",
+                  "SHIPPED",
+                  "DELIVERED",
+                  "CANCELED",
+                  "RETURNED",
+                  "REFUNDED",
+                  "SENT_TO_COURIER",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      // 🚀 THE FIX: If the status is SHIPPED, open the modal instead of mutating immediately
+                      if (s === "SHIPPED" || s === "SENT_TO_COURIER") {
+                        setShippedModal({ open: true, id: activeMenuId });
+                        setActiveMenuId(null);
+                        setShowStatusMenu(false);
+                      } else {
+                        statusMutation.mutate({
+                          id: activeMenuId!,
+                          payload: { status: s },
+                        });
+                      }
+                    }}
+                    className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2]"
+                  >
+                    {s}
+                  </button>
+                ))} */}
               </div>
             </div>
           )}
@@ -1026,6 +1075,128 @@ export default function OrderTable() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {shippedModal.open && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10002] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[380px] shadow-2xl overflow-hidden text-left border border-gray-100">
+            {/* Minimal Header */}
+            <div className="px-6 py-5 flex justify-between items-center bg-white">
+              <h3 className="text-base font-bold text-gray-900 tracking-tight">
+                Courier Setup
+              </h3>
+              <button
+                onClick={() => setShippedModal({ open: false, id: null })}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-gray-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                statusMutation.mutate({
+                  id: shippedModal.id,
+                  payload: {
+                    status: (shippedModal as any).targetStatus,
+                    courierName: formData.get("courierName"),
+                    trackingCode:
+                      courierMethod === "MANUAL"
+                        ? formData.get("trackingCode")
+                        : "",
+                  },
+                });
+              }}
+              className="px-6 pb-8 space-y-6"
+            >
+              {/* Modern Pill Toggle */}
+              <div className="flex bg-gray-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setCourierMethod("AUTO")}
+                  className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                    courierMethod === "AUTO"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-400"
+                  }`}
+                >
+                  Automatic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCourierMethod("MANUAL")}
+                  className={`flex-1 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                    courierMethod === "MANUAL"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-400"
+                  }`}
+                >
+                  Manual
+                </button>
+              </div>
+
+              {/* Input Group */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                    Provider
+                  </label>
+                  <select
+                    name="courierName"
+                    required
+                    className="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#FF7050] bg-gray-50/50 transition-all cursor-pointer"
+                  >
+                    <option value="Steadfast">Steadfast Courier</option>
+                    <option value="Pathao">Pathao Courier</option>
+                    <option value="RedX">RedX Logistics</option>
+                    <option value="Paperfly">Paperfly</option>
+                    <option value="Carrybee">Carrybee</option>
+                    <option value="Manual">Others / Manual</option>
+                  </select>
+                </div>
+
+                {courierMethod === "MANUAL" ? (
+                  <div className="space-y-1.5 animate-in slide-in-from-top-1 duration-200">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
+                      Tracking ID
+                    </label>
+                    <input
+                      name="trackingCode"
+                      type="text"
+                      required
+                      placeholder="Enter assignment code"
+                      className="w-full border border-gray-200 rounded-xl p-3 text-sm outline-none focus:border-[#FF7050] bg-gray-50/50"
+                    />
+                  </div>
+                ) : (
+                  <div className="px-4 py-3 bg-orange-50/50 rounded-xl border border-orange-100 flex items-center gap-3 animate-in fade-in duration-300">
+                    <Info size={14} className="text-[#FF7050]" />
+                    <p className="text-[11px] text-[#FF7050] font-medium leading-tight">
+                      Order will be booked via API. Tracking ID will auto-sync.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Solid Action Button */}
+              <button
+                type="submit"
+                disabled={statusMutation.isPending}
+                className="w-full py-4 bg-[#FF7050] hover:bg-[#e05b3d] text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-orange-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-70 disabled:active:scale-100 cursor-pointer mt-2"
+              >
+                {statusMutation.isPending ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <>
+                    Complete Assignment <Truck size={16} />
+                  </>
+                )}
+              </button>
+            </form>
           </div>
         </div>
       )}

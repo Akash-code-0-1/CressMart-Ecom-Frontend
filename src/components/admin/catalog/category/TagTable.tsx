@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
@@ -94,6 +94,24 @@ export default function TagTable() {
       setSelectedIds(tagList.map((item: { id: string }) => item.id));
     }
   };
+
+    const menuRef = useRef<HTMLDivElement | null>(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setActiveMenuId(null); 
+        }
+      };
+  
+      if (activeMenuId) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+  
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [activeMenuId]);
 
   const columns: TableColumn<Tag>[] = [
     {
@@ -209,7 +227,8 @@ export default function TagTable() {
       header: "Action",
       key: "action",
       render: (item) => (
-        <div className="relative">
+        <div className="relative"
+          ref={activeMenuId === item.id ? menuRef : null}>
           <button
             onClick={() =>
               setActiveMenuId(activeMenuId === item.id ? null : item.id)
@@ -220,12 +239,13 @@ export default function TagTable() {
           </button>
 
           {activeMenuId === item.id && (
-            <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50">
+            <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-50">
               <button
                 type="button"
-                onClick={() =>
+                onClick={() =>{
+                  setActiveMenuId(null);
                   router.push(`/admin/dashboard/tag/add?id=${item.id}`)
-                }
+                }}
                 className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
               >
                 <Edit3 size={12} /> Edit Tag
@@ -233,6 +253,7 @@ export default function TagTable() {
               <button
                 type="button"
                 onClick={() => {
+                  setActiveMenuId(null);
                   if (confirm("Delete this campaign tag permanently?"))
                     deleteMutation.mutate(item.id);
                 }}
