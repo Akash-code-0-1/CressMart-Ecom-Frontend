@@ -3,15 +3,22 @@ import React from "react";
 interface InputFieldProps {
   label: string;
   placeholder: string;
+  name: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void;
   required?: boolean;
   type?: string;
   error?: boolean;
   isTextArea?: boolean;
 }
-
 const InputField: React.FC<InputFieldProps> = ({
   label,
   placeholder,
+  name,
+  value,
+  onChange,
   required,
   type = "text",
   error,
@@ -23,16 +30,24 @@ const InputField: React.FC<InputFieldProps> = ({
     </label>
     {isTextArea ? (
       <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
         placeholder={placeholder}
-        className="bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-sm border border-transparent focus:border-[#FF7050] transition-all min-h-[100px] font-poppins"
+        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-sm border transition-all min-h-[100px] font-poppins ${
+          error ? "border-[#FF7050]" : "border-transparent"
+        } focus:border-[#FF7050]`}
       />
     ) : (
       <input
+        name={name}
+        value={value}
+        onChange={onChange}
         type={type}
         placeholder={placeholder}
-        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-base text-normal border ${
+        className={`bg-[#F9F9F9] px-6 py-5 rounded-[12px] outline-none text-base text-normal border transition-all font-poppins ${
           error ? "border-[#FF7050]" : "border-transparent"
-        } focus:border-[#FF7050] transition-all font-poppins`}
+        } focus:border-[#FF7050]`}
       />
     )}
   </div>

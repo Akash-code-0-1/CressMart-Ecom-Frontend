@@ -12,21 +12,42 @@ export default function ContentNavigation() {
     {
       id: "carousel",
       label: "Carousel",
-      path: "/dashboard/carousel",
+      path: "/admin/dashboard/carousel",
       icon: Shapes,
     },
     {
-      id: "banner",
-      label: "Banners",
-      path: "/dashboard/banner",
+      id: "faq",
+      label: "Faqs",
+      path: "/admin/dashboard/faq",
+      icon: SubCategroyIcon,
+    },
+    // {
+    //   id: "popup",
+    //   label: "Popups",
+    //   path: "/admin/dashboard/popup",
+    //   icon: SubCategroyIcon,
+    // },
+    {
+      id: "blog",
+      label: "Blogs",
+      path: "/admin/dashboard/blog",
       icon: SubCategroyIcon,
     },
     {
-      id: "popup",
-      label: "Popups",
-      path: "/dashboard/popup",
+      id: "landingPage",
+      label: "Landing Page",
+      path: "/admin/dashboard/landing-page",
       icon: SubCategroyIcon,
     },
+
+        {
+      id: "testimonials",
+      label: "Testimonials",
+      path: "/admin/dashboard/testimonials",
+      icon: SubCategroyIcon,
+    },
+
+
   ];
 
   return (

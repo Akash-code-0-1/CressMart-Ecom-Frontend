@@ -13,14 +13,12 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   } else {
-    // 🔥 CRITICAL: If it IS FormData, ensure no Content-Type is forced 
-    // so the browser can natively inject 'multipart/form-data; boundary=...'
     delete headers["Content-Type"];
   }
 
   return fetch(url, {
     ...options,
     headers,
-    credentials: "include", // Keeps cookie sharing active
+    credentials: "include",
   });
 };

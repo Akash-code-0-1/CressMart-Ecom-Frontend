@@ -23,7 +23,7 @@ const DataTable = <T,>({
   gradiant = false,
 }: DataTableProps<T>) => {
   return (
-    <div className="w-full overflow-x-auto px-[18px]">
+    <div className="w-full overflow-x-auto px-[18px] font-poppins">
       <table className="w-full text-left border-separate border-spacing-0 min-w-[1000px] xl:min-w-full">
         <thead>
           <tr
@@ -56,6 +56,9 @@ const DataTable = <T,>({
               <tr
                 key={rowKeyValue}
                 className="hover:bg-[#F8FBFF] transition-colors group"
+                style={{
+                  zIndex: data.length - rowIndex,
+                }}
               >
                 {columns.map((col, colIndex) => (
                   <td

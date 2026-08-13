@@ -1,3 +1,6 @@
+"use client";
+
+import Link from "next/link"; // Import Link
 import PluseIcon from "@/components/store-front/svg/svg/PluseIcon";
 import PrimaryButton from "../common/PrimaryButton";
 
@@ -7,7 +10,10 @@ export default function OrderHeader() {
       <h2 className="text-[#023337] text-base lg:text-[22px] font-lato font-bold">
         Order List
       </h2>
-      <PrimaryButton label="Add Order" icon={<PluseIcon />} />
+      
+      <Link href="/admin/dashboard/order/add">
+        <PrimaryButton label="Add Order" icon={<PluseIcon />} />
+      </Link>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useRef, useEffect, ReactNode } from "react";
@@ -10,7 +12,7 @@ import FileIcon from "@/components/store-front/svg/svg/FileIcon";
 import { TimeFilter } from "@/app/admin/(dashboard)/dashboard/home/HomePageWrapper";
 
 interface OverviewSectionProps {
-  stats: any;
+  stats: any; // This receives stats.overview from the backend
   isLoading: boolean;
   isError: boolean;
   activeFilter: TimeFilter;
@@ -28,7 +30,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
   selectedDate,
   setSelectedDate,
 }) => {
-  // Local UI State (Calendar visibility and internal viewing)
+  // Local UI State for the custom calendar popup
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const calendarRef = useRef<HTMLDivElement | null>(null);
@@ -51,6 +53,9 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   };
 
+  console.log(stats, "OverviewSection.tsx: stats prop");
+
+  // Calendar Day Generator
   const renderDays = (): ReactNode[] => {
     const days: ReactNode[] = [];
     const year = viewDate.getFullYear();
@@ -58,10 +63,12 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
     const totalDays = new Date(year, month + 1, 0).getDate();
     const startOffset = new Date(year, month, 1).getDay();
 
+    // Fill empty slots for previous month's trailing days
     for (let i = 0; i < startOffset; i++) {
       days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
     }
 
+    // Render current month's days
     for (let d = 1; d <= totalDays; d++) {
       const isSelected =
         selectedDate.getDate() === d &&
@@ -74,8 +81,8 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
           type="button"
           onClick={() => {
             const newDate = new Date(year, month, d);
-            setSelectedDate(newDate); // Updates Parent
-            setActiveFilter("Custom"); // Updates Parent
+            setSelectedDate(newDate);
+            setActiveFilter("Custom");
             setShowCalendar(false);
           }}
           className={`h-8 w-8 text-xs rounded-full flex items-center justify-center transition-all cursor-pointer outline-none ${
@@ -92,10 +99,11 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
   };
 
   return (
-    <div className="px-6 py-2 bg-white rounded-[8px] font-poppins relative">
+    <div className="px-6 py-2 bg-white rounded-[8px] font-poppins relative border border-gray-50">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-3 gap-4">
         <h2 className="text-base font-semibold text-black">Overview</h2>
 
+        {/* Filter Toolbar */}
         <div className="flex items-center gap-2 bg-white p-1 rounded-[8px] flex-wrap">
           {["Day", "Month", "Year", "All Time"].map((filter) => (
             <button
@@ -116,12 +124,12 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
             </button>
           ))}
 
-          {/* Calendar Toggle */}
+          {/* Custom Date Picker Toggle */}
           <div className="relative" ref={calendarRef}>
             <button
               type="button"
               onClick={() => setShowCalendar(!showCalendar)}
-              className="flex items-center gap-2 ml-2 px-4 py-1.5 text-white text-sm font-medium rounded-[8px] cursor-pointer outline-none"
+              className="flex items-center gap-2 ml-2 px-4 py-1.5 text-white text-sm font-medium rounded-[8px] cursor-pointer outline-none shadow-sm"
               style={{
                 background: "linear-gradient(90deg, #38BDF8 0%, #1E90FF 100%)",
               }}
@@ -130,9 +138,9 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
               <ThreeBarIcon />
             </button>
 
+            {/* Calendar UI */}
             {showCalendar && (
-              <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 shadow-2xl rounded-xl p-4 z-50 w-[280px]">
-                {/* ... (Keep your calendar navigation logic here) ... */}
+              <div className="absolute top-full right-0 mt-2 bg-white border border-gray-200 shadow-2xl rounded-xl p-4 z-50 w-[280px] animate-in fade-in zoom-in duration-150">
                 <div className="flex items-center justify-between mb-4 px-1">
                   <span className="text-sm font-bold text-gray-800">
                     {formatDateLabel(viewDate)}
@@ -199,6 +207,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
         </div>
       </div>
 
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Products"
@@ -219,28 +228,33 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
           value={
             isLoading
               ? "..."
-              : `৳${stats?.totalRevenue?.toLocaleString() || "0"}`
+              : `৳${Number(stats?.totalRevenue || 0).toLocaleString()}`
           }
           icon={<DiscountIcon />}
         />
 
+        {/* Dynamic Notification Section */}
         <div className="bg-[#F9F9F9] p-4 rounded-[8px] flex flex-col justify-between relative overflow-hidden min-h-[115px]">
           <div className="absolute right-0 top-3 bottom-3 w-[3px] bg-[#FF6A00] rounded-l-full"></div>
           <h3 className="text-sm font-normal text-black font-poppins mb-3">
-            Important Notification
+            System Alerts
           </h3>
           <div className="space-y-1">
             <NotificationItem
-              text={`${stats?.totalProducts || 0} Products To be Reviewed`}
+              text={
+                isLoading
+                  ? "Syncing..."
+                  : `${stats?.totalProducts || 0} Catalog Items`
+              }
             />
-            <NotificationItem text="5 Products on Low Stock" />
+            <NotificationItem text="Inventory data updated" />
           </div>
         </div>
       </div>
 
       {isError && (
-        <p className="text-red-500 text-xs mt-2 text-right">
-          Failed to load fresh data.
+        <p className="text-red-500 text-xs mt-2 text-right font-medium">
+          ⚠️ Network Error: Unable to fetch live statistics.
         </p>
       )}
     </div>

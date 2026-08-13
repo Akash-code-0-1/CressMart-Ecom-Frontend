@@ -1,20 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
-import { TableColumn } from "@/@types/order.type";
-import { Product } from "@/@types/product.type";
-import Image from "next/image";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { apiFetch } from "@/utils/api";
-import { getAdminTokenAction } from "@/app/actions/auth";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
+import { fetchAllProducts, deleteProduct } from "@/services-api/productService";
+import { apiFetch } from "@/utils/api";
 import DataTable from "../common/DataTable";
 import Pagination from "../common/Pagination";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
-interface ExtendedTableColumn<T> extends TableColumn<T> {
+interface ExtendedTableColumn<T> {
+  header: string;
+  key: string;
+  render?: (item: T, index: number) => React.ReactNode;
   headerRender?: () => React.ReactNode;
+  className?: string;
   headerClassName?: string;
+}
+interface TableData {
+  id: string;
+  name: string;
+  images?: string[];
+  category?: {
+    id?: string;
+    name?: string;
+  };
+  category_id?: string;
+  sku?: string;
+  priority?: number;
+  status?: "PUBLISHED" | "DRAFT" | "active" | string;
 }
 
 export default function ProductTable() {
@@ -23,7 +39,7 @@ export default function ProductTable() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Read live URL parameters to pass directly into your backend queries
+  // Read URL parameters for query synchronization
   const page = Number(searchParams.get("page")) || 1;
   const limit = Number(searchParams.get("limit")) || 10;
   const search = searchParams.get("search") || "";
@@ -37,67 +53,81 @@ export default function ProductTable() {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const { data: fetchResponse, isLoading } = useQuery({
+  // FETCH WORKFLOW: Synchronizes state updates across all dashboard screens
+  const { data: serverPayload, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products-list-panel", page, limit, search, category_id, status],
+    queryFn: () =>
+      fetchAllProducts({ page, limit, search, category_id, status }),
+    refetchOnWindowFocus: true, // Forces immediate synchronization when returning to this page
+    refetchOnMount: "always", // 🚀 FIXED: Enforce continuous network syncing when this layout section renders
+    staleTime: 0, // 🚀 FIXED: Marks local dataset immediately stale to prioritize incoming PATCH responses
+  });
+
+  // 🚀 FETCH WORKFLOW: Get the exact categories deep multi-level tree mapping
+  const { data: treeResponse } = useQuery({
+    queryKey: ["categories-nested-tree-upload"],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-        search,
-        category_id,
-        status,
-      });
-
-      // 🚀 ABSOLUTE FALLBACK OVERRIDE: Point directly to your NestJS port address layout
-      const backendUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082/api/v1";
-      const token = await getAdminTokenAction();
-
-      const res = await fetch(
-        `${backendUrl}/products?${queryParams.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token || ""}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!res.ok) throw new Error("Failed to sync catalog rows");
+      const res = await apiFetch("/categories/tree");
       return res.json();
     },
   });
 
-  // 🚀 FIXED: Defensively extract products array without breaking structure or style
-  const productList = (() => {
-    if (Array.isArray(fetchResponse)) return fetchResponse;
-    if (fetchResponse && Array.isArray(fetchResponse.data))
-      return fetchResponse.data;
-    if (fetchResponse && Array.isArray(fetchResponse.products))
-      return fetchResponse.products;
-    return [];
-  })();
+  // 🚀 FIXED RESOLUTION MAP: Deep scan every child node level recursively to build an unambiguous dictionary matching ids to absolute sub/child category names
+  const categoryLookupMap = useMemo(() => {
+    const lookup: Record<string, string> = {};
 
-  const meta = fetchResponse?.meta || { totalPages: 1, total: 0 };
+    const parsedNodes = (() => {
+      if (!treeResponse) return [];
+      if (Array.isArray(treeResponse)) return treeResponse;
+      if (treeResponse.data && Array.isArray(treeResponse.data))
+        return treeResponse.data;
+      if (treeResponse.data?.data && Array.isArray(treeResponse.data.data))
+        return treeResponse.data.data;
+      return [];
+    })();
 
-  // 🚀 DELETE PRODUCT MUTATION
+    const traverseDeepTree = (
+      nodes: {
+        id: string;
+        name: string;
+        children?: [];
+      }[],
+    ) => {
+      if (!Array.isArray(nodes)) return;
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        if (node && node.id && node.name) {
+          lookup[node.id] = node.name;
+        }
+        // Recursively trace through deep subcategories / children branches down to the lowest leaf node
+        if (
+          node &&
+          node.children &&
+          Array.isArray(node.children) &&
+          node.children.length > 0
+        ) {
+          traverseDeepTree(node.children);
+        }
+      }
+    };
+
+    traverseDeepTree(parsedNodes);
+    return lookup;
+  }, [treeResponse]);
+
+  const productList = serverPayload?.data || [];
+  const meta = serverPayload?.meta || { totalPages: 1, total: 0 };
+
+  // DELETE MUTATION WORKFLOW
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const token = await getAdminTokenAction();
-      const res = await apiFetch(`/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token || ""}` },
-      });
-      if (!res.ok) throw new Error("Could not drop target catalog item");
-      return res.json();
-    },
+    mutationFn: (id: string) => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products-list-panel"] });
-      alert("Product successfully deleted from catalog.");
+      toast.success("Product successfully deleted from catalog.");
       setActiveMenuId(null);
     },
-    onError: (err: any) => alert(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   const handlePageChange = (targetPage: number) => {
@@ -108,9 +138,7 @@ export default function ProductTable() {
 
   const handleSelectRow = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((itemId) => itemId !== id)
-        : [...prev, id],
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
     );
   };
 
@@ -118,19 +146,20 @@ export default function ProductTable() {
     if (selectedIds.length === productList.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(productList.map((product: any) => product.id));
+      setSelectedIds(productList.map((product: { id: string }) => product.id));
     }
   };
 
-  const productColumns: ExtendedTableColumn<any>[] = [
+  const productColumns: ExtendedTableColumn<TableData>[] = [
     {
       header: "",
       key: "checkbox-selection",
-      headerClassName: "w-[40px]",
+      headerClassName: "w-[40px] px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       headerRender: () => (
         <input
           type="checkbox"
-          className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer inline-block vertical-middle"
+          className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
           checked={
             selectedIds.length === productList.length && productList.length > 0
           }
@@ -149,6 +178,8 @@ export default function ProductTable() {
     {
       header: "SL",
       key: "sl",
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       render: (_, index) => (
         <span className="text-[15px] text-[#1D1A1A] font-normal">
           {(page - 1) * limit + (index ?? 0) + 1}
@@ -158,32 +189,37 @@ export default function ProductTable() {
     {
       header: "Image",
       key: "image",
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       render: (product) => {
         const rawImg = Array.isArray(product.images) ? product.images[0] : null;
-        const srcUrl = rawImg
-          ? rawImg.startsWith("http")
-            ? rawImg
-            : `${baseStorageUrl}${rawImg}`
+        const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+        const isValidImg = cleanImg.replace(/^\/+/, "").length > 0;
+        const srcUrl = isValidImg
+          ? cleanImg.startsWith("http")
+            ? cleanImg
+            : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
           : "/images/products/product2.png";
         return (
-          <div className="flex items-center">
-            <img
-              src={srcUrl}
-              alt={product.name}
-              width={45}
-              height={45}
-              className="rounded-[8px] object-cover"
-            />
-          </div>
+          <Image
+            src={srcUrl}
+            alt="Product Image"
+            width={50}
+            height={50}
+            className="rounded-lg object-cover h-11 w-11 bg-gray-50"
+            unoptimized
+          />
         );
       },
     },
     {
       header: "Name",
       key: "name",
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       render: (product) => (
         <span
-          className="text-[15px] text-[#1D1A1A] font-normal block max-w-[300px]"
+          className="text-[15px] text-[#1D1A1A] font-normal block max-w-[300px] truncate"
           title={product.name}
         >
           {product.name}
@@ -193,33 +229,26 @@ export default function ProductTable() {
     {
       header: "Category",
       key: "category",
-      render: (product) => (
-        <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.category?.name || "Uncategorized"}
-        </span>
-      ),
-    },
-    {
-      header: "Sub Category",
-      key: "subCategory",
-      render: (product) => (
-        <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.subCategory || "N/A"}
-        </span>
-      ),
-    },
-    {
-      header: "Priority",
-      key: "priority",
-      render: (product) => (
-        <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.priority}%
-        </span>
-      ),
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
+      render: (product) => {
+        // 🚀 RESOLVED: Evaluates the specific category_id string value against the deep parsed map dictionary entries
+        const targetCategoryString =
+          product.category?.name ||
+          categoryLookupMap[product.category_id || ""] ||
+          "Uncategorized";
+        return (
+          <span className="text-[13px] xl:text-[15px] text-black font-normal">
+            {targetCategoryString}
+          </span>
+        );
+      },
     },
     {
       header: "SKU",
       key: "sku",
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
           {product.sku || "N/A"}
@@ -227,45 +256,50 @@ export default function ProductTable() {
       ),
     },
     {
-      header: "Tags",
-      key: "tags",
+      header: "Priority",
+      key: "priority",
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
       render: (product) => (
         <span className="text-[13px] xl:text-[15px] text-black font-normal">
-          {product.meta_tags || "None"}
+          {product.priority ?? 100}
         </span>
       ),
     },
     {
       header: "Status",
       key: "status",
-      render: (product) => (
-        <div
-          className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${
-            product.status === "PUBLISHED"
-              ? "bg-[#C1FFBC] text-[#085E00]"
-              : "bg-gray-100 text-gray-500"
-          }`}
-        >
-          {product.status === "PUBLISHED" ? "Publish" : product.status}
-        </div>
-      ),
+      headerClassName: "px-4 py-3 text-left",
+      className: "px-4 py-3 align-middle",
+      render: (product) => {
+        const isPublished =
+          product.status === "PUBLISHED" || product.status === "active";
+        return (
+          <div
+            className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}
+          >
+            {isPublished ? "Publish" : product.status}
+          </div>
+        );
+      },
     },
     {
       header: "Action",
       key: "action",
+      headerClassName: "px-4 py-3 text-right",
+      className: "px-4 py-3 align-middle text-right",
       render: (product) => (
-        <div className="relative">
+        <div className="relative inline-block text-left">
           <button
             onClick={() =>
               setActiveMenuId(activeMenuId === product.id ? null : product.id)
             }
-            className="text-black p-1 transition-colors cursor-pointer"
+            className="text-black p-1 cursor-pointer"
           >
             <MoreVertical size={20} />
           </button>
-
           {activeMenuId === product.id && (
-            <div className="absolute right-0 mt-1 w-32 bg-white border rounded-md shadow-lg py-1 z-50">
+            <div className="absolute right-0 mt-1 w-32 bg-white  rounded-md shadow-lg py-1 z-50 text-left">
               <button
                 type="button"
                 onClick={() =>
@@ -292,7 +326,7 @@ export default function ProductTable() {
     },
   ];
 
-  if (isLoading) {
+  if (isLoadingProducts) {
     return (
       <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
         <Loader2 className="animate-spin text-gray-400" size={24} />

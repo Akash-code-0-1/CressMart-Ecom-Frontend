@@ -1,3 +1,8 @@
+"use client";
+
+import { translations } from "@/locales";
+import { useLanguage } from "@/providers/LanguageProvider";
+
 interface MainButtonProps {
   label?: string;
   onClick?: () => void;
@@ -5,17 +10,19 @@ interface MainButtonProps {
 }
 
 const ViewButton: React.FC<MainButtonProps> = ({
-  label = "Show More",
+  label,
   onClick,
   className = "",
 }) => {
+  const { language } = useLanguage();
+const t = translations[language];
   return (
     <button
       onClick={onClick}
       className={`group relative cursor-pointer flex items-center gap-2 text-black transition-all duration-300 ease-in-out ${className}`}
     >
       <div className="relative pb-0.5">
-        <span className="text-lg font-medium">{label}</span>
+        <span className="text-lg font-medium">{label ?? t.common.viewMore}</span>
         <span className="absolute bottom-0 left-0 h-[1.5px] w-0 bg-black transition-all duration-300 ease-in-out group-hover:w-full" />
       </div>
       <svg

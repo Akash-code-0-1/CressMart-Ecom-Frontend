@@ -4,9 +4,9 @@ import SettingsPage from "@/components/admin/settings/SettingsPage";
 
 export default function Page() {
   return (
-    <div className="flex h-screen overflow-hidden">
-      <main className="flex-1 overflow-y-auto focus:outline-none">
-        <div className="p-2 md:p-0">
+    <div className="flex">
+      <main className="flex-1">
+        <div className="bg-white">
           <div className="md:mx-4 mx-2 bg-white mt-2">
             <SettingsPage />
           </div>

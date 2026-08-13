@@ -7,24 +7,95 @@ import ProductGridHeader from "@/components/store-front/category/ProductGridHead
 import SubCategoryBar from "@/components/store-front/category/SubCategoryBar";
 import ProductCard from "@/components/store-front/common/ProductCard";
 import Link from "next/link";
-import { FaChevronRight, FaFilter, FaTimes } from "react-icons/fa";
+import { FaChevronRight, FaFilter, FaTimes, FaBoxOpen } from "react-icons/fa";
 import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { getCategory } from "@/services-api/categoryService";
+import { useParams, useSearchParams } from "next/navigation";
+import { filterProducts } from "@/services-api/productService";
+import { getBrands } from "@/services-api/brandService";
+import { Product } from "@/@types/product.type";
+import React from "react";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const activeSort = searchParams.get("sort") || "popularity";
 
-  const products = Array(20).fill({
-    id: 1,
-    title: "H20 Mini USB Portable Air Humidifier",
-    price: 598,
-    oldPrice: 750,
-    discount: "25%",
-    image: "/images/store-front/products/product02.png",
-    rating: 5,
-    reviews: 120,
-    inStock: true,
+  const slug = params.slug as string;
+  const activeBrandId = searchParams.get("brand_id") || "";
+  const activeCategoryId = searchParams.get("category_id") || "";
+  const maxPrice = searchParams.get("max") || "100000";
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  // category data fetch
+  const { data: category, isLoading: categoryLoading } = useQuery({
+    queryKey: ["category", slug],
+    queryFn: () => getCategory(slug),
+    enabled: !!slug,
   });
 
+  // brand data fetch
+  const { data: brandsResponse } = useQuery({
+    queryKey: ["brands"],
+    queryFn: () => getBrands(1, 50),
+  });
+
+  // product fetch
+  const {
+    data: filterProductsData,
+    isLoading: productsLoading,
+    error: productsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [
+      "products",
+      category?.id,
+      activeCategoryId,
+      activeBrandId,
+      maxPrice,
+      activeSort,
+    ],
+    queryFn: ({ pageParam = 1 }) =>
+      filterProducts({
+        page: pageParam,
+        limit: 16,
+        search: "",
+        min_price: 0,
+        max_price: Number(maxPrice),
+        category_id: activeBrandId ? "" : activeCategoryId || category!.id,
+        brand_id: activeBrandId,
+        sort: activeSort,
+      }),
+    initialPageParam: 1,
+    enabled: !!category?.id,
+    getNextPageParam: (lastPage) => {
+      const { current_page, total_pages } = lastPage.pagination;
+      return current_page < total_pages ? current_page + 1 : undefined;
+    },
+  });
+
+  if (categoryLoading || (productsLoading && !filterProductsData)) {
+    return (
+      <div className="h-screen flex justify-center items-center font-poppins text-xl">
+        Loading Products...
+      </div>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <p className="text-center py-20 font-poppins">
+        Something went wrong while fetching products.
+      </p>
+    );
+  }
   return (
     <div className="px-4 md:px-10 mb-20">
       {/* 1. Breadcrumb & Banner */}
@@ -34,19 +105,28 @@ const CategoryPage = () => {
             Home
           </Link>{" "}
           <FaChevronRight color="#FF7050" size={15} />
-          <span className="text-[#FF7050]">Gadget & Tools</span>
+          <span className="text-[#FF7050]">{category?.name}</span>
         </nav>
-        <CategoryBanner />
+        <CategoryBanner
+          bannerImage={category?.background_image_url}
+          description={category?.description}
+          categoryName={category?.name}
+        />
       </div>
 
       {/* 2. Sub-category */}
       <div className="max-w-[1720px] mx-auto mb-6 md:mb-8">
-        <SubCategoryBar />
+        <SubCategoryBar subcategory={category?.children} />
       </div>
 
       {/* 3. Main Content: Sidebar + Grid */}
       <div className="max-w-[1720px] mx-auto pt-6 md:pt-14">
-        <ProductGridHeader totalProducts={6257} />
+        <ProductGridHeader
+          totalProducts={
+            filterProductsData?.pages[0]?.pagination?.total_items || 0
+          }
+          categoryName={category?.name}
+        />
 
         {/* Mobile Filter Trigger Button (Visible only below lg breakpoint) */}
         <div className="lg:hidden mt-6 flex justify-start">
@@ -62,21 +142,54 @@ const CategoryPage = () => {
         <div className="flex flex-col lg:flex-row gap-4 mt-6 lg:mt-10">
           {/* Desktop Sidebar - Unchanged */}
           <aside className="hidden lg:block w-[390px] shrink-0">
-            <FilterSidebar />
+            {/* <FilterSidebar /> */}
+            <FilterSidebar
+              brands={brandsResponse?.data?.data}
+              activeCategoryName={category?.name}
+              totalProductCount={
+                filterProductsData?.pages[0]?.pagination?.total_items || 0
+              }
+            />
           </aside>
           <main className="flex-1">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
-              {products.map((product, idx) => (
-                <ProductCard key={idx} {...product} />
-              ))}
-            </div>
+            {filterProductsData?.pages[0]?.pagination?.total_items === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#F9F9F9] rounded-[22px] border border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-[#FF7050]/10 rounded-full flex items-center justify-center mb-4 text-[#FF7050]">
+                  <FaBoxOpen size={32} />
+                </div>
+                <h3 className="font-poppins text-xl md:text-2xl font-semibold text-black mb-2">
+                  {t.noProductsFound}
+                </h3>
+                <p className="font-poppins text-sm md:text-base text-[#727272] max-w-md">
+                  {t.noProductsFoundDesc}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 md:gap-4 gap-2">
+                  {filterProductsData?.pages.map((page, i) => (
+                    <React.Fragment key={i}>
+                      {page.data.map((product: Product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </div>
 
-            {/* Pagination Placeholder */}
-            <div className="mt-12 flex justify-center">
-              <button className="px-8 py-3 bg-white border border-gray-200 rounded-full hover:bg-orange-500 hover:text-white transition-all cursor-pointer font-poppins">
-                Load More
-              </button>
-            </div>
+                {/* Load More Button */}
+                {hasNextPage && (
+                  <div className="mt-12 flex justify-center">
+                    <button
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="px-8 py-3 bg-white border border-gray-200 rounded-full hover:bg-orange-500 hover:text-white transition-all cursor-pointer font-poppins disabled:opacity-50"
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Load More"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </main>
         </div>
       </div>

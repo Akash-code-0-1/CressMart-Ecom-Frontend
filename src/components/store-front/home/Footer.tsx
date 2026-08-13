@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
 
 // React Icons
 import { FiMapPin, FiPhoneCall, FiMail, FiClock } from "react-icons/fi";
@@ -13,119 +14,175 @@ import {
   FaLinkedin,
   FaTelegramPlane,
 } from "react-icons/fa";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSettings } from "@/services-api/settingsService";
+import { JSX } from "react/jsx-runtime";
+import LocationIcon from "../svg/LocationIcon";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  const footerLinks = {
-    company: [
-      "About Us",
-      "Shipping & Delivery",
-      "Return & Exchange",
-      "Privacy",
-      "Terms & Conditions",
-      "FAQs",
-    ],
-    account: [
-      "Sign In",
-      "View Cart",
-      "My Wishlist",
-      "Track My Order",
-      "Help Ticket",
-      "Customer Testimonials",
-    ],
-    corporate: [
-      "Become a Vendor",
-      "Affiliate Program",
-      "Our Blog",
-      "Career",
-      "Display Center",
-      "Our Suppliers",
-    ],
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["settings"],
+    queryFn: fetchSettings,
+  });
+
+  const info = settings?.data || settings;
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    "http://localhost:8082";
+  const rowImage = info?.footer_logo || "";
+  const iconUrl = rowImage.startsWith("http")
+    ? rowImage
+    : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+
+  const socialIcons: Record<string, JSX.Element> = {
+    facebook: <FaFacebook />,
+    instagram: <FaInstagram />,
+    youtube: <FaYoutube />,
+    linkedin: <FaLinkedin />,
+    telegram: <FaTelegramPlane />,
   };
 
-  const socialLinks = [
-    {
-      name: "facebook",
-      icon: <FaFacebook />,
-      url: "www.facebook.com/creasssmart",
-      color: "text-[#1877F2]",
-    },
-    {
-      name: "instagram",
-      icon: <FaInstagram />,
-      url: "www.instagram.com/creasssmart",
-      color: "text-[#E4405F]",
-    },
-    {
-      name: "youtube",
-      icon: <FaYoutube />,
-      url: "www.youtube.com/creasssmart",
-      color: "text-[#FF0000]",
-    },
-    {
-      name: "linkedin",
-      icon: <FaLinkedin />,
-      url: "www.linkedin.com/creasssmart",
-      color: "text-[#0A66C2]",
-    },
-    {
-      name: "telegram",
-      icon: <FaTelegramPlane />,
-      url: "www.telegram.com/creasssmart",
-      color: "text-[#229ED9]",
-    },
-  ];
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  const footerLinks = {
+    company: [
+      {
+        label: t.footer.companyLinks[0],
+        path: "/legal/about-us",
+      },
+      // {
+      //   label: t.footer.companyLinks[1],
+      //   path: "/shipping",
+      // },
+      {
+        label: t.footer.companyLinks[2],
+        path: "/legal/return-exchange",
+      },
+      {
+        label: t.footer.companyLinks[3],
+        path: "/legal/privacy-policy",
+      },
+      {
+        label: t.footer.companyLinks[4],
+        path: "/legal/terms-condition",
+      },
+      {
+        label: t.footer.companyLinks[5],
+        path: "/faq",
+      },
+    ],
+
+    account: [
+      {
+        label: t.footer.accountLinks[0],
+        path: "/signin",
+      },
+      {
+        label: t.footer.accountLinks[1],
+        path: "/cart",
+      },
+      {
+        label: t.footer.accountLinks[2],
+        path: "/profile/wishlist",
+      },
+      // {
+      //   label: t.footer.accountLinks[3],
+      //   path: "/track-order",
+      // },
+      // {
+      //   label: t.footer.accountLinks[4],
+      //   path: "/help-ticket",
+      // },
+      {
+        label: t.footer.accountLinks[5],
+        path: "/",
+      },
+    ],
+
+    corporate: [
+      // {
+      //   label: t.footer.corporateLinks[0],
+      //   path: "/vendor/register",
+      // },
+      // {
+      //   label: t.footer.corporateLinks[1],
+      //   path: "/affiliate-program",
+      // },
+      {
+        label: t.footer.corporateLinks[2],
+        path: "/blog",
+      },
+      {
+        label: t.footer.corporateLinks[5],
+        path: "/suppliers",
+      },
+    ],
+  };
 
   return (
     <footer className="w-full bg-white font-inter">
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
         {/* --- Top Section: Links & Info --- */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-5 mb-3 md:mb-2">
-          
           <div className="col-span-2 lg:col-span-1">
             <Link
               href="/"
               className="inline-block mb-6 md:mb-8 max-w-[180px] sm:max-w-[210px] md:max-w-[230px] w-full"
             >
-              <Image
-                src="/images/logo.png"
-                alt="Creass Mart"
-                width={230}
-                height={64}
-                className="w-full object-contain"
-                priority
-                style={{ height: "auto" }}
-              />
+              {isLoading ? (
+                <div className="w-[230px] h-[64px] animate-pulse bg-gray-100 rounded" />
+              ) : (
+                <Image
+                  src={iconUrl}
+                  alt="Creass Mart"
+                  width={230}
+                  height={64}
+                  className="w-full object-contain"
+                  priority
+                  unoptimized
+                  style={{ height: "auto" }}
+                />
+              )}
             </Link>
 
             <div className="space-y-5">
               <div className="flex items-start gap-3">
                 <FiMapPin className="text-[#FF7050] text-xl shrink-0 mt-1" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">Address:</span>{" "}
-                  Dhaka Bangladesh
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.address}:
+                  </span>{" "}
+                  {info?.address || "Dhaka, Bangladesh"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiPhoneCall className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">Call Us:</span>{" "}
-                  01904300117
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.callUs}:
+                  </span>{" "}
+                  {info?.contact_phone || "01904300117"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiMail className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">Email:</span>{" "}
-                  info@creasssmart.com
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.email}:
+                  </span>{" "}
+                  {info?.contact_email || "info@creasssmart.com"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <FiClock className="text-[#FF7050] text-xl shrink-0" />
                 <p className="text-[#727272] text-[15px] font-medium leading-normal">
-                  <span className="text-[#727272] font-bold">Hours:</span>{" "}
-                  10:00-18:00, Sat-Thu
+                  <span className="text-[#727272] font-bold">
+                    {t.footer.hours}:
+                  </span>{" "}
+                  {t.footer.officeHours}
                 </p>
               </div>
             </div>
@@ -134,16 +191,16 @@ const Footer = () => {
           {/* Column 2: Company */}
           <div>
             <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
-              Company
+              {t.footer.company}
             </h4>
             <ul className="space-y-4">
               {footerLinks.company.map((link) => (
-                <li key={link}>
+                <li key={link.label}>
                   <Link
-                    href="#"
+                    href={link.path}
                     className="text-[#727272] hover:text-[#FF7050] transition-colors text-[15px] font-medium"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -153,16 +210,16 @@ const Footer = () => {
           {/* Column 3: Account */}
           <div>
             <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
-              Account
+              {t.footer.account}
             </h4>
             <ul className="space-y-4">
               {footerLinks.account.map((link) => (
-                <li key={link}>
+                <li key={link.path}>
                   <Link
-                    href="#"
+                    href={link.path}
                     className="text-[#727272] hover:text-[#FF7050] transition-colors text-[15px] font-medium"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -172,16 +229,16 @@ const Footer = () => {
           {/* Column 4: Corporate */}
           <div>
             <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
-              Corporate
+              {t.footer.corporate}
             </h4>
             <ul className="space-y-4">
               {footerLinks.corporate.map((link) => (
-                <li key={link}>
+                <li key={link.path}>
                   <Link
-                    href="#"
+                    href={link.path}
                     className="text-[#727272] hover:text-[#FF7050] transition-colors text-[15px] font-medium"
                   >
-                    {link}
+                    {link.label}
                   </Link>
                 </li>
               ))}
@@ -191,25 +248,38 @@ const Footer = () => {
           {/* Column 5: Socials */}
           <div>
             <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
-              Get In Touch
+              {t.footer.getInTouch}
             </h4>
             <div className="space-y-5">
-              {socialLinks.map((social) => (
-                <div
-                  key={social.name}
-                  className="flex items-center gap-3 group cursor-pointer"
+              {info?.social_links?.map((social: any) => (
+                <Link
+                  key={social.platform}
+                  href={social.url || "#"}
+                  target="_blank"
+                  className="flex items-center gap-3 group"
                 >
                   <div
-                    className={`${social.color} text-2xl group-hover:scale-110 transition-transform`}
+                    className={`text-[#FF7050] text-2xl group-hover:scale-110 transition-transform`}
                   >
-                    {social.icon}
+                    {socialIcons[social.platform.toLowerCase()] || (
+                      <FaFacebook />
+                    )}
                   </div>
                   <span className="text-[#727272] text-[14px] font-medium group-hover:text-black transition-colors truncate">
                     {social.url}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
+
+            <div className="flex items-center gap-2 mt-4 cursor-pointer">
+              <LocationIcon />
+              <span className="text-[#727272] text-[12px] font-medium whitespace-nowrap hover:font-semibold transition-all">
+                {t.storeLocation}
+              </span>
+            </div>
+
+
           </div>
         </div>
 
@@ -229,7 +299,7 @@ const Footer = () => {
         {/* --- Bottom Copyright --- */}
         <div className="py-4 text-center">
           <p className="text-[#727272] text-[15px] font-medium">
-            Developed by{" "}
+            {t.footer.developedBy}{" "}
             <Link href={"https://codeandget.com"} target="_blank">
               <Image
                 src={"/images/admin/logo.png"}
@@ -239,7 +309,8 @@ const Footer = () => {
                 className="inline-block mr-1.5"
               />
             </Link>
-            | Copyright {currentYear} © Creass Mart. All rights reserved.
+            | {t.footer.copyright} {currentYear} © Creass Mart.{" "}
+            {t.footer.allRightsReserved}
           </p>
         </div>
       </div>

@@ -1,42 +1,72 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaRegUser, FaRegHeart, FaCamera, FaSpinner } from "react-icons/fa";
+import {
+  FaRegUser,
+  FaRegHeart,
+  FaCamera,
+  FaSpinner,
+  FaTruck,
+} from "react-icons/fa";
 import { BiUser } from "react-icons/bi";
 import { SlHandbag } from "react-icons/sl";
 import { IoLogOutOutline } from "react-icons/io5";
 import { useAuthStore } from "@/store/useAuthStore";
 import { deleteSessionToken } from "@/app/actions/auth";
 import { useQueryClient } from "@tanstack/react-query";
-// 🚀 FIXED: Importing our unified network utility wrapper
 import { apiFetch } from "@/utils/api";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
+import Image from "next/image";
+import toast from "react-hot-toast";
 
-const sidebarLinks = [
-  { name: "Profile Details", href: "/profile", icon: BiUser },
-  { name: "Orders", href: "/profile/order", icon: SlHandbag },
-  { name: "Wish List", href: "/profile/wishlist", icon: FaRegHeart },
-];
+const emptySubscribe = () => () => {};
 
 const ProfileSidebar = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  
+
   const user = useAuthStore((state) => state.user);
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
   const setAuthUser = useAuthStore((state) => state.setAuthUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  const [hydrated, setHydrated] = useState(false);
+  const hydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const [uploading, setUploading] = useState(false);
-  const [cacheBuster, setCacheBuster] = useState<number>(Date.now());
+  const [cacheBuster, setCacheBuster] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const sidebarLinks = [
+    {
+      name: t.profileSidebar.profileDetails,
+      href: "/profile",
+      icon: BiUser,
+    },
+    {
+      name: t.profileSidebar.orders,
+      href: "/profile/order",
+      icon: SlHandbag,
+    },
+    {
+      name: t.profileSidebar.wishList,
+      href: "/profile/wishlist",
+      icon: FaRegHeart,
+    },
+    {
+      name: t.profileSidebar.trackOrder,
+      href: "/profile/track-order",
+      icon: FaTruck,
+    },
+  ];
 
   const handleLogout = async () => {
     queryClient.clear();
@@ -59,7 +89,7 @@ const ProfileSidebar = () => {
     try {
       setUploading(true);
       const formData = new FormData();
-      
+
       // ✅ Matches your backend NestJS controller interceptor parameter target
       formData.append("image", file);
 
@@ -68,7 +98,7 @@ const ProfileSidebar = () => {
         method: "PATCH",
         headers: {
           // Explicit flag informs JwtStrategy to prioritize customer identity checks
-          "X-Customer-Request": "true"
+          "X-Customer-Request": "true",
         },
         body: formData,
       });
@@ -105,8 +135,9 @@ const ProfileSidebar = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (err: any) {
-      alert(err.message || "Could not upload image.");
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error?.message || "Could not upload image.");
     } finally {
       setUploading(false);
     }
@@ -119,7 +150,9 @@ const ProfileSidebar = () => {
   let avatarUrl = null;
   if (user?.avatar) {
     const cleanPath = user.avatar.replace(/^\/+/, "");
-    avatarUrl = `${backendBaseUrl}/${cleanPath}?t=${cacheBuster}`;
+    avatarUrl = cacheBuster
+      ? `${backendBaseUrl}/${cleanPath}?t=${cacheBuster}`
+      : `${backendBaseUrl}/${cleanPath}`;
   }
 
   if (!hydrated || !isStoreReady) {
@@ -153,13 +186,16 @@ const ProfileSidebar = () => {
         <div className="relative group w-24 h-24 mb-4">
           <div className="w-full h-full bg-[#F2F2F2] rounded-full overflow-hidden border border-gray-100 flex items-center justify-center text-gray-300 relative">
             {avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 alt="Profile Avatar"
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
+                unoptimized
               />
             ) : (
               <FaRegUser size={40} />
@@ -177,17 +213,17 @@ const ProfileSidebar = () => {
             disabled={uploading}
             type="button"
             className="absolute bottom-0 right-0 bg-[#FF7050] text-white p-2 rounded-full border-2 border-white shadow-md hover:bg-[#e66345] transition-all cursor-pointer flex items-center justify-center z-20 disabled:opacity-50"
-            title="Update Profile Picture"
+            title={t.profileSidebar.updateProfilePicture}
           >
             <FaCamera size={12} />
           </button>
         </div>
 
         <h3 className="text-lg font-semibold text-black">
-          {user?.name || "User Account"}
+          {user?.name || t.profileSidebar.userAccount}
         </h3>
         <p className="text-sm text-gray-400 font-medium">
-          {user?.phone || "No Phone Info"}
+          {user?.phone || t.profileSidebar.noPhoneInfo}
         </p>
       </div>
 
@@ -227,7 +263,7 @@ const ProfileSidebar = () => {
             size={24}
             className="group-hover:translate-x-1 transition-transform"
           />
-          <span className="text-sm">Logout</span>
+          <span className="text-sm">{t.profileSidebar.logout}</span>
         </button>
       </nav>
     </div>

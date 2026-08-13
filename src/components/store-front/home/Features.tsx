@@ -1,33 +1,26 @@
+"use client"
+
 import Image from "next/image";
+import { useLanguage } from "@/providers/LanguageProvider";
+import { translations } from "@/locales";
+
+
+const featureImages = [
+  "/images/store-front/feature/feture1.svg",
+  "/images/store-front/feature/feature2.svg",
+  "/images/store-front/feature/feature3.svg",
+  "/images/store-front/feature/feature4.svg",
+
+];
 
 const Features = () => {
-  const features = [
-    {
-      title: "Cash On Delivery",
-      desc: "Pay safely at your doorstep upon receiving.",
-      image: "/images/store-front/feature/feture1.svg",
-    },
-    {
-      title: "100% Original Products",
-      desc: "100% authentic and premium products guaranteed.",
-      image: "/images/store-front/feature/feature2.svg",
-    },
-    {
-      title: "Best Price Assurance",
-      desc: "Unbeatable prices and exciting deals everyday.",
-      image: "/images/store-front/feature/feature3.svg",
-    },
-    {
-      title: "Fast Nationwide Delivery",
-      desc: "Within 24 hours inside Dhaka and fast nationwide.",
-      image: "/images/store-front/feature/feature4.svg",
-    },
-  ];
+  const { language } = useLanguage();
+  const t = translations[language];
 
   return (
     <section className="w-full bg-white font-inter py-10 md:py-[80px] px-4 md:px-10">
       <div className="max-w-[1720px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 lg:gap-x-0 lg:gap-y-0">
-        {features.map((item, index) => (
+        {t.features.map((item, index) => (
           <div
             key={index}
             className="relative flex items-start lg:items-center lg:justify-center"
@@ -36,7 +29,7 @@ const Features = () => {
             <div className="flex items-start lg:items-center gap-3 lg:gap-5">
               <div className="shrink-0">
                 <Image
-                  src={item.image}
+                  src={featureImages[index]}
                   alt={item.title}
                   width={80}
                   height={80}
@@ -56,7 +49,7 @@ const Features = () => {
             </div>
 
             {/* Desktop Separator */}
-            {index !== features.length - 1 && (
+            {index !== t.features.length - 1 && (
               <div className="hidden lg:block absolute right-0 w-px h-[24px] bg-[#E2E2E2]" />
             )}
           </div>
