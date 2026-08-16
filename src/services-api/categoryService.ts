@@ -139,6 +139,29 @@ export const updateCategory = async (id: string, payload: any) => {
   return res.json();
 };
 
+// 🚀 9. BULK DELETE CATEGORIES
+export const bulkDeleteCategories = async (ids: string[]) => {
+  const token = await getAdminTokenAction();
+  
+  const res = await apiFetch("/categories/bulk-delete", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => ({}));
+    throw new Error(
+      errorJson?.message || "Failed to execute bulk deletion."
+    );
+  }
+
+  return res.json();
+};
+
 // ======= Store Front Service ==============
 
 export interface Category {
