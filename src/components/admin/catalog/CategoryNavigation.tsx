@@ -17,6 +17,7 @@ const CategoryNavigation = () => {
     { id: "child-category", label: "Child Category", path: "/admin/dashboard/child-category", icon: SubCategoryIcon },
     { id: "brand", label: "Brand", path: "/admin/dashboard/brand", icon: BrandIcon },
     { id: "tags", label: "Tags", path: "/admin/dashboard/tag", icon: Hash },
+    { id: "unit", label: "Units", path: "/admin/dashboard/unit", icon: Hash },
   ];
 
   return (

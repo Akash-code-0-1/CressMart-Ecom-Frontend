@@ -156,6 +156,28 @@ export const deleteProduct = async (id: string) => {
   return res.json();
 };
 
+// 🚀 7. BULK DELETE PRODUCTS
+export const bulkDeleteProducts = async (ids: string[]) => {
+  const token = await getAdminTokenAction();
+  const res = await apiFetch("/products/bulk-delete", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json();
+    throw new Error(
+      errorJson?.message ||
+        "Failed to execute bulk deletion on selected products.",
+    );
+  }
+  return res.json();
+};
+
 // update variant
 export const updateVariant = async (
   id: string,

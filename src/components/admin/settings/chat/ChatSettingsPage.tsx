@@ -177,14 +177,14 @@ export default function ChatSettingsPage() {
       <div className="flex justify-between items-center mb-8 bg-white">
         <h2 className="text-[22px] font-bold text-[#023337]">Chat settings</h2>
         <div className="flex gap-3">
-          <button
+          {/* <button
             onClick={() =>
               queryClient.invalidateQueries({ queryKey: ["chatSettings"] })
             }
             className="cursor-pointer flex items-center gap-2 px-6 py-2.5 rounded-[8px] bg-[#F9F9F9] text-[#020202] font-semibold text-sm"
           >
             <RotateCcw size={18} /> Reset
-          </button>
+          </button> */}
           <PrimaryButton label="Save Changes" onClick={handleSave} />
         </div>
       </div>
