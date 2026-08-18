@@ -63,7 +63,7 @@
 //     if (!roomId || !isOpen) return;
 
 //     const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
-    
+
 //     if (!sharedSocketInstance) {
 //       // 🚀 FIXED: Injected explicit custom header into the websocket layer instance configuration
 //       sharedSocketInstance = io(`${backendUrl}/chat`, {
@@ -138,6 +138,7 @@ import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { apiFetch } from "@/utils/api";
 import { useAuthStore } from "@/store/useAuthStore";
+import { getCookie } from "cookies-next";
 
 interface Message {
   id: string;
@@ -177,7 +178,9 @@ export function useChatEngine(isOpen: boolean) {
   });
 
   // 2️⃣ Fetch Message History Cache
-  const { data: messages = [], isLoading: loadingHistory } = useQuery<Message[]>({
+  const { data: messages = [], isLoading: loadingHistory } = useQuery<
+    Message[]
+  >({
     queryKey: ["chat", "messages", roomId],
     queryFn: async () => {
       const res = await apiFetch(`/chat/conversations/${roomId}/messages`, {
@@ -201,19 +204,27 @@ export function useChatEngine(isOpen: boolean) {
   useEffect(() => {
     if (!roomId || !isOpen) return;
 
+    // 1. Get the token (similar to how your apiFetch does it)
+    // Assuming you are using 'auth_token' for customers
+    const token =
+      typeof window !== "undefined"
+        ? getCookie("auth_token") || localStorage.getItem("token")
+        : null;
+
     const backendUrl =
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
       "http://localhost:8082";
 
     if (!sharedSocketInstance || !sharedSocketInstance.connected) {
       sharedSocketInstance = io(`${backendUrl}/chat`, {
-        path: "/socket.io", // 🚀 Crucial for Traefik / Coolify proxy routing
-        transports: ["websocket"], // 🚀 Force WebSocket only
+        path: "/socket.io",
+        transports: ["websocket"],
         withCredentials: true,
         autoConnect: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        // 🚀 ADD THIS: Pass the token in the auth object
+        auth: {
+          token: token,
+        },
         query: { isCustomerRequest: "true" },
       });
     }
@@ -248,7 +259,7 @@ export function useChatEngine(isOpen: boolean) {
         (oldMessages: Message[] = []) => {
           if (oldMessages.some((m) => m.id === message.id)) return oldMessages;
           return [...oldMessages, message];
-        }
+        },
       );
     };
 
@@ -291,7 +302,10 @@ export function useChatEngine(isOpen: boolean) {
 
   // 5️⃣ Send Message Mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (payload: { text: string | null; attachments: any[] | null }) => {
+    mutationFn: async (payload: {
+      text: string | null;
+      attachments: any[] | null;
+    }) => {
       if (sharedSocketInstance && roomId) {
         sharedSocketInstance.emit("sendMessage", {
           conversationId: roomId,
