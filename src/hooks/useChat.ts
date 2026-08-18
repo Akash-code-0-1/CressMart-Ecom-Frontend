@@ -133,6 +133,7 @@
 //   };
 // }
 
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
@@ -150,7 +151,6 @@ interface Message {
   sender: { id: string; name: string; avatar: string | null; role: string };
 }
 
-// Global variable tracking ensures a single web socket instance across components
 let sharedSocketInstance: Socket | null = null;
 
 export function useChatEngine(isOpen: boolean) {
@@ -158,44 +158,38 @@ export function useChatEngine(isOpen: boolean) {
   const user = useAuthStore((state) => state.user);
   const [isAdminTyping, setIsAdminTyping] = useState(false);
 
-  // Ref to track latest `isOpen` state without triggering socket re-subscriptions
   const isOpenRef = useRef(isOpen);
   useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
-  // 1️⃣ Fetch Active Room Target Path Reference
+  // 1️⃣ Fetch Active Room ID
   const { data: roomId } = useQuery({
     queryKey: ["chat", "room"],
     queryFn: async () => {
       const res = await apiFetch("/chat/conversations/sync-room", {
         method: "GET",
-        headers: {
-          "X-Customer-Request": "true",
-        },
+        headers: { "X-Customer-Request": "true" },
       });
       const json = await res.json();
       return json?.data?.conversationId || json?.conversationId || "";
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && isOpen,
   });
 
-  // 2️⃣ Sync Timestream History Cache
+  // 2️⃣ Fetch Message History Cache
   const { data: messages = [], isLoading: loadingHistory } = useQuery<Message[]>({
     queryKey: ["chat", "messages", roomId],
     queryFn: async () => {
       const res = await apiFetch(`/chat/conversations/${roomId}/messages`, {
         method: "GET",
-        headers: {
-          "X-Customer-Request": "true",
-        },
+        headers: { "X-Customer-Request": "true" },
       });
-      if (!res.ok) throw new Error("Failed to sync structural messaging metrics.");
+      if (!res.ok) throw new Error("Failed to fetch messages.");
       const json = await res.json();
       const rawData = json?.data !== undefined ? json.data : json;
       const list = Array.isArray(rawData) ? rawData : rawData?.messages || [];
 
-      // Normalize `content` to `text` field for frontend uniformity
       return list.map((msg: any) => ({
         ...msg,
         text: msg.text ?? msg.content ?? null,
@@ -204,9 +198,9 @@ export function useChatEngine(isOpen: boolean) {
     enabled: !!roomId && isOpen,
   });
 
-  // 3️⃣ Manage Global Realtime WebSocket Listener Contexts
+  // 3️⃣ Socket Management
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !isOpen) return;
 
     const backendUrl =
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -216,22 +210,20 @@ export function useChatEngine(isOpen: boolean) {
       sharedSocketInstance = io(`${backendUrl}/chat`, {
         withCredentials: true,
         transports: ["websocket"],
-        extraHeaders: {
-          "X-Customer-Request": "true",
-        },
+        query: { isCustomerRequest: "true" },
       });
     }
 
     const socket = sharedSocketInstance;
 
-    const joinAndSync = () => {
+    const handleConnect = () => {
       socket.emit("joinRoom", { conversationId: roomId });
     };
 
     if (socket.connected) {
-      joinAndSync();
+      handleConnect();
     } else {
-      socket.on("connect", joinAndSync);
+      socket.on("connect", handleConnect);
     }
 
     const handleNewMessage = (rawMessage: any) => {
@@ -247,12 +239,6 @@ export function useChatEngine(isOpen: boolean) {
           return [...oldMessages, message];
         }
       );
-
-      // Increment unread count using ref to ensure state freshness
-      const state = useAuthStore.getState();
-      if (!isOpenRef.current && message.sender_id !== user?.id) {
-        state.setUnreadMessageCount(state.unreadMessageCount + 1);
-      }
     };
 
     const handleUserTyping = (data: { userId: string }) => {
@@ -263,20 +249,26 @@ export function useChatEngine(isOpen: boolean) {
       if (data.userId !== user?.id) setIsAdminTyping(false);
     };
 
+    const handleException = (err: any) => {
+      console.error("[ChatSocket] Backend Exception:", err);
+    };
+
     socket.on("newMessage", handleNewMessage);
     socket.on("userTyping", handleUserTyping);
     socket.on("userStoppedTyping", handleUserStoppedTyping);
+    socket.on("exception", handleException);
 
     return () => {
       socket.emit("leaveRoom", { conversationId: roomId });
-      socket.off("connect", joinAndSync);
+      socket.off("connect", handleConnect);
       socket.off("newMessage", handleNewMessage);
       socket.off("userTyping", handleUserTyping);
       socket.off("userStoppedTyping", handleUserStoppedTyping);
+      socket.off("exception", handleException);
     };
-  }, [roomId, queryClient, user?.id]);
+  }, [roomId, isOpen, queryClient, user?.id]);
 
-  // 4️⃣ Encapsulate Typing Notification Emit Dispatches
+  // 4️⃣ Send Typing Indicators
   const sendTypingStatus = (typing: boolean) => {
     if (sharedSocketInstance && roomId) {
       sharedSocketInstance.emit(typing ? "typing" : "stopTyping", {
@@ -285,17 +277,14 @@ export function useChatEngine(isOpen: boolean) {
     }
   };
 
-  // 5️⃣ Encapsulate Output Payload Delivery Channels
+  // 5️⃣ Send Message Mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (payload: {
-      text: string | null;
-      attachments: any[] | null;
-    }) => {
+    mutationFn: async (payload: { text: string | null; attachments: any[] | null }) => {
       if (sharedSocketInstance && roomId) {
         sharedSocketInstance.emit("sendMessage", {
           conversationId: roomId,
-          content: payload.text, // 🚀 FIXED: Standardized field key to 'content' for NestJS DTO compatibility
-          text: payload.text,    // Fallback for key flexibility
+          text: payload.text,
+          content: payload.text, // Sends both field names for DTO compatibility
           attachments: payload.attachments || [],
         });
       }
