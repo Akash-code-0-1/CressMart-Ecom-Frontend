@@ -34,6 +34,7 @@ import toast from "react-hot-toast";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { getWishlist } from "@/services-api/wishlistService";
+import { v4 as uuidv4 } from "uuid";
 
 interface SearchResponse {
   data: {
@@ -196,7 +197,8 @@ const Navbar = () => {
 
     let id = localStorage.getItem("guestId");
     if (!id) {
-      id = crypto.randomUUID();
+      // id = crypto.randomUUID();
+      id = uuidv4();
       localStorage.setItem("guestId", id);
     }
     return id;

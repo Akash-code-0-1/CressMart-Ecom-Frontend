@@ -20,6 +20,7 @@ import {
   stripTempId,
 } from "./Utils";
 import { LocalBanner } from "./caurousel.typ";
+import { v4 as uuidv4 } from "uuid";
 
 export const useBannerManager = () => {
   const queryClient = useQueryClient();
@@ -179,8 +180,8 @@ export const useBannerManager = () => {
       toast.error("Meta title is required.");
       return;
     }
-
-    const key = editingBannerId ?? editingTempId ?? crypto.randomUUID();
+    // const key = editingBannerId ?? editingTempId ?? crypto.randomUUID();
+    const key = editingBannerId ?? editingTempId ?? uuidv4();
     const updatedBanner: LocalBanner = {
       ...formData,
       id: editingBannerId ?? undefined,
