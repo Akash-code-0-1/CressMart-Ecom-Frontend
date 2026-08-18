@@ -678,6 +678,7 @@ import { translations } from "@/locales";
 import { MOHASAGOR_PREFIX } from "@/constants/checkout";
 import debounce from "lodash/debounce";
 import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
+import { v4 as uuidv4 } from "uuid";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -698,7 +699,8 @@ const MainCheckoutSection: React.FC = () => {
     if (typeof window === "undefined") return null;
     let id = localStorage.getItem("guestId");
     if (!id) {
-      id = crypto.randomUUID();
+      // id = crypto.randomUUID();
+      id = uuidv4();
       localStorage.setItem("guestId", id);
     }
     return id;
