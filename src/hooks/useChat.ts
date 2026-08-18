@@ -133,7 +133,6 @@
 //   };
 // }
 
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
@@ -206,10 +205,15 @@ export function useChatEngine(isOpen: boolean) {
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
       "http://localhost:8082";
 
-    if (!sharedSocketInstance) {
+    if (!sharedSocketInstance || !sharedSocketInstance.connected) {
       sharedSocketInstance = io(`${backendUrl}/chat`, {
+        path: "/socket.io", // 🚀 Crucial for Traefik / Coolify proxy routing
+        transports: ["websocket"], // 🚀 Force WebSocket only
         withCredentials: true,
-        transports: ["websocket"],
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
         query: { isCustomerRequest: "true" },
       });
     }
@@ -217,7 +221,12 @@ export function useChatEngine(isOpen: boolean) {
     const socket = sharedSocketInstance;
 
     const handleConnect = () => {
+      console.log("[Socket] Connected successfully");
       socket.emit("joinRoom", { conversationId: roomId });
+    };
+
+    const handleConnectError = (err: any) => {
+      console.error("[Socket] Connection Error:", err);
     };
 
     if (socket.connected) {
@@ -225,6 +234,8 @@ export function useChatEngine(isOpen: boolean) {
     } else {
       socket.on("connect", handleConnect);
     }
+
+    socket.on("connect_error", handleConnectError);
 
     const handleNewMessage = (rawMessage: any) => {
       const message: Message = {
@@ -261,6 +272,7 @@ export function useChatEngine(isOpen: boolean) {
     return () => {
       socket.emit("leaveRoom", { conversationId: roomId });
       socket.off("connect", handleConnect);
+      socket.off("connect_error", handleConnectError);
       socket.off("newMessage", handleNewMessage);
       socket.off("userTyping", handleUserTyping);
       socket.off("userStoppedTyping", handleUserStoppedTyping);
@@ -284,7 +296,7 @@ export function useChatEngine(isOpen: boolean) {
         sharedSocketInstance.emit("sendMessage", {
           conversationId: roomId,
           text: payload.text,
-          content: payload.text, // Sends both field names for DTO compatibility
+          content: payload.text,
           attachments: payload.attachments || [],
         });
       }

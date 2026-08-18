@@ -25,7 +25,7 @@
 //       // 🚀 FILTER: Only push if it's an Order or Review
 //       if (notification.type === 'ORDER' || notification.type === 'REVIEW') {
 //         addNotification(notification);
-        
+
 //         toast(notification.title, {
 //           icon: notification.type === 'ORDER' ? '📦' : '⭐',
 //           style: { borderRadius: '10px', background: '#023337', color: '#fff', fontSize: '14px' },
@@ -43,23 +43,33 @@
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { useNotificationStore } from "@/store/useNotificationStore";
-import { useAuthStore } from "@/store/useAuthStore"; 
+import { useAuthStore } from "@/store/useAuthStore";
 import { notificationApi } from "@/services-api/notificationService";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 import { toast } from "react-hot-toast";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+const SOCKET_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+  "http://localhost:8082";
 
-// 1. Root Socket for System Notifications
+// // 1. Root Socket for System Notifications
+// const rootSocket: Socket = io(SOCKET_URL, {
+//   transports: ["websocket"],
+//   autoConnect: true,
+// });
+
+// 1. Root Notification Socket
 const rootSocket: Socket = io(SOCKET_URL, {
-  transports: ["websocket"],
+  transports: ["websocket"], // 🚀 Force pure websocket mode
+  withCredentials: true,
   autoConnect: true,
 });
 
 export const useChatNotificationSync = () => {
   const { setNotifications, addNotification } = useNotificationStore();
-  const { unreadMessageCount, setUnreadMessageCount, isChatOpen } = useAuthStore();
+  const { unreadMessageCount, setUnreadMessageCount, isChatOpen } =
+    useAuthStore();
 
   useEffect(() => {
     let chatSocket: Socket | null = null;
@@ -73,15 +83,20 @@ export const useChatNotificationSync = () => {
       try {
         const res = await apiFetch("/chat/rooms", {
           method: "GET",
-          headers: { 
+          headers: {
             Authorization: `Bearer ${adminToken}`,
-            "X-Admin-Request": "true" 
+            "X-Admin-Request": "true",
           },
         });
         if (res.ok) {
           const roomData = await res.json();
-          const rooms = Array.isArray(roomData) ? roomData : (roomData?.rooms || roomData?.data || []);
-          const totalUnread = rooms.reduce((acc: number, room: any) => acc + (room.unreadCount || 0), 0);
+          const rooms = Array.isArray(roomData)
+            ? roomData
+            : roomData?.rooms || roomData?.data || [];
+          const totalUnread = rooms.reduce(
+            (acc: number, room: any) => acc + (room.unreadCount || 0),
+            0,
+          );
           setUnreadMessageCount(totalUnread);
         }
       } catch (err) {
@@ -89,9 +104,17 @@ export const useChatNotificationSync = () => {
       }
 
       // --- B. AUTHENTICATED CHAT SOCKET ---
+      // chatSocket = io(`${SOCKET_URL}/chat`, {
+      //   transports: ["websocket"],
+      //   auth: { token: adminToken }, // 🚀 CRITICAL: Must have token to hear messages
+      //   query: { isAdmin: "true" },
+      // });
+
+      // 2. Chat Socket
       chatSocket = io(`${SOCKET_URL}/chat`, {
-        transports: ["websocket"],
-        auth: { token: adminToken }, // 🚀 CRITICAL: Must have token to hear messages
+        transports: ["websocket"], // 🚀 Force pure websocket mode
+        withCredentials: true,
+        auth: { token: adminToken },
         query: { isAdmin: "true" },
       });
 
@@ -100,9 +123,9 @@ export const useChatNotificationSync = () => {
         // Only increment if user is NOT currently looking at the chat
         if (!state.isChatOpen) {
           state.setUnreadMessageCount(state.unreadMessageCount + 1);
-          toast(`New message received`, { 
-            icon: '💬',
-            style: { background: '#FF6A00', color: '#fff' } 
+          toast(`New message received`, {
+            icon: "💬",
+            style: { background: "#FF6A00", color: "#fff" },
           });
         }
       });
@@ -110,15 +133,15 @@ export const useChatNotificationSync = () => {
 
     // --- C. SYSTEM NOTIFICATIONS ---
     rootSocket.on("newNotification", (notification: any) => {
-      if (notification.type === 'ORDER' || notification.type === 'REVIEW') {
+      if (notification.type === "ORDER" || notification.type === "REVIEW") {
         addNotification(notification);
-        toast(notification.title, { icon: '🔔' });
+        toast(notification.title, { icon: "🔔" });
       }
     });
 
     // Fetch history
-    notificationApi.getRecent().then(data => setNotifications(data));
-    
+    notificationApi.getRecent().then((data) => setNotifications(data));
+
     initializeSync();
 
     return () => {
