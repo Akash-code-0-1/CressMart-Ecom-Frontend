@@ -133,10 +133,8 @@
 //   };
 // }
 
-
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { apiFetch } from "@/utils/api";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -146,6 +144,7 @@ interface Message {
   conversation_id: string;
   sender_id: string;
   text: string | null;
+  content?: string | null;
   attachments: any[] | null;
   created_at: string;
   sender: { id: string; name: string; avatar: string | null; role: string };
@@ -159,6 +158,12 @@ export function useChatEngine(isOpen: boolean) {
   const user = useAuthStore((state) => state.user);
   const [isAdminTyping, setIsAdminTyping] = useState(false);
 
+  // Ref to track latest `isOpen` state without triggering socket re-subscriptions
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
   // 1️⃣ Fetch Active Room Target Path Reference
   const { data: roomId } = useQuery({
     queryKey: ["chat", "room"],
@@ -166,15 +171,13 @@ export function useChatEngine(isOpen: boolean) {
       const res = await apiFetch("/chat/conversations/sync-room", {
         method: "GET",
         headers: {
-          // 🚀 FIXED: Protects handshake endpoint from being hijacked by admin cookies
-          "X-Customer-Request": "true"
-        }
+          "X-Customer-Request": "true",
+        },
       });
       const json = await res.json();
       return json?.data?.conversationId || json?.conversationId || "";
     },
-    // 🚀 FIXED: Enabled background sync even if modal is closed to track unread count
-    enabled: !!user?.id, 
+    enabled: !!user?.id,
   });
 
   // 2️⃣ Sync Timestream History Cache
@@ -184,87 +187,116 @@ export function useChatEngine(isOpen: boolean) {
       const res = await apiFetch(`/chat/conversations/${roomId}/messages`, {
         method: "GET",
         headers: {
-          // 🚀 FIXED: Isolates message history requests to storefront customer profile context
-          "X-Customer-Request": "true"
-        }
+          "X-Customer-Request": "true",
+        },
       });
       if (!res.ok) throw new Error("Failed to sync structural messaging metrics.");
       const json = await res.json();
       const rawData = json?.data !== undefined ? json.data : json;
-      return Array.isArray(rawData) ? rawData : rawData?.messages || [];
+      const list = Array.isArray(rawData) ? rawData : rawData?.messages || [];
+
+      // Normalize `content` to `text` field for frontend uniformity
+      return list.map((msg: any) => ({
+        ...msg,
+        text: msg.text ?? msg.content ?? null,
+      }));
     },
-    // History only fetches when the window is actually open to save bandwidth
     enabled: !!roomId && isOpen,
   });
 
   // 3️⃣ Manage Global Realtime WebSocket Listener Contexts
   useEffect(() => {
-    // 🚀 FIXED: Removed !isOpen check so socket listens in background for unread badge
     if (!roomId) return;
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
-    
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+      "http://localhost:8082";
+
     if (!sharedSocketInstance) {
-      // 🚀 FIXED: Injected explicit custom header into the websocket layer instance configuration
       sharedSocketInstance = io(`${backendUrl}/chat`, {
         withCredentials: true,
         transports: ["websocket"],
         extraHeaders: {
-          "X-Customer-Request": "true" // 🔒 Locks WebSocket initialization strictly to customer credentials context
-        }
+          "X-Customer-Request": "true",
+        },
       });
     }
 
-    sharedSocketInstance.emit("joinRoom", { conversationId: roomId });
+    const socket = sharedSocketInstance;
 
-    // React Query handles optimistic visual mutations inside updates cleanly
-    sharedSocketInstance.on("newMessage", (message: Message) => {
-      // Update the cache for when the user eventually opens the chat
-      queryClient.setQueryData(["chat", "messages", roomId], (oldMessages: Message[] = []) => {
-        if (oldMessages.some((m) => m.id === message.id)) return oldMessages;
-        return [...oldMessages, message];
-      });
+    const joinAndSync = () => {
+      socket.emit("joinRoom", { conversationId: roomId });
+    };
 
-      // 🚀 FIXED: Increment global unread count if chat is closed and sender is Admin
+    if (socket.connected) {
+      joinAndSync();
+    } else {
+      socket.on("connect", joinAndSync);
+    }
+
+    const handleNewMessage = (rawMessage: any) => {
+      const message: Message = {
+        ...rawMessage,
+        text: rawMessage.text ?? rawMessage.content ?? null,
+      };
+
+      queryClient.setQueryData(
+        ["chat", "messages", roomId],
+        (oldMessages: Message[] = []) => {
+          if (oldMessages.some((m) => m.id === message.id)) return oldMessages;
+          return [...oldMessages, message];
+        }
+      );
+
+      // Increment unread count using ref to ensure state freshness
       const state = useAuthStore.getState();
-      if (!isOpen && message.sender_id !== user?.id) {
+      if (!isOpenRef.current && message.sender_id !== user?.id) {
         state.setUnreadMessageCount(state.unreadMessageCount + 1);
       }
-    });
+    };
 
-    sharedSocketInstance.on("userTyping", (data: { userId: string }) => {
+    const handleUserTyping = (data: { userId: string }) => {
       if (data.userId !== user?.id) setIsAdminTyping(true);
-    });
+    };
 
-    sharedSocketInstance.on("userStoppedTyping", (data: { userId: string }) => {
+    const handleUserStoppedTyping = (data: { userId: string }) => {
       if (data.userId !== user?.id) setIsAdminTyping(false);
-    });
+    };
+
+    socket.on("newMessage", handleNewMessage);
+    socket.on("userTyping", handleUserTyping);
+    socket.on("userStoppedTyping", handleUserStoppedTyping);
 
     return () => {
-      if (sharedSocketInstance) {
-        sharedSocketInstance.emit("leaveRoom", { conversationId: roomId });
-        sharedSocketInstance.off("newMessage");
-        sharedSocketInstance.off("userTyping");
-        sharedSocketInstance.off("userStoppedTyping");
-      }
+      socket.emit("leaveRoom", { conversationId: roomId });
+      socket.off("connect", joinAndSync);
+      socket.off("newMessage", handleNewMessage);
+      socket.off("userTyping", handleUserTyping);
+      socket.off("userStoppedTyping", handleUserStoppedTyping);
     };
-  }, [roomId, isOpen, queryClient, user?.id]);
+  }, [roomId, queryClient, user?.id]);
 
   // 4️⃣ Encapsulate Typing Notification Emit Dispatches
   const sendTypingStatus = (typing: boolean) => {
     if (sharedSocketInstance && roomId) {
-      sharedSocketInstance.emit(typing ? "typing" : "stopTyping", { conversationId: roomId });
+      sharedSocketInstance.emit(typing ? "typing" : "stopTyping", {
+        conversationId: roomId,
+      });
     }
   };
 
   // 5️⃣ Encapsulate Output Payload Delivery Channels
   const sendMessageMutation = useMutation({
-    mutationFn: async (payload: { text: string | null; attachments: any[] | null }) => {
+    mutationFn: async (payload: {
+      text: string | null;
+      attachments: any[] | null;
+    }) => {
       if (sharedSocketInstance && roomId) {
         sharedSocketInstance.emit("sendMessage", {
           conversationId: roomId,
-          text: payload.text,
-          attachments: payload.attachments,
+          content: payload.text, // 🚀 FIXED: Standardized field key to 'content' for NestJS DTO compatibility
+          text: payload.text,    // Fallback for key flexibility
+          attachments: payload.attachments || [],
         });
       }
     },
