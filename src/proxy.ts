@@ -74,7 +74,6 @@
 //   ],
 // };
 
-
 import { NextRequest, NextResponse } from "next/server";
 
 function getUserRole(token: string): string | null {
@@ -88,7 +87,6 @@ function getUserRole(token: string): string | null {
       .padEnd(Math.ceil(payload.length / 4) * 4, "=");
 
     const decoded = JSON.parse(atob(normalized));
-
     return decoded.role ?? null;
   } catch {
     return null;
@@ -97,26 +95,26 @@ function getUserRole(token: string): string | null {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const customerToken = request.cookies.get("auth_token")?.value;
 
-  // ==========================
-  // REDIRECT LOGGED-IN USERS FROM SIGNIN TO PROFILE
-  // ==========================
+  const customerToken =
+    request.cookies.get("auth_token")?.value ||
+    request.cookies.get("token")?.value;
+
+  const adminToken =
+    request.cookies.get("admin_token")?.value ||
+    request.cookies.get("token")?.value;
+
+  // 1. Redirect logged-in users away from signin
   if (pathname === "/signin" && customerToken) {
     return NextResponse.redirect(new URL("/profile", request.url));
   }
 
-  // Allow admin signin page
   if (pathname === "/admin/dashboard/signin") {
     return NextResponse.next();
   }
 
-  // ==========================
-  // ADMIN PANEL PROTECTION
-  // ==========================
+  // 2. Protect Admin Panel
   if (pathname.startsWith("/admin")) {
-    const adminToken = request.cookies.get("admin_token")?.value;
-
     if (!adminToken) {
       return NextResponse.redirect(
         new URL("/admin/dashboard/signin", request.url)
@@ -124,8 +122,6 @@ export function proxy(request: NextRequest) {
     }
 
     const role = getUserRole(adminToken);
-
-    // Allow both ADMIN and MANAGER
     if (!role || !["ADMIN", "MANAGER"].includes(role)) {
       return NextResponse.redirect(
         new URL("/admin/dashboard/signin", request.url)
@@ -135,9 +131,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ==========================
-  // CUSTOMER PROFILE PROTECTION
-  // ==========================
+  // 3. Protect Customer Profile
   if (pathname.startsWith("/profile")) {
     if (!customerToken) {
       return NextResponse.redirect(new URL("/signin", request.url));
@@ -147,15 +141,6 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Next.js expects a default export or an export named 'middleware'.
-// Aliasing proxy guarantees Next.js detects it without renaming your function.
-export { proxy as middleware };
-export default proxy;
-
 export const config = {
-  matcher: [
-    "/admin/:path*",
-    "/profile/:path*",
-    "/signin",
-  ],
+  matcher: ["/admin/:path*", "/profile/:path*", "/signin"],
 };
