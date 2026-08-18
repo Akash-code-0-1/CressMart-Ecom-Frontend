@@ -123,6 +123,10 @@ export const sidebarMenu = [
             label: "Landing Page",
             href: "/admin/dashboard/landing-page",
           },
+                    {
+            label: "Testimonials",
+            href: "/admin/dashboard/testimonials",
+          },
         ],
       },
     ],

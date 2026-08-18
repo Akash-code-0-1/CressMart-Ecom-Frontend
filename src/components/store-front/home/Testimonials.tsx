@@ -41,10 +41,12 @@ const Testimonials = () => {
 
   // 2. Data processing function
   const processImage = (url: string | null) => {
-    if (!url) return "/images/placeholder.svg";
-    return url.startsWith("http")
-      ? url
-      : `${backendBaseUrl}/${url.replace(/^\/+/, "")}`;
+    if (!url || url.trim() === "") return "/images/placeholder.svg";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+
+    // Clean up extra slashes so uploads/testimonials/file.webp becomes http://localhost:8082/uploads/testimonials/file.webp
+    const cleanPath = url.replace(/^\/+/, "");
+    return `${backendBaseUrl}/${cleanPath}`;
   };
 
   const facebookReviews = facebookRes?.data || [];
@@ -121,9 +123,12 @@ const Testimonials = () => {
                         <div className="relative w-14 h-14 md:w-18 md:h-18 rounded-full overflow-hidden mb-3 border-10 border-[#F9F9F9]">
                           <Image
                             src={processImage(item.author_avatar)}
-                            alt={item.author_name || t.testimonials.customerAvatar}
+                            alt={
+                              item.author_name || t.testimonials.customerAvatar
+                            }
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                         </div>
                         <h4 className="text-black font-poppins text-lg md:text-[20px] font-medium">
@@ -172,6 +177,7 @@ const Testimonials = () => {
                         alt={video.author_name || t.testimonials.videoThumbnail}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        unoptimized
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
                         <div className="transform scale-75 group-hover:scale-100 transition-transform duration-300">

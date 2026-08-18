@@ -302,6 +302,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     ? selectedVariant.stock
     : product.quantity;
 
+  // Ensure avgRating is a number so numeric methods can be used safely
+  const avgRating: number =
+    typeof product.avg_rating === "number"
+      ? product.avg_rating
+      : parseFloat(String(product.avg_rating)) || 0;
+
   // discount calculation
   const discount =
     regularPrice > currentPrice
@@ -359,14 +365,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       <div className="flex items-center gap-x-3 gap-y-2 flex-wrap text-sm sm:text-[16px]">
         <div className="flex items-center">
           <span className="text-[#FDCC0D] font-medium mr-1">
-            ({product.avg_rating ? product.avg_rating.toFixed(1) : "0.0"})
+            ({avgRating.toFixed(1)})
           </span>
           {[...Array(5)].map((_, i) => (
             <AiFillStar
               key={i}
               size={16}
               className={
-                i < Math.floor(product.avg_rating || 0)
+                i < Math.floor(avgRating)
                   ? "text-[#FDCC0D]"
                   : "text-gray-300"
               }
@@ -422,7 +428,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </div>
 
         <div className="flex gap-4 flex-wrap">
-          {product.suppliers.map((supplier) => {
+          {(product.suppliers || []).map((supplier) => {
             const rowImage = supplier.image_url || "";
             const iconUrl = rowImage.startsWith("http")
               ? rowImage

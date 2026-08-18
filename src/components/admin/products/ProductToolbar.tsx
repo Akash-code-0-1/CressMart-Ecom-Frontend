@@ -229,7 +229,7 @@ export default function ProductToolbar() {
             />
           </div>
 
-          <div className="border border-[#F7931E] rounded-[8px] px-3 py-1 flex flex-col justify-center cursor-pointer hover:bg-orange-50 transition-colors w-full sm:w-auto">
+          {/* <div className="border border-[#F7931E] rounded-[8px] px-3 py-1 flex flex-col justify-center cursor-pointer hover:bg-orange-50 transition-colors w-full sm:w-auto">
             <span className="text-[12px] text-[#070707] font-poppins font-medium">
               View
             </span>
@@ -239,7 +239,7 @@ export default function ProductToolbar() {
                 Large icons
               </span>
             </div>
-          </div>
+          </div> */}
 
           <div className="w-full sm:w-auto">
             <PrimaryButton

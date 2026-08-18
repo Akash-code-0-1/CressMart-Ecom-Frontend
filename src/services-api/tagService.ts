@@ -45,6 +45,27 @@ export const deleteTag = async (id: string) => {
   return res.json();
 };
 
+// 🚀 7. BULK DELETE TAGS
+export const bulkDeleteTags = async (ids: string[]) => {
+  const token = await getAdminTokenAction();
+  const res = await apiFetch("/tags/bulk-delete", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token || ""}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json();
+    throw new Error(
+      errorJson?.message || "Failed to bulk delete selected tag records.",
+    );
+  }
+  return res.json();
+};
+
 // 🚀 4. UPLOAD MEDIA ASSETS (FIXED ROUTING PATHWAY TO THE VALID CONTROLLER MAPPING)
 export const uploadTagMedia = async (file: File) => {
   const token = await getAdminTokenAction();

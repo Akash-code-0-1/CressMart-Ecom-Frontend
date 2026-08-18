@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
@@ -33,6 +33,24 @@ export default function UnitTable() {
       setActiveMenuId(null);
     },
   });
+
+    const menuRef = useRef<HTMLDivElement | null>(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+          setActiveMenuId(null); 
+        }
+      };
+  
+      if (activeMenuId) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+  
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [activeMenuId]);
 
   const columns: {
     header: string;
@@ -73,7 +91,8 @@ export default function UnitTable() {
       header: "Action",
       key: "action",
       render: (item: UnitRow) => (
-        <div className="relative flex justify-end">
+        <div className="relative flex justify-end" 
+        ref={activeMenuId === item.id ? menuRef : null}>
           <button
             onClick={() =>
               setActiveMenuId(activeMenuId === item.id ? null : item.id)
@@ -88,11 +107,11 @@ export default function UnitTable() {
                 className="fixed inset-0 z-40"
                 onClick={() => setActiveMenuId(null)}
               />
-              <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-100 shadow-2xl rounded-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute right-0 top-full mt-2 w-40 bg-white border-gray-100 shadow-2xl rounded-xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
                 <button
                   onClick={() => {
-                    router.push(`/admin/dashboard/unit/add?id=${item.id}`);
                     setActiveMenuId(null);
+                    router.push(`/admin/dashboard/unit/add?id=${item.id}`);
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -100,6 +119,7 @@ export default function UnitTable() {
                 </button>
                 <button
                   onClick={() => {
+                    setActiveMenuId(null);
                     if (confirm("Delete this unit?"))
                       deleteMutation.mutate(item.id);
                   }}

@@ -57,6 +57,7 @@ export const extractOrderData = (
           name: it.product_name || it.product?.name || "Unknown Product",
           quantity: Number(it.quantity || 1),
           price: Number(it.unit_price || 0),
+          unit_price: Number(it.unit_price || 0),
           image,
           variantInfo,
           shippingFee: Number(it.item_shipping_fee || 0),
@@ -100,7 +101,7 @@ export const extractOrderData = (
       phone: raw.customer_phone || "",
       address: raw.customer_address || "",
     },
-    customerNote: raw.customer_note || raw.customerNote || "",
+    customerNote: raw.customer_note ?? (raw as any).customerNote ?? "",
     items,
-  } as Order;
+  } as unknown as Order;
 };

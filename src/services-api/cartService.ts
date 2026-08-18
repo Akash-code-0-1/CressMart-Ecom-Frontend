@@ -11,6 +11,9 @@ const getLocalMohasagorItems = (): {
   image: string;
   quantity: number;
   variantInfo: { label: string; value: string; type?: string }[];
+  // optional runtime fields that may be attached
+  product?: any;
+  variant?: any;
 }[] => {
   if (typeof window === "undefined") return [];
   try {
@@ -31,6 +34,8 @@ const saveLocalMohasagorItems = (
     image: string;
     quantity: number;
     variantInfo: { label: string; value: string; type?: string }[];
+    product?: any;
+    variant?: any;
   }[],
 ) => {
   if (typeof window === "undefined") return;

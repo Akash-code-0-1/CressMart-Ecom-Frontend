@@ -44,3 +44,33 @@ export const getTestimonials = async (
 
   return res.json();
 };
+
+
+export const createTestimonial = async (dto: any) => {
+  const res = await apiFetch("/testimonials", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+  return res.json();
+};
+
+export const updateTestimonial = async (id: string, dto: any) => {
+  const res = await apiFetch(`/testimonials/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(dto),
+  });
+  return res.json();
+};
+
+export const deleteTestimonial = async (id: string) => {
+  const res = await apiFetch(`/testimonials/${id}`, {
+    method: "DELETE",
+  });
+  return res.json();
+};
+
+export const getAdminTestimonials = async (type?: TestimonialType) => {
+  const url = type ? `/testimonials/admin-list?type=${type}` : "/testimonials/admin-list";
+  const res = await apiFetch(url, { method: "GET" });
+  return res.json();
+};

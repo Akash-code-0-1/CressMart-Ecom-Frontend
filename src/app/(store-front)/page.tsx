@@ -12,6 +12,8 @@ import Testimonials from "@/components/store-front/home/Testimonials";
 import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";
 import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const tags = await getHomeTags();
 
@@ -20,7 +22,9 @@ export default async function Page() {
         (tag: HomeTagSection) => tag.is_flash_sale === true && tag.end_date,
       )
     : [];
+
   const activeFlashSale = flashSaleArray[0];
+
   return (
     <>
       <BannerSlider />

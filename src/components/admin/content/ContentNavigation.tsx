@@ -39,6 +39,15 @@ export default function ContentNavigation() {
       path: "/admin/dashboard/landing-page",
       icon: SubCategroyIcon,
     },
+
+        {
+      id: "testimonials",
+      label: "Testimonials",
+      path: "/admin/dashboard/testimonials",
+      icon: SubCategroyIcon,
+    },
+
+
   ];
 
   return (
