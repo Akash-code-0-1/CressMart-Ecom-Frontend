@@ -364,7 +364,6 @@ export default function SubCategoryTable() {
         limit,
         search: search || undefined,
         status: status || undefined,
-        level: 2,
       });
     },
   });

@@ -20,9 +20,8 @@ const ProductDetailsTabs = ({ product }: Props) => {
   const t = translations[language];
   const [activeTab, setActiveTab] = useState<TabType>("Description");
 
-  const isThirdPartyProduct = product.slug
-    ?.toLowerCase()
-    .startsWith("mohasagor");
+  const slug = product.slug ?? "";
+  const isThirdPartyProduct = slug.toLowerCase().startsWith("mohasagor");
 
   const tabs: { label: string; id: TabType; count?: number }[] = [
     { label: t.productDetails.description, id: "Description" },
@@ -65,12 +64,14 @@ const ProductDetailsTabs = ({ product }: Props) => {
 
             <div className="bg-[#F8F8F8] rounded-[16px] py-6 px-4 md:py-8 md:px-[67px] mt-6">
               {activeTab === "Description" && (
-                <DescriptionSection content={product.description} />
+                <DescriptionSection content={product.description ?? null} />
               )}
               {activeTab === "Specification" && (
-                <SpecificationSection specs={product?.specifications} />
+                <SpecificationSection specs={product.specifications ?? null} />
               )}
-              {activeTab === "FAQs" && <FAQsSection faqs={product.faqs} />}
+              {activeTab === "FAQs" && (
+                <FAQsSection faqs={product.faqs ?? null} />
+              )}
 
               {activeTab === "Review" && (
                 <ReviewSection productId={product.id} />

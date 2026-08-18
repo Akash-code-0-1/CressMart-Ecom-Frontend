@@ -530,8 +530,10 @@ export default {
     notePlaceholder: "বিশেষ নির্দেশনা লিখুন...",
 
     deliveryCharge: "ডেলিভারি চার্জ নির্বাচন করুন",
-    outsideDhaka: "ঢাকার বাইরে ১৩০ টাকা",
-    insideDhaka: "ঢাকার ভিতরে ৭০ টাকা",
+
+    outsideDhakaLabel: "ঢাকার বাইরে",
+    insideDhakaLabel: "ঢাকার ভিতরে",
+    subCityLabel: "সাব সিটি",
 
     paymentMethod: "পেমেন্ট পদ্ধতি",
     cashOnDelivery: "ক্যাশ অন ডেলিভারি",

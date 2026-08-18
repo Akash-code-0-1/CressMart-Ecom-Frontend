@@ -144,5 +144,6 @@ export interface OrderItem {
   image: string;
   variantInfo: string;
   unit_price: number;
+  shippingFee?: number;
 }
 
