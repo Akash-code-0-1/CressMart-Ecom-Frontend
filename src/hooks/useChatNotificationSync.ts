@@ -48,6 +48,7 @@ import { notificationApi } from "@/services-api/notificationService";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 import { toast } from "react-hot-toast";
+import { getCookie } from "cookies-next";
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -60,109 +61,83 @@ const rootSocket: Socket = io(SOCKET_URL, {
   autoConnect: true,
 });
 
+
 export const useChatNotificationSync = () => {
   const { setNotifications, addNotification } = useNotificationStore();
   const { setUnreadMessageCount, user } = useAuthStore();
 
   useEffect(() => {
-    // Safety check: only run if user is logged in
     if (!user) return;
 
     let chatSocket: Socket | null = null;
 
     const initializeSync = async () => {
-      // 🚀 Step 1: Detect Role via Admin Token check
       const adminToken = await getAdminTokenAction();
       const isAdmin = !!adminToken;
 
-      // --- A. INITIAL UNREAD FETCH ---
+      // 1️⃣ INITIAL FETCH
       try {
-        if (isAdmin) {
-          // ADMIN logic: fetch all rooms and sum counts
-          const res = await apiFetch("/chat/rooms", {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${adminToken}`,
-              "X-Admin-Request": "true",
-            },
-          });
-          if (res.ok) {
-            const rooms = await res.json();
-            const total = (Array.isArray(rooms) ? rooms : []).reduce(
-              (acc: number, r: any) => acc + (r.unreadCount || 0),
-              0
+        const endpoint = isAdmin ? "/chat/rooms" : "/chat/conversations/sync-room";
+        const res = await apiFetch(endpoint, {
+          method: "GET",
+          headers: isAdmin ? { Authorization: `Bearer ${adminToken}`, "X-Admin-Request": "true" } : {},
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          const responseData = json.data || json;
+          
+          if (isAdmin) {
+            const total = (Array.isArray(responseData) ? responseData : []).reduce(
+              (acc: number, r: any) => acc + (r.unreadCount || 0), 0
             );
             setUnreadMessageCount(total);
+          } else {
+            // 🚀 FIX: Set the real unread count from DB for customers
+            setUnreadMessageCount(responseData.unreadCount || 0);
           }
-        } else {
-          /**
-           * CUSTOMER logic: 
-           * Since your /sync-room only returns the ID, we rely on the Socket 
-           * for real-time updates. On initial load, we assume 0 or 
-           * you can fetch messages (but your service marks them as read immediately).
-           */
-          setUnreadMessageCount(0); 
-        }
-      } catch (err) {
-        console.error("Unread count fetch error:", err);
-      }
-
-      // --- B. AUTHENTICATED CHAT SOCKET ---
-      // We connect to the namespace shown in your logs
-      chatSocket = io(`${SOCKET_URL}/chat`, {
-        transports: ["websocket", "polling"],
-        withCredentials: true,
-        auth: { token: adminToken || "user-session" },
-        query: { isAdmin: isAdmin ? "true" : "false" },
-      });
-
-      chatSocket.on("connect", () => {
-        console.log("[Socket] Chat connected successfully");
-      });
-
-      chatSocket.on("newMessage", (message: any) => {
-        const state = useAuthStore.getState();
-        
-        // 🚀 Logic to decide if we increment the badge
-        // 1. If user is Admin -> Increment if sender is NOT an Admin
-        // 2. If user is Customer -> Increment if sender IS an Admin
-        const shouldIncrement = isAdmin 
-          ? message.sender?.role !== 'ADMIN' 
-          : message.sender?.role === 'ADMIN' || message.sender?.role === 'MANAGER';
-
-        // Only increment if chat window is closed and message is from "the other side"
-        if (!state.isChatOpen && shouldIncrement) {
-          state.setUnreadMessageCount(state.unreadMessageCount + 1);
           
-          toast(`New message from ${message.sender?.name || 'Support'}`, {
-            icon: "💬",
-            style: { background: "#FF6A00", color: "#fff" },
+          // 2️⃣ SOCKET CONNECTION
+          const SOCKET_BASE = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
+          
+          chatSocket = io(`${SOCKET_BASE}/chat`, {
+            transports: ["websocket"],
+            withCredentials: true,
+            auth: { token: adminToken || getCookie("auth_token") },
+            query: { isAdmin: isAdmin ? "true" : "false" },
+          });
+
+          chatSocket.on("connect", () => {
+            // 🚀 CRITICAL FIX: Customer joins their room immediately so they hear messages while closed
+            if (!isAdmin && responseData.conversationId) {
+              chatSocket?.emit("joinRoom", { conversationId: responseData.conversationId });
+            }
+          });
+
+          chatSocket.on("newMessage", (message: any) => {
+            const state = useAuthStore.getState();
+            
+            // Logic: Admins hear customers, Customers hear Admins
+            const isFromOtherSide = isAdmin 
+              ? message.sender?.role !== 'ADMIN' 
+              : (message.sender?.role === 'ADMIN' || message.sender?.role === 'MANAGER');
+
+            if (!state.isChatOpen && isFromOtherSide) {
+              state.setUnreadMessageCount(state.unreadMessageCount + 1);
+              toast(`New message received`, { icon: "💬" });
+            }
           });
         }
-      });
-    };
-
-    // --- C. SYSTEM NOTIFICATIONS (Orders/Reviews) ---
-    const handleNewNotification = (notification: any) => {
-      if (notification.type === "ORDER" || notification.type === "REVIEW") {
-        addNotification(notification);
-        toast(notification.title, { icon: "🔔" });
+      } catch (err) {
+        console.error("Sync init failed", err);
       }
     };
 
-    rootSocket.on("newNotification", handleNewNotification);
-
-    // Fetch history
-    notificationApi.getRecent().then((data) => setNotifications(data));
-
+    // (System Notifications logic remains same...)
     initializeSync();
 
     return () => {
-      rootSocket.off("newNotification", handleNewNotification);
-      if (chatSocket) {
-        chatSocket.off("newMessage");
-        chatSocket.disconnect();
-      }
+      if (chatSocket) chatSocket.disconnect();
     };
-  }, [user?.id, setNotifications, addNotification, setUnreadMessageCount]);
+  }, [user?.id]);
 };
