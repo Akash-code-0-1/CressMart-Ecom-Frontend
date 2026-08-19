@@ -14,8 +14,24 @@ export const fetchSingleUnit = async (id: string) => {
   return res.json();
 };
 
+// export const createUnit = async (payload: any) => {
+//   const token = await getAdminTokenAction();
+//   const res = await apiFetch("/units", {
+//     method: "POST",
+//     headers: {
+//       Authorization: `Bearer ${token}`,
+//       "Content-Type": "application/json",
+//     },
+//     body: JSON.stringify(payload),
+//   });
+//   if (!res.ok) throw new Error("Failed to create unit.");
+//   return res.json();
+// };
+
+
 export const createUnit = async (payload: any) => {
   const token = await getAdminTokenAction();
+
   const res = await apiFetch("/units", {
     method: "POST",
     headers: {
@@ -24,12 +40,37 @@ export const createUnit = async (payload: any) => {
     },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to create unit.");
-  return res.json();
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      Array.isArray(data.message)
+        ? data.message.join(", ")
+        : data.message || "Failed to create unit."
+    );
+  }
+
+  return data;
 };
+
+// export const updateUnit = async (id: string, payload: any) => {
+//   const token = await getAdminTokenAction();
+//   const res = await apiFetch(`/units/${id}`, {
+//     method: "PATCH",
+//     headers: {
+//       Authorization: `Bearer ${token}`,
+//       "Content-Type": "application/json",
+//     },
+//     body: JSON.stringify(payload),
+//   });
+//   if (!res.ok) throw new Error("Failed to update unit.");
+//   return res.json();
+// };
 
 export const updateUnit = async (id: string, payload: any) => {
   const token = await getAdminTokenAction();
+
   const res = await apiFetch(`/units/${id}`, {
     method: "PATCH",
     headers: {
@@ -38,8 +79,18 @@ export const updateUnit = async (id: string, payload: any) => {
     },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to update unit.");
-  return res.json();
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      Array.isArray(data.message)
+        ? data.message.join(", ")
+        : data.message || "Failed to update unit."
+    );
+  }
+
+  return data;
 };
 
 export const deleteUnit = async (id: string) => {

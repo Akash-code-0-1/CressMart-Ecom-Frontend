@@ -272,14 +272,18 @@ const Footer = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mt-4 cursor-pointer">
-              <LocationIcon />
-              <span className="text-[#727272] text-[12px] font-medium whitespace-nowrap hover:font-semibold transition-all">
-                {t.storeLocation}
-              </span>
-            </div>
-
-
+            <a
+              href="https://maps.app.goo.gl/Faf26v95RjUoYZ3D7"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="flex items-center gap-2 mt-4 cursor-pointer">
+                <LocationIcon />
+                <span className="text-[#727272] text-[12px] font-medium whitespace-nowrap hover:font-semibold transition-all">
+                  {t.storeLocation}
+                </span>
+              </div>
+            </a>
           </div>
         </div>
 
