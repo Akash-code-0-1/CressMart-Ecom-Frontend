@@ -40,7 +40,9 @@
 //   }, [setNotifications, addNotification]);
 // };
 
-import { useEffect } from "react";
+
+
+import { useEffect, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -48,108 +50,122 @@ import { notificationApi } from "@/services-api/notificationService";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 import { toast } from "react-hot-toast";
+import { getCookie } from "cookies-next";
 
 const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
   "http://localhost:8082";
 
-// // 1. Root Socket for System Notifications
-// const rootSocket: Socket = io(SOCKET_URL, {
-//   transports: ["websocket"],
-//   autoConnect: true,
-// });
-
-// 1. Root Notification Socket
+// 1. Root Notification Socket (System Notifications)
 const rootSocket: Socket = io(SOCKET_URL, {
-  transports: ["websocket"], // 🚀 Force pure websocket mode
+  transports: ["websocket", "polling"],
   withCredentials: true,
   autoConnect: true,
 });
 
 export const useChatNotificationSync = () => {
   const { setNotifications, addNotification } = useNotificationStore();
-  const { unreadMessageCount, setUnreadMessageCount, isChatOpen } =
-    useAuthStore();
+  const { setUnreadMessageCount, user } = useAuthStore();
+
+  // 🚀 FIXED: Wrapped in Promise.resolve() to match your Admin Modal's stable sync logic
+  const updateGlobalBadge = useCallback((count: number) => {
+    Promise.resolve().then(() => {
+      useAuthStore.getState().setUnreadMessageCount(count);
+    });
+  }, []);
 
   useEffect(() => {
+    if (!user) return;
+
     let chatSocket: Socket | null = null;
 
     const initializeSync = async () => {
       const adminToken = await getAdminTokenAction();
-      if (!adminToken) return;
+      const isAdmin = !!adminToken;
 
-      // --- A. INITIAL UNREAD FETCH ---
-      // Fetch rooms to calculate total unread count on load
       try {
-        const res = await apiFetch("/chat/rooms", {
+        // --- A. INITIAL FETCH (PERSISTENCE) ---
+        const endpoint = isAdmin ? "/chat/rooms" : "/chat/conversations/sync-room";
+        const res = await apiFetch(endpoint, {
           method: "GET",
-          headers: {
-            Authorization: `Bearer ${adminToken}`,
-            "X-Admin-Request": "true",
-          },
+          headers: isAdmin ? { Authorization: `Bearer ${adminToken}`, "X-Admin-Request": "true" } : {},
         });
+
         if (res.ok) {
-          const roomData = await res.json();
-          const rooms = Array.isArray(roomData)
-            ? roomData
-            : roomData?.rooms || roomData?.data || [];
-          const totalUnread = rooms.reduce(
-            (acc: number, room: any) => acc + (room.unreadCount || 0),
-            0,
-          );
-          setUnreadMessageCount(totalUnread);
-        }
-      } catch (err) {
-        console.error("Failed to fetch initial unread count", err);
-      }
+          const json = await res.json();
+          // Extract data correctly based on your controller's { data: ... } wrapper
+          const responseData = json.data || json;
+          
+          if (isAdmin) {
+            const rooms = Array.isArray(responseData) ? responseData : [];
+            const total = rooms.reduce((acc: number, r: any) => acc + (r.unreadCount || 0), 0);
+            updateGlobalBadge(total);
+          } else {
+            // 🚀 SUCCESS: Reads the unreadCount returned by your fixed sync-room endpoint
+            updateGlobalBadge(responseData.unreadCount || 0);
+          }
+          
+          // --- B. SOCKET CONNECTION ---
+          chatSocket = io(`${SOCKET_URL}/chat`, {
+            transports: ["websocket", "polling"],
+            withCredentials: true,
+            auth: { token: adminToken || getCookie("auth_token") },
+            query: { isAdmin: isAdmin ? "true" : "false" },
+          });
 
-      // --- B. AUTHENTICATED CHAT SOCKET ---
-      // chatSocket = io(`${SOCKET_URL}/chat`, {
-      //   transports: ["websocket"],
-      //   auth: { token: adminToken }, // 🚀 CRITICAL: Must have token to hear messages
-      //   query: { isAdmin: "true" },
-      // });
+          chatSocket.on("connect", () => {
+            // 🚀 100% CRITICAL: Customer MUST join room to hear "newMessage" events while widget is closed
+            if (!isAdmin && responseData.conversationId) {
+              chatSocket?.emit("joinRoom", { conversationId: responseData.conversationId });
+            }
+          });
 
-      // 2. Chat Socket
-      chatSocket = io(`${SOCKET_URL}/chat`, {
-        transports: ["websocket"], // 🚀 Force pure websocket mode
-        withCredentials: true,
-        auth: { token: adminToken },
-        query: { isAdmin: "true" },
-      });
+          chatSocket.on("newMessage", (message: any) => {
+            const state = useAuthStore.getState();
+            
+            // Logic: Is this message coming from the staff?
+            const isFromStaff = message.sender?.role === 'ADMIN' || message.sender?.role === 'MANAGER';
 
-      chatSocket.on("newMessage", (message: any) => {
-        const state = useAuthStore.getState();
-        // Only increment if user is NOT currently looking at the chat
-        if (!state.isChatOpen) {
-          state.setUnreadMessageCount(state.unreadMessageCount + 1);
-          toast(`New message received`, {
-            icon: "💬",
-            style: { background: "#FF6A00", color: "#fff" },
+            // Only increment if chat is closed and it's from staff
+            if (!state.isChatOpen && isFromStaff) {
+              const newCount = state.unreadMessageCount + 1;
+              updateGlobalBadge(newCount);
+              
+              toast(`Support: ${message.text || 'Sent a file'}`, {
+                icon: "💬",
+                duration: 5000,
+                style: {
+                  borderRadius: '12px',
+                  background: '#023337',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                },
+              });
+            }
           });
         }
-      });
+      } catch (err) {
+        console.error("Chat Sync Error:", err);
+      }
     };
 
     // --- C. SYSTEM NOTIFICATIONS ---
-    rootSocket.on("newNotification", (notification: any) => {
-      if (notification.type === "ORDER" || notification.type === "REVIEW") {
-        addNotification(notification);
-        toast(notification.title, { icon: "🔔" });
+    const handleNotify = (n: any) => {
+      if (n.type === "ORDER" || n.type === "REVIEW") {
+        addNotification(n);
+        toast(n.title, { icon: "🔔" });
       }
-    });
+    };
 
-    // Fetch history
+    rootSocket.on("newNotification", handleNotify);
     notificationApi.getRecent().then((data) => setNotifications(data));
 
     initializeSync();
 
     return () => {
-      rootSocket.off("newNotification");
-      if (chatSocket) {
-        chatSocket.off("newMessage");
-        chatSocket.disconnect();
-      }
+      rootSocket.off("newNotification", handleNotify);
+      if (chatSocket) chatSocket.disconnect();
     };
-  }, [setNotifications, addNotification, setUnreadMessageCount]);
+  }, [user?.id, setNotifications, addNotification, updateGlobalBadge]);
 };
