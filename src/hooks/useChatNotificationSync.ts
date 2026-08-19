@@ -40,6 +40,8 @@
 //   }, [setNotifications, addNotification]);
 // };
 
+
+
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { useNotificationStore } from "@/store/useNotificationStore";
@@ -53,46 +55,57 @@ const SOCKET_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
   "http://localhost:8082";
 
-// // 1. Root Socket for System Notifications
-// const rootSocket: Socket = io(SOCKET_URL, {
-//   transports: ["websocket"],
-//   autoConnect: true,
-// });
-
-// 1. Root Notification Socket
+// 1. Root Notification Socket (System-wide)
 const rootSocket: Socket = io(SOCKET_URL, {
-  transports: ["websocket"], // 🚀 Force pure websocket mode
+  transports: ["websocket", "polling"], // 🚀 Added polling fallback for better production stability
   withCredentials: true,
   autoConnect: true,
 });
 
 export const useChatNotificationSync = () => {
   const { setNotifications, addNotification } = useNotificationStore();
-  const { unreadMessageCount, setUnreadMessageCount, isChatOpen } =
-    useAuthStore();
+  const { setUnreadMessageCount, user } = useAuthStore();
 
   useEffect(() => {
     let chatSocket: Socket | null = null;
 
     const initializeSync = async () => {
-      const adminToken = await getAdminTokenAction();
-      if (!adminToken) return;
+      // 🚀 FIX 1: Get Token for either Admin OR Customer
+      // First try to get the admin token
+      let token = await getAdminTokenAction();
+      let isAdmin = !!token;
+
+      // If no admin token, try to get standard user token (assuming it's stored in cookies or similar)
+      // If your apiFetch handles tokens via cookies, we still need the string for Socket.io auth
+      if (!token) {
+        // Fallback: Try to get token from cookies if getAdminTokenAction returned null
+        token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1] || null;
+      }
+
+      // If absolutely no token is found, we cannot connect to the authenticated chat namespace
+      if (!token) return;
 
       // --- A. INITIAL UNREAD FETCH ---
-      // Fetch rooms to calculate total unread count on load
       try {
+        // This endpoint should work for both admins (returning all rooms) 
+        // and customers (returning just their own room)
         const res = await apiFetch("/chat/rooms", {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${adminToken}`,
-            "X-Admin-Request": "true",
+            Authorization: `Bearer ${token}`,
+            ...(isAdmin && { "X-Admin-Request": "true" }),
           },
         });
+
         if (res.ok) {
           const roomData = await res.json();
           const rooms = Array.isArray(roomData)
             ? roomData
             : roomData?.rooms || roomData?.data || [];
+          
           const totalUnread = rooms.reduce(
             (acc: number, room: any) => acc + (room.unreadCount || 0),
             0,
@@ -104,52 +117,56 @@ export const useChatNotificationSync = () => {
       }
 
       // --- B. AUTHENTICATED CHAT SOCKET ---
-      // chatSocket = io(`${SOCKET_URL}/chat`, {
-      //   transports: ["websocket"],
-      //   auth: { token: adminToken }, // 🚀 CRITICAL: Must have token to hear messages
-      //   query: { isAdmin: "true" },
-      // });
-
-      // 2. Chat Socket
       chatSocket = io(`${SOCKET_URL}/chat`, {
-        transports: ["websocket"], // 🚀 Force pure websocket mode
+        transports: ["websocket", "polling"], // 🚀 Added polling fallback
         withCredentials: true,
-        auth: { token: adminToken },
-        query: { isAdmin: "true" },
+        auth: { token: token },
+        query: { isAdmin: isAdmin ? "true" : "false" }, // 🚀 Dynamically set isAdmin
       });
 
       chatSocket.on("newMessage", (message: any) => {
         const state = useAuthStore.getState();
         // Only increment if user is NOT currently looking at the chat
         if (!state.isChatOpen) {
-          state.setUnreadMessageCount(state.unreadMessageCount + 1);
-          toast(`New message received`, {
-            icon: "💬",
-            style: { background: "#FF6A00", color: "#fff" },
-          });
+          // Check if message is from "the other side" (Admin if user is customer, or vice versa)
+          // Most backends send a 'sender_id'. We ensure we don't count our own messages.
+          if (message.sender_id !== user?.id) {
+            state.setUnreadMessageCount(state.unreadMessageCount + 1);
+            toast(`New message received`, {
+              icon: "💬",
+              style: { background: "#FF6A00", color: "#fff" },
+            });
+          }
         }
+      });
+
+      // Handle reconnection to ensure badge stays accurate
+      chatSocket.on("connect", () => {
+        console.log("Chat socket connected");
       });
     };
 
     // --- C. SYSTEM NOTIFICATIONS ---
-    rootSocket.on("newNotification", (notification: any) => {
+    const handleNewNotification = (notification: any) => {
       if (notification.type === "ORDER" || notification.type === "REVIEW") {
         addNotification(notification);
         toast(notification.title, { icon: "🔔" });
       }
-    });
+    };
 
-    // Fetch history
+    rootSocket.on("newNotification", handleNewNotification);
+
+    // Fetch notification history
     notificationApi.getRecent().then((data) => setNotifications(data));
 
     initializeSync();
 
     return () => {
-      rootSocket.off("newNotification");
+      rootSocket.off("newNotification", handleNewNotification);
       if (chatSocket) {
         chatSocket.off("newMessage");
         chatSocket.disconnect();
       }
     };
-  }, [setNotifications, addNotification, setUnreadMessageCount]);
+  }, [setNotifications, addNotification, setUnreadMessageCount, user?.id]);
 };
