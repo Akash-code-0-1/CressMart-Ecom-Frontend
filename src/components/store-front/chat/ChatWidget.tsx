@@ -60,7 +60,7 @@ const fetchChatSettings = async (): Promise<ChatSettings> => {
       method: "GET",
       cache: "no-store",
     });
-    
+
     const json = await res.json();
     return json?.data ?? json ?? {};
   } catch (err) {
@@ -68,7 +68,6 @@ const fetchChatSettings = async (): Promise<ChatSettings> => {
     return {};
   }
 };
-
 
 const ChatWidget = () => {
   const { language } = useLanguage();
@@ -98,12 +97,11 @@ const ChatWidget = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-
-    const { 
-    unreadMessageCount, 
-    setUnreadMessageCount, 
-    isChatOpen: isOpen, 
-    setIsChatOpen: setIsOpen 
+  const {
+    unreadMessageCount,
+    setUnreadMessageCount,
+    isChatOpen: isOpen,
+    setIsChatOpen: setIsOpen,
   } = useAuthStore();
 
   // 🚀 ACTION: Open chat and clear badge
@@ -145,6 +143,31 @@ const ChatWidget = () => {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isAdminTyping]);
+
+  useEffect(() => {
+    const syncUnreadCount = async () => {
+      // Only sync if user is logged in and we haven't opened the chat yet
+      if (!user?.id || isOpen) return;
+
+      try {
+        const res = await apiFetch("/chat/conversations/sync-room", {
+          method: "GET",
+          headers: { "X-Customer-Request": "true" },
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          // The backend usually sends unreadCount in the conversation object
+          const count = json?.data?.unreadCount || json?.unreadCount || 0;
+          setUnreadMessageCount(count);
+        }
+      } catch (err) {
+        console.error("Customer unread sync failed:", err);
+      }
+    };
+
+    syncUnreadCount();
+  }, [user?.id, setUnreadMessageCount]);
 
   // --- Handlers ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,7 +319,9 @@ const ChatWidget = () => {
 
   if (!isStoreReady || !user) return null;
 
-  const whatsappHref = formatWhatsappUrl(settings?.whatsappUrl || settings?.phone);
+  const whatsappHref = formatWhatsappUrl(
+    settings?.whatsappUrl || settings?.phone,
+  );
   const messengerHref = formatMessengerUrl(settings?.messengerUrl);
   const enableLiveChat = settings?.enableLiveChat ?? true;
 
@@ -347,7 +372,9 @@ const ChatWidget = () => {
                   <FiPhone size={14} /> Call Now
                 </a>
               ) : (
-                <p className="text-xs text-center text-gray-400">Phone number not configured</p>
+                <p className="text-xs text-center text-gray-400">
+                  Phone number not configured
+                </p>
               )}
             </div>
           )}
@@ -407,7 +434,6 @@ const ChatWidget = () => {
               )}
             </button>
           )}
-
         </div>
       )}
 
@@ -600,8 +626,6 @@ const ChatWidget = () => {
               </button>
             </form>
           </div>
-
-
         </div>
       )}
 
@@ -613,7 +637,7 @@ const ChatWidget = () => {
           } else {
             setShowOptions(!showOptions);
             if (showOptions) setShowPhoneInfo(false);
-            // If the user clicks this and options show, 
+            // If the user clicks this and options show,
             // you might want to clear badge only when they enter 'Live Chat'
           }
         }}

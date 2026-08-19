@@ -36,6 +36,9 @@ const CatalogHead = () => {
     if (pathname.includes("/tag")) {
       return { label: "Add Tag", route: "/admin/dashboard/tag/add" };
     }
+    if (pathname.includes("/unit")) {
+      return { label: "Add Unit", route: "/admin/dashboard/unit/add" };
+    }
     return { label: "Add Category", route: "/admin/dashboard/category/add" };
   })();
   const updateUrlParam = (key: string, value: string) => {

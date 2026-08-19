@@ -17,9 +17,22 @@ export default function AddUnitMain() {
   const unitId = searchParams.get("id");
   const isEditMode = !!unitId;
 
-  const methods = useForm({
-    defaultValues: { name: "", slug: "", priority: 100, status: "active" },
+  type UnitFormData = {
+    name: string;
+    slug: string;
+    priority: number;
+    status: "active" | "draft";
+  };
+
+  const methods = useForm<UnitFormData>({
+    defaultValues: {
+      name: "",
+      slug: "",
+      priority: 100,
+      status: "active",
+    },
   });
+
   const { register, handleSubmit, reset } = methods;
 
   const { data: response, isLoading } = useQuery({
@@ -34,14 +47,28 @@ export default function AddUnitMain() {
     }
   }, [response, reset]);
 
+  // const mutation = useMutation({
+  //   mutationFn: (data: any) =>
+  //     isEditMode ? updateUnit(unitId!, data) : createUnit(data),
+  //   onSuccess: () => {
+  //     alert("Unit saved successfully!");
+  //     router.push("/admin/dashboard/unit");
+  //   },
+  //   onError: (err: any) => alert(err.message),
+  // });
+
   const mutation = useMutation({
-    mutationFn: (data: any) =>
+    mutationFn: (data: UnitFormData) =>
       isEditMode ? updateUnit(unitId!, data) : createUnit(data),
+
     onSuccess: () => {
       alert("Unit saved successfully!");
       router.push("/admin/dashboard/unit");
     },
-    onError: (err: any) => alert(err.message),
+
+    onError: (err: any) => {
+      alert(err.message);
+    },
   });
 
   if (isEditMode && isLoading)
@@ -105,9 +132,17 @@ export default function AddUnitMain() {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Priority
                 </label>
-                <input
+                {/* <input
                   type="number"
                   {...register("priority")}
+                  className="w-full p-3 bg-[#F9F9F9] rounded-lg border border-transparent focus:border-[#1DA1F2] outline-none transition"
+                /> */}
+
+                <input
+                  type="number"
+                  {...register("priority", {
+                    valueAsNumber: true,
+                  })}
                   className="w-full p-3 bg-[#F9F9F9] rounded-lg border border-transparent focus:border-[#1DA1F2] outline-none transition"
                 />
               </div>
