@@ -92,6 +92,8 @@
 //   );
 // }
 
+"use client";
+
 import { apiFetch } from "@/utils/api";
 import { useFormContext } from "react-hook-form";
 import { SectionWrapper } from "./SectionWrapper";
@@ -106,9 +108,12 @@ export default function InventorySection({
   Barcode?: React.ElementType;
 }) {
   const { register, watch, setValue } = useFormContext();
+
+  // Watch values for conditional logic and controlled select
   const isVariantMandatory = watch("is_variant_mandatory");
   const selectedUnitId = watch("unit_id");
 
+  // Fetch Units for the dropdown
   const { data: unitsRes } = useQuery({
     queryKey: ["units-list-dropdown"],
     queryFn: async () => {
@@ -117,36 +122,26 @@ export default function InventorySection({
     },
   });
 
-  const unitsList = (() => {
-    if (Array.isArray(unitsRes)) return unitsRes;
-    if (unitsRes && Array.isArray(unitsRes.data)) return unitsRes.data;
-    if (unitsRes && Array.isArray(unitsRes.data?.data))
-      return unitsRes.data.data;
-    return [];
-  })();
+  // Extract units list from common API response shapes
+  const unitsList = Array.isArray(unitsRes)
+    ? unitsRes
+    : unitsRes?.data?.data || unitsRes?.data || [];
 
   return (
     <SectionWrapper title="Inventory">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label>Quantity (Stock)</Label>
-          <input
-            type="number"
-            {...register("quantity")}
-            disabled={isVariantMandatory}
-            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none placeholder:text-gray-400 disabled:opacity-50"
-            placeholder={isVariantMandatory ? "Derived from attributes" : "50"}
-          />
-        </div>
+        {/* 1. Unit Selection Mapping */}
         <div>
           <Label>Unit Selection Mapping</Label>
           <div className="relative w-full">
             <select
               value={selectedUnitId || ""}
               onChange={(e) => {
-                setValue("unit_id", e.target.value);
+                const val = e.target.value;
+                setValue("unit_id", val);
+                // Sync the unit_name based on selection
                 const matchObj = unitsList.find(
-                  (u: { id: string; name: string }) => u.id === e.target.value,
+                  (u: { id: string; name: string }) => u.id === val,
                 );
                 if (matchObj) setValue("unit_name", matchObj.name);
               }}
@@ -165,36 +160,47 @@ export default function InventorySection({
             />
           </div>
         </div>
+
+        <div>
+          <Label>Quantity (Stock)</Label>
+          <input
+            type="number"
+            {...register("quantity")} // Don't use valueAsNumber here, we handle it in the mutationFn
+            disabled={isVariantMandatory}
+            placeholder={isVariantMandatory ? "Derived from variants" : "50"}
+            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none border border-transparent focus:border-gray-200 placeholder:text-gray-400 disabled:opacity-50"
+          />
+        </div>
+
+        {/* 3. Warranty */}
         <div>
           <Label>Warranty</Label>
           <Input placeholder="12 months" {...register("warranty")} />
         </div>
+
+        {/* 4. SKU / Code */}
         <div>
           <Label>SKU / Code</Label>
-          <input
-            type="text"
-            placeholder="SAM-REF-525"
-            {...register("sku")} // Register as "sku"
-            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none border border-gray-200"
-          />
+          <Input placeholder="SAM-REF-525" {...register("sku")} />
         </div>
 
+        {/* 5. Priority Rank */}
         <div>
           <Label>Priority Rank</Label>
-          <input
+          <Input
             type="number"
             placeholder="100"
-            {...register("priority", { valueAsNumber: true })} // <--- CRITICAL CHANGE
-            className="w-full bg-[#F9F9F9] rounded-lg px-4 py-3 text-sm outline-none"
+            {...register("priority", { valueAsNumber: true })}
           />
         </div>
 
+        {/* 6. Barcode */}
         <div>
           <Label>Barcode</Label>
           <Input
             placeholder="88091..."
             icon={Barcode}
-            {...register("barcode")} // Ensure name is "barcode"
+            {...register("barcode")}
           />
         </div>
       </div>

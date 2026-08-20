@@ -717,10 +717,139 @@ export default function ProductUploadMain() {
     }
   }, [existingProduct, isEditMode, methods]);
 
+  // // product create and update mutation
+  // const productMutation = useMutation({
+  //   mutationFn: async (targetStatus: "DRAFT" | "PUBLISHED") => {
+  //     const formPayload = methods.getValues();
+  //     const cleanSlug =
+  //       formPayload.slug ||
+  //       formPayload.name
+  //         .toLowerCase()
+  //         .replace(/[^a-z0-9]+/g, "-")
+  //         .replace(/(^-|-$)/g, "");
+
+  //     // FIX: Only generate SKU if the field is empty and we are NOT in edit mode
+  //     const finalSku =
+  //       formPayload.sku?.trim() ||
+  //       (isEditMode ? undefined : `SKU-${Date.now()}`);
+
+  //     // FIX: Allow 0 as a valid priority
+  //     const finalPriority =
+  //       formPayload.priority === "" || formPayload.priority === undefined
+  //         ? 100
+  //         : Number(formPayload.priority);
+
+  //     const finalPayload: { [key: string]: unknown } = {
+  //       name: formPayload.name,
+  //       slug: cleanSlug,
+  //       category_id: formPayload.category_id || null,
+  //       brand_id: formPayload.brand_id || null,
+  //       unit_id: formPayload.unit_id || null,
+  //       short_description: formPayload.short_description || null,
+  //       description: formPayload.description,
+  //       status: isEditMode ? formPayload.status : targetStatus,
+  //       images: Array.isArray(images) ? images.map((img) => String(img)) : [],
+  //       priority:
+  //         formPayload.priority === "" ? 100 : Number(formPayload.priority),
+  //       regular_price: Number(formPayload.regular_price) || 0,
+  //       sell_price: Number(formPayload.sell_price) || 0,
+  //       cost_price: Number(formPayload.cost_price) || 0,
+  //       quantity: Number(formPayload.quantity) || 0,
+  //       warranty: formPayload.warranty || null,
+  //       sku: formPayload.sku?.trim() === "" ? null : formPayload.sku?.trim(),
+  //       barcode: formPayload.barcode || null,
+  //       is_variant_mandatory: formPayload.is_variant_mandatory,
+  //       meta_title: formPayload.seoTitle || null,
+  //       meta_description: formPayload.seoDescription || null,
+  //       meta_tags: formPayload.seoKeywords || null,
+  //       video_urls: Array.isArray(formPayload.video_urls)
+  //         ? formPayload.video_urls.filter(Boolean)
+  //         : [],
+  //       specifications: Array.isArray(formPayload.specifications)
+  //         ? formPayload.specifications
+  //         : [],
+  //       faqs: Array.isArray(formPayload.faqs) ? formPayload.faqs : [],
+
+  //       shipping_type: formPayload.shippingMode,
+  //       ...(formPayload.shippingMode === "CUSTOM"
+  //         ? {
+  //             shipping_config: (formPayload.customShippingRows || [])
+  //               .filter((r: { zone: string; charge: string }) => r.zone?.trim())
+  //               .map((r: { zone: string; charge: string }) => ({
+  //                 zone: r.zone.trim(),
+  //                 charge: Number(r.charge) || 0,
+  //               })),
+  //           }
+  //         : formPayload.shippingMode === "FREE"
+  //           ? { shipping_config: [] }
+  //           : {}),
+  //     };
+
+  //     // Include tags and suppliers in payload for both Create and Edit mode
+  //     finalPayload.tag_ids = formPayload.tag_ids || [];
+  //     finalPayload.supplier_ids = formPayload.supplier_ids || [];
+
+  //     // Include variants in payload for both create and edit mode
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //     finalPayload.variants = formPayload.variants.map((v: any) => ({
+  //       ...(v.variantId || v.id ? { id: v.variantId || v.id } : {}),
+  //       attributes: Array.isArray(v.attributes) ? v.attributes : [],
+  //       stock: Number(v.stock) || 0,
+  //       sku: v.sku || `SKU-${Date.now()}`,
+  //       price: Number(v.price) || 0,
+  //       images: Array.isArray(v.images)
+  //         ? v.images.map((img: string) => String(img))
+  //         : [],
+  //     }));
+
+  //     if (isEditMode && productId) {
+  //       return updateProduct(productId, finalPayload);
+  //     }
+  //     return createProduct(finalPayload);
+  //   },
+  //   onSuccess: () => {
+  //     // Wipe out the main products lists query cache
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["products-list-panel"],
+  //       exact: false,
+  //     });
+
+  //     //  Clear out this exact single product item cache row too so it refetches cleanly next time
+  //     if (isEditMode && productId) {
+  //       queryClient.invalidateQueries({
+  //         queryKey: ["product-single-edit-node", productId],
+  //         exact: true,
+  //       });
+  //       queryClient.removeQueries({
+  //         queryKey: ["product-single-edit-node", productId],
+  //       });
+  //     }
+
+  //     toast.success(
+  //       isEditMode
+  //         ? "Product updated successfully!"
+  //         : "Product created successfully!",
+  //     );
+
+  //     methods.reset();
+  //     setImages([]);
+  //     router.push("/admin/dashboard/products");
+  //     router.refresh();
+  //   },
+  //   onError: (err) => {
+  //     toast.error(`Rejection Error: ${err.message}`);
+  //   },
+  // });
+
   // product create and update mutation
   const productMutation = useMutation({
+    
+
+
     mutationFn: async (targetStatus: "DRAFT" | "PUBLISHED") => {
       const formPayload = methods.getValues();
+
+      // 1. Generate clean slug if empty
       const cleanSlug =
         formPayload.slug ||
         formPayload.name
@@ -728,99 +857,98 @@ export default function ProductUploadMain() {
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, "");
 
-      // FIX: Only generate SKU if the field is empty and we are NOT in edit mode
-      const finalSku =
-        formPayload.sku?.trim() ||
-        (isEditMode ? undefined : `SKU-${Date.now()}`);
-
-      // FIX: Allow 0 as a valid priority
-      const finalPriority =
-        formPayload.priority === "" || formPayload.priority === undefined
-          ? 100
-          : Number(formPayload.priority);
-
-      const finalPayload: { [key: string]: unknown } = {
+      // 2. Map everything explicitly to match your Backend DTO
+      const finalPayload: any = {
         name: formPayload.name,
         slug: cleanSlug,
-        category_id: formPayload.category_id || null,
+        category_id: formPayload.category_id,
         brand_id: formPayload.brand_id || null,
         unit_id: formPayload.unit_id || null,
-        short_description: formPayload.short_description || null,
         description: formPayload.description,
+        short_description: formPayload.short_description || null,
+
+        // Status Logic
         status: isEditMode ? formPayload.status : targetStatus,
-        images: Array.isArray(images) ? images.map((img) => String(img)) : [],
-        priority:
-          formPayload.priority === "" ? 100 : Number(formPayload.priority),
-        regular_price: Number(formPayload.regular_price) || 0,
-        sell_price: Number(formPayload.sell_price) || 0,
-        cost_price: Number(formPayload.cost_price) || 0,
-        quantity: Number(formPayload.quantity) || 0,
+        images: Array.isArray(images) ? images : [],
+
+        // PRICING FIX: Convert strings to Numbers for Prisma Decimal fields
+        sell_price: parseFloat(String(formPayload.sell_price)) || 0,
+        regular_price: parseFloat(String(formPayload.regular_price)) || 0,
+        cost_price: parseFloat(String(formPayload.cost_price)) || 0,
+
+        // QUANTITY FIX:
+        // If variants are mandatory, base quantity must be 0 (Backend sums up variants).
+        // If no variants, we use the manual quantity input.
+        quantity: formPayload.is_variant_mandatory
+          ? 0
+          : parseInt(String(formPayload.quantity)) || 0,
+
+        priority: parseInt(String(formPayload.priority)) || 100,
+        is_variant_mandatory: !!formPayload.is_variant_mandatory,
         warranty: formPayload.warranty || null,
+
+        // IDENTIFIER FIX: Empty string "" must be NULL for Unique database constraints
+        barcode:
+          formPayload.barcode?.trim() === ""
+            ? null
+            : formPayload.barcode?.trim(),
         sku: formPayload.sku?.trim() === "" ? null : formPayload.sku?.trim(),
-        barcode: formPayload.barcode || null,
-        is_variant_mandatory: formPayload.is_variant_mandatory,
+
+        // SEO MAPPING: (Frontend "seo..." -> Backend "meta_...")
         meta_title: formPayload.seoTitle || null,
         meta_description: formPayload.seoDescription || null,
         meta_tags: formPayload.seoKeywords || null,
-        video_urls: Array.isArray(formPayload.video_urls)
-          ? formPayload.video_urls.filter(Boolean)
-          : [],
+
+        // ARRAYS & JSONB
+        tag_ids: formPayload.tag_ids || [],
+        supplier_ids: formPayload.supplier_ids || [],
         specifications: Array.isArray(formPayload.specifications)
           ? formPayload.specifications
           : [],
         faqs: Array.isArray(formPayload.faqs) ? formPayload.faqs : [],
+        video_urls: Array.isArray(formPayload.video_urls)
+          ? formPayload.video_urls.filter(Boolean)
+          : [],
 
-        shipping_type: formPayload.shippingMode,
-        ...(formPayload.shippingMode === "CUSTOM"
-          ? {
-              shipping_config: (formPayload.customShippingRows || [])
-                .filter((r: { zone: string; charge: string }) => r.zone?.trim())
-                .map((r: { zone: string; charge: string }) => ({
-                  zone: r.zone.trim(),
-                  charge: Number(r.charge) || 0,
-                })),
-            }
-          : formPayload.shippingMode === "FREE"
-            ? { shipping_config: [] }
-            : {}),
+        // SHIPPING MAPPING
+        shipping_type: formPayload.shippingMode || "DEFAULT",
+        shipping_config:
+          formPayload.shippingMode === "CUSTOM"
+            ? (formPayload.customShippingRows || []).map((r: any) => ({
+                zone: r.zone,
+                charge: parseFloat(String(r.charge)) || 0,
+              }))
+            : [],
+
+        // VARIANTS MAPPING
+        variants: (formPayload.variants || []).map((v: any) => ({
+          ...(v.variantId || v.id ? { id: v.variantId || v.id } : {}),
+          attributes: v.attributes,
+          stock: parseInt(String(v.stock)) || 0,
+          price: parseFloat(String(v.price)) || 0,
+          sku: v.sku || `SKU-${Date.now()}-${Math.random()}`,
+          images: Array.isArray(v.images) ? v.images : [],
+        })),
       };
 
-      // Include tags and suppliers in payload for both Create and Edit mode
-      finalPayload.tag_ids = formPayload.tag_ids || [];
-      finalPayload.supplier_ids = formPayload.supplier_ids || [];
-
-      // Include variants in payload for both create and edit mode
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      finalPayload.variants = formPayload.variants.map((v: any) => ({
-        ...(v.variantId || v.id ? { id: v.variantId || v.id } : {}),
-        attributes: Array.isArray(v.attributes) ? v.attributes : [],
-        stock: Number(v.stock) || 0,
-        sku: v.sku || `SKU-${Date.now()}`,
-        price: Number(v.price) || 0,
-        images: Array.isArray(v.images)
-          ? v.images.map((img: string) => String(img))
-          : [],
-      }));
-
+      // 3. API Call
       if (isEditMode && productId) {
         return updateProduct(productId, finalPayload);
       }
       return createProduct(finalPayload);
     },
+
+
+
     onSuccess: () => {
-      // Wipe out the main products lists query cache
+      // Clear all product-related caches to see changes immediately
       queryClient.invalidateQueries({
         queryKey: ["products-list-panel"],
         exact: false,
       });
 
-      //  Clear out this exact single product item cache row too so it refetches cleanly next time
       if (isEditMode && productId) {
         queryClient.invalidateQueries({
-          queryKey: ["product-single-edit-node", productId],
-          exact: true,
-        });
-        queryClient.removeQueries({
           queryKey: ["product-single-edit-node", productId],
         });
       }
@@ -831,13 +959,14 @@ export default function ProductUploadMain() {
           : "Product created successfully!",
       );
 
+      // Reset local state and navigate
       methods.reset();
       setImages([]);
       router.push("/admin/dashboard/products");
       router.refresh();
     },
-    onError: (err) => {
-      toast.error(`Rejection Error: ${err.message}`);
+    onError: (err: any) => {
+      toast.error(`Operation Failed: ${err.message || "Unknown error"}`);
     },
   });
 
@@ -947,24 +1076,23 @@ export default function ProductUploadMain() {
                   <Label required>Sell Price (৳)</Label>
                   <Input
                     type="number"
-                    placeholder="0"
-                    {...methods.register("sell_price", { required: true })}
+                    {...methods.register("sell_price", { valueAsNumber: true })}
                   />
                 </div>
                 <div>
                   <Label required>Regular Price (৳)</Label>
                   <Input
                     type="number"
-                    placeholder="0"
-                    {...methods.register("regular_price", { required: true })}
+                    {...methods.register("regular_price", {
+                      valueAsNumber: true,
+                    })}
                   />
                 </div>
                 <div>
-                  <Label>Cost Price (Optional) (৳)</Label>
+                  <Label>Cost Price (৳)</Label>
                   <Input
                     type="number"
-                    placeholder="0"
-                    {...methods.register("cost_price")}
+                    {...methods.register("cost_price", { valueAsNumber: true })}
                   />
                 </div>
               </div>
