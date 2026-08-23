@@ -20,6 +20,7 @@ interface User {
 }
 
 interface AuthState {
+  clearAdminAuth: () => void;
   user: User | null;
 
   adminUser: User | null;
