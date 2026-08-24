@@ -54,11 +54,28 @@ interface ChatMessage {
   sender?: { id: string; name: string; avatar: string | null; role: string };
 }
 
+// const fetchChatSettings = async (): Promise<ChatSettings> => {
+//   try {
+//     const res = await apiFetch("/admin/chat-settings", {
+//       method: "GET",
+//       cache: "no-store",
+//     });
+
+//     const json = await res.json();
+//     return json?.data ?? json ?? {};
+//   } catch (err) {
+//     console.error("Error fetching chat settings:", err);
+//     return {};
+//   }
+// };
+
+
 const fetchChatSettings = async (): Promise<ChatSettings> => {
   try {
     const res = await apiFetch("/admin/chat-settings", {
       method: "GET",
       cache: "no-store",
+      // Ensure no headers are sent that might trigger a 401 if null
     });
 
     const json = await res.json();
@@ -116,9 +133,21 @@ const ChatWidget = () => {
     }
   };
 
+  // const handleOpenLiveChat = () => {
+  //   setIsOpen(true);
+  //   setUnreadMessageCount(0); // 🚀 Clear count when opened
+  //   setShowOptions(false);
+  //   setShowPhoneInfo(false);
+  // };
+
   const handleOpenLiveChat = () => {
+    if (!user) {
+      toast.error("Please sign in to start a live chat with our team.");
+      // Optional: router.push('/signin');
+      return;
+    }
     setIsOpen(true);
-    setUnreadMessageCount(0); // 🚀 Clear count when opened
+    setUnreadMessageCount(0);
     setShowOptions(false);
     setShowPhoneInfo(false);
   };
@@ -144,9 +173,34 @@ const ChatWidget = () => {
     }
   }, [messages, isAdminTyping]);
 
+  // useEffect(() => {
+  //   const syncUnreadCount = async () => {
+  //     // Only sync if user is logged in and we haven't opened the chat yet
+  //     if (!user?.id || isOpen) return;
+
+  //     try {
+  //       const res = await apiFetch("/chat/conversations/sync-room", {
+  //         method: "GET",
+  //         headers: { "X-Customer-Request": "true" },
+  //       });
+
+  //       if (res.ok) {
+  //         const json = await res.json();
+  //         // The backend usually sends unreadCount in the conversation object
+  //         const count = json?.data?.unreadCount || json?.unreadCount || 0;
+  //         setUnreadMessageCount(count);
+  //       }
+  //     } catch (err) {
+  //       console.error("Customer unread sync failed:", err);
+  //     }
+  //   };
+
+  //   syncUnreadCount();
+  // }, [user?.id, setUnreadMessageCount]);
+
   useEffect(() => {
     const syncUnreadCount = async () => {
-      // Only sync if user is logged in and we haven't opened the chat yet
+      // Only sync if user is logged in
       if (!user?.id || isOpen) return;
 
       try {
@@ -154,7 +208,6 @@ const ChatWidget = () => {
           method: "GET",
           headers: { "X-Customer-Request": "true" },
         });
-
         if (res.ok) {
           const json = await res.json();
           // The backend usually sends unreadCount in the conversation object
@@ -317,7 +370,8 @@ const ChatWidget = () => {
     );
   };
 
-  if (!isStoreReady || !user) return null;
+  // if (!isStoreReady || !user) return null;
+  if (!isStoreReady) return null;
 
   const whatsappHref = formatWhatsappUrl(
     settings?.whatsappUrl || settings?.phone,
@@ -419,17 +473,33 @@ const ChatWidget = () => {
           )}
 
           {/* 💬 Live Chat — show only if enableLiveChat is true */}
-          {enableLiveChat && (
+          {/* {enableLiveChat && (
             <button
-              onClick={handleOpenLiveChat} // 🚀 Updated
+              onClick={handleOpenLiveChat} 
               className="relative flex items-center justify-center w-12 h-12 bg-[#FF7050] text-white rounded-full shadow-lg hover:scale-110 transition-all border-none cursor-pointer"
               title="Live Chat"
             >
               <FiMessageSquare size={22} />
-              {/* Badge on the inner option button */}
               {unreadMessageCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white">
                   {unreadMessageCount}
+                </span>
+              )}
+            </button>
+          )} */}
+
+          {enableLiveChat && (
+            <button
+              onClick={handleOpenLiveChat}
+              className="relative flex items-center justify-center w-12 h-12 bg-[#FF7050] text-white rounded-full shadow-lg hover:scale-110 transition-all border-none cursor-pointer"
+              title="Live Chat"
+            >
+              <FiMessageSquare size={22} />
+              {/* Only show badge if user is logged in */}
+              {user && unreadMessageCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white">
+                  {" "}
+                  {unreadMessageCount}{" "}
                 </span>
               )}
             </button>
@@ -630,6 +700,34 @@ const ChatWidget = () => {
       )}
 
       {/* 🚀 THE MAIN FLOATING CM TOGGLE BUTTON */}
+      {/* <button
+        onClick={() => {
+          if (isOpen) {
+            setIsOpen(false);
+          } else {
+            setShowOptions(!showOptions);
+            if (showOptions) setShowPhoneInfo(false);
+            // If the user clicks this and options show,
+            // you might want to clear badge only when they enter 'Live Chat'
+          }
+        }}
+        type="button"
+        className="relative bg-[#FF7050] text-white w-14 h-14 rounded-full shadow-[0_8px_24px_rgba(255,112,80,0.35)] hover:bg-[#e66345] transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center z-[100] border-none outline-none"
+      >
+        {isOpen || showOptions ? (
+          <FiX size={28} />
+        ) : (
+          <>
+            <BsChatDotsFill size={28} />
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white font-bold text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in">
+                {unreadMessageCount}
+              </span>
+            )}
+          </>
+        )}
+      </button> */}
+
       <button
         onClick={() => {
           if (isOpen) {
@@ -649,10 +747,11 @@ const ChatWidget = () => {
         ) : (
           <>
             <BsChatDotsFill size={28} />
-            {/* 🚀 THE MAIN RED BADGE */}
-            {unreadMessageCount > 0 && (
+            {/* Only show badge if user is logged in */}
+            {user && unreadMessageCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#FF7050] text-white font-bold text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in">
-                {unreadMessageCount}
+                {" "}
+                {unreadMessageCount}{" "}
               </span>
             )}
           </>

@@ -6,6 +6,7 @@ export interface CategoryQuery {
   limit?: number;
   search?: string;
   status?: string;
+  level?: number;  
 }
 
 // 🚀 1. FETCH ONLY TRUE LEVEL-3 CHILD CATEGORIES

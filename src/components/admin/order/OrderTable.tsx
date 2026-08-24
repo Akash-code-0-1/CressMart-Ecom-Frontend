@@ -29,6 +29,7 @@ import {
   PackageCheck,
   XCircle,
   RotateCcw,
+  ExternalLink,
 } from "lucide-react";
 import Image from "next/image";
 import { debounce } from "lodash";
@@ -447,15 +448,221 @@ export default function OrderTable() {
 
   const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
+const handlePrint = useReactToPrint({
+  contentRef: invoiceRef, // Note: newer versions use contentRef instead of content
+  documentTitle: `Invoice_${selectedOrderForPrint?.order_number || "Order"}`,
+  onAfterPrint: () => setSelectedOrderForPrint(null),
+});
+
+useEffect(() => {
+  // Only trigger if we have an order AND the ref is actually attached to a DOM element
+  if (selectedOrderForPrint && invoiceRef.current) {
+    const timer = setTimeout(() => {
+      handlePrint();
+    }, 250); // Increased delay slightly to ensure DOM is ready
+    return () => clearTimeout(timer);
+  }
+}, [selectedOrderForPrint, handlePrint]);
+
+  const getTrackingUrl = (code: string, provider: string) => {
+    if (!code) return null;
+    const p = provider?.toLowerCase() || "";
+    if (p.includes("steadfast")) return `https://steadfast.com.bd/t/${code}`;
+    if (p.includes("pathao"))
+      return `https://pathao.com/courier-tracking?tracking_code=${code}`;
+    if (p.includes("redx"))
+      return `https://redx.com.bd/track-order/?trackingId=${code}`;
+    if (p.includes("paperfly"))
+      return `https://www.paperfly.com.bd/tracking.php?tracking_number=${code}`;
+    return null;
+  };
+
+  const isLead = (item: any) => !!item.cart_items && !item.order_items;
+
+  useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setActiveMenuId(null);
+      setShowStatusMenu(false);
+    }
+  };
+
+  if (activeMenuId) {
+    document.addEventListener("mousedown", handleClickOutside);
+  }
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [activeMenuId]);
+
   // --- COLUMNS ---
+  // const columns = [
+  //   {
+  //     header: isIncompleteTab ? "Lead ID" : "Order Id",
+  //     key: "id",
+  //     render: (item: any) => (
+  //       <span
+  //         onClick={() => openDetails(item)}
+  //         className="font-medium text-[14px] cursor-pointer hover:text-[#1DA1F2] transition-colors"
+  //       >
+  //         {isIncompleteTab ? `LEAD-${item.id.slice(0, 8)}` : item.order_number}
+  //       </span>
+  //     ),
+  //   },
+  //   {
+  //     header: "Product",
+  //     key: "product",
+  //     render: (item: any) => {
+  //       const items = isIncompleteTab
+  //         ? item.cart_items || []
+  //         : item.order_items || [];
+  //       const firstItem = items[0];
+
+  //       // 🚀 THE FIX: We look for the 'product' object first because it now
+  //       // exists in BOTH regular orders and our enriched incomplete leads.
+  //       const productInfo = firstItem?.product || {};
+
+  //       // Check images array from product table first, then fallback to direct image strings
+  //       const img =
+  //         productInfo.images?.[0] ||
+  //         productInfo.featuredImage ||
+  //         firstItem?.image ||
+  //         firstItem?.externalImage;
+
+  //       // Check name from product table first, then fallback to direct name strings
+  //       const name =
+  //         productInfo.name ||
+  //         firstItem?.product_name ||
+  //         firstItem?.externalName ||
+  //         (isIncompleteTab ? "Guest Item" : "Untitled");
+
+  //       return (
+  //         <div
+  //           onClick={() => openDetails(item)}
+  //           className="flex items-center gap-3 cursor-pointer group"
+  //         >
+  //           <Image
+  //             src={getImgUrl(img)}
+  //             alt="product"
+  //             width={40}
+  //             height={40}
+  //             unoptimized
+  //             className="rounded-lg object-cover bg-gray-50 p-1 group-hover:border-[#1DA1F2] transition-all"
+  //           />
+  //           <div className="flex flex-col">
+  //             <span className="truncate max-w-[150px] text-[14px] font-medium text-black group-hover:text-[#1DA1F2] transition-colors">
+  //               {name}
+  //             </span>
+  //             {items.length > 1 && (
+  //               <span className="text-[10px] text-[#1DA1F2] font-bold">
+  //                 +{items.length - 1} more items
+  //               </span>
+  //             )}
+  //           </div>
+  //         </div>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     header: "Customer",
+  //     key: "customer",
+  //     render: (item: any) => (
+  //       <div onClick={() => openDetails(item)} className="cursor-pointer">
+  //         <p className="font-medium text-[14px] text-black">
+  //           {item.customer_name || "Anonymous Guest"}
+  //         </p>
+  //         <p className="text-[12px] text-gray-500">
+  //           {item.customer_phone || "No Phone"}
+  //         </p>
+  //       </div>
+  //     ),
+  //   },
+  //   {
+  //     header: "Amount",
+  //     key: "amount",
+  //     render: (item: any) => {
+  //       const totalValue = isIncompleteTab
+  //         ? Number(item.total_amount)
+  //         : Number(item.total_bill) || Number(item.total_amount_due || 0);
+  //       return (
+  //         <div
+  //           onClick={() => openDetails(item)}
+  //           className="cursor-pointer space-y-0.5"
+  //         >
+  //           <span className="font-semibold text-[14px] text-black block">
+  //             ৳{totalValue || 0}
+  //           </span>
+  //           {isIncompleteTab && (
+  //             <span className="text-[10px] text-gray-400">Potential Sale</span>
+  //           )}
+  //         </div>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     header: "Status",
+  //     key: "status",
+  //     render: (item: any) => {
+  //       if (isIncompleteTab) {
+  //         return (
+  //           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold bg-gray-50 text-gray-400 border-gray-200">
+  //             <Clock size={15} />
+  //             <span>Abandoned</span>
+  //           </div>
+  //         );
+  //       }
+  //       const config = getStatusConfig(item.status);
+  //       const IconComponent = config.icon;
+  //       return (
+  //         <div
+  //           onClick={() => openDetails(item)}
+  //           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold transition-all ${config.className}`}
+  //         >
+  //           <IconComponent size={15} className={config.iconColor} />
+  //           <span className="capitalize">{config.label}</span>
+  //         </div>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     header: "Action",
+  //     key: "action",
+  //     render: (order: any) => (
+  //       <button
+  //         onClick={(e) => {
+  //           e.stopPropagation();
+  //           const rect = e.currentTarget.getBoundingClientRect();
+  //           setMenuPos({
+  //             top: rect.bottom + 8,
+  //             left: rect.left - 165,
+  //             opensUpward: false,
+  //           });
+  //           setActiveMenuId(activeMenuId === order.id ? null : order.id);
+  //           setShowStatusMenu(false);
+  //         }}
+  //         className="p-1 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+  //       >
+  //         <MoreVertical size={20} />
+  //       </button>
+  //     ),
+  //   },
+  // ];
+
   const columns = [
+    {
+      header: "No.",
+      key: "index",
+      render: (_: any, index: number) => (
+        <span className="text-gray-500 font-medium">
+          {(page - 1) * 10 + index + 1}
+        </span>
+      ),
+    },
     {
       header: isIncompleteTab ? "Lead ID" : "Order Id",
       key: "id",
       render: (item: any) => (
         <span
           onClick={() => openDetails(item)}
-          className="font-medium text-[14px] cursor-pointer hover:text-[#1DA1F2] transition-colors"
+          className="font-bold text-[13px] cursor-pointer text-gray-800 hover:text-[#1DA1F2]"
         >
           {isIncompleteTab ? `LEAD-${item.id.slice(0, 8)}` : item.order_number}
         </span>
@@ -468,86 +675,123 @@ export default function OrderTable() {
         const items = isIncompleteTab
           ? item.cart_items || []
           : item.order_items || [];
-        const firstItem = items[0];
-
-        // 🚀 THE FIX: We look for the 'product' object first because it now
-        // exists in BOTH regular orders and our enriched incomplete leads.
-        const productInfo = firstItem?.product || {};
-
-        // Check images array from product table first, then fallback to direct image strings
+        const first = items[0];
+        const productInfo = first?.product || {};
         const img =
           productInfo.images?.[0] ||
           productInfo.featuredImage ||
-          firstItem?.image ||
-          firstItem?.externalImage;
-
-        // Check name from product table first, then fallback to direct name strings
-        const name =
-          productInfo.name ||
-          firstItem?.product_name ||
-          firstItem?.externalName ||
-          (isIncompleteTab ? "Guest Item" : "Untitled");
-
+          first?.image ||
+          first?.externalImage;
         return (
-          <div
-            onClick={() => openDetails(item)}
-            className="flex items-center gap-3 cursor-pointer group"
-          >
+          <div className="flex items-center gap-2">
             <Image
               src={getImgUrl(img)}
-              alt="product"
-              width={40}
-              height={40}
+              alt="p"
+              width={38}
+              height={38}
               unoptimized
-              className="rounded-lg object-cover bg-gray-50 p-1 group-hover:border-[#1DA1F2] transition-all"
+              className="rounded border bg-white p-0.5"
             />
-            <div className="flex flex-col">
-              <span className="truncate max-w-[150px] text-[14px] font-medium text-black group-hover:text-[#1DA1F2] transition-colors">
-                {name}
-              </span>
-              {items.length > 1 && (
-                <span className="text-[10px] text-[#1DA1F2] font-bold">
-                  +{items.length - 1} more items
-                </span>
-              )}
-            </div>
+            <span className="truncate max-w-[130px] text-[12px] font-bold text-gray-700">
+              {productInfo.name || first?.product_name || "Untitled"}
+            </span>
           </div>
         );
       },
     },
     {
-      header: "Customer",
+      header: "Customer Info",
       key: "customer",
       render: (item: any) => (
-        <div onClick={() => openDetails(item)} className="cursor-pointer">
-          <p className="font-medium text-[14px] text-black">
-            {item.customer_name || "Anonymous Guest"}
+        <div className="text-[12px]">
+          <p className="font-bold text-gray-900 leading-tight">
+            {item.customer_name || "Guest"}
           </p>
-          <p className="text-[12px] text-gray-500">
-            {item.customer_phone || "No Phone"}
-          </p>
+          <p className="text-gray-500">{item.customer_phone || "N/A"}</p>
         </div>
       ),
     },
     {
-      header: "Amount",
+      header: "Date",
+      key: "created_at",
+      render: (item: any) => (
+        <div className="text-[11px] leading-tight text-gray-600">
+          <p className="font-bold text-gray-800">
+            {new Date(item.created_at).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+          <p>
+            {new Date(item.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+      ),
+    },
+{
+      header: "Price",
       key: "amount",
       render: (item: any) => {
-        const totalValue = isIncompleteTab
-          ? Number(item.total_amount)
-          : Number(item.total_bill) || Number(item.total_amount_due || 0);
+        // 1. Check total_amount_due (Standard for regular orders)
+        // 2. Check total_amount (Standard for incomplete leads)
+        // 3. Check total_bill (Standard for some calculated views)
+        const displayPrice = Number(
+          item.total_amount_due || 
+          0
+        );
+
         return (
-          <div
-            onClick={() => openDetails(item)}
-            className="cursor-pointer space-y-0.5"
-          >
-            <span className="font-semibold text-[14px] text-black block">
-              ৳{totalValue || 0}
-            </span>
-            {isIncompleteTab && (
-              <span className="text-[10px] text-gray-400">Potential Sale</span>
-            )}
-          </div>
+          <span className="font-bold text-[13px] text-gray-900 font-poppins">
+            ৳{displayPrice.toLocaleString()}
+          </span>
+        );
+      },
+    },
+{
+      header: "Supplier",
+      key: "supplier",
+      render: (item: any) => {
+        const items = isIncompleteTab
+          ? item.cart_items || []
+          : item.order_items || [];
+        
+        const firstItem = items[0];
+        
+        // 1. Identify the Supplier name
+        let supplierName = "Own Product"; // Default
+
+        if (isIncompleteTab) {
+          // Check metadata fetched for incomplete leads
+          const resolved = productDetailsMap[firstItem?.productId];
+          if (resolved?.isExternal || firstItem?.isExternal) {
+            supplierName = resolved?.supplier_name || "Mohashagor";
+          }
+        } else {
+          // Check regular order items
+          // In your backend, external items usually have external_product_id
+          if (firstItem?.external_product_id || firstItem?.isExternal) {
+            supplierName = firstItem?.supplier_name || "Mohashagor";
+          } else if (item.source && !["direct", "admin_panel", "system"].includes(item.source.toLowerCase())) {
+            // If the source itself is the supplier name
+            supplierName = item.source;
+          }
+        }
+
+        // 2. Define colors based on supplier type
+        const isOwn = supplierName.toLowerCase() === "own product" || supplierName.toLowerCase() === "system";
+        
+        return (
+          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
+            isOwn 
+              ? "bg-blue-50 text-blue-600 border border-blue-100" 
+              : "bg-orange-50 text-orange-600 border border-orange-100"
+          }`}>
+            {supplierName}
+          </span>
         );
       },
     },
@@ -555,24 +799,35 @@ export default function OrderTable() {
       header: "Status",
       key: "status",
       render: (item: any) => {
-        if (isIncompleteTab) {
-          return (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold bg-gray-50 text-gray-400 border-gray-200">
-              <Clock size={15} />
-              <span>Abandoned</span>
-            </div>
-          );
-        }
-        const config = getStatusConfig(item.status);
-        const IconComponent = config.icon;
+        const config = getStatusConfig(
+          isIncompleteTab ? "PENDING" : item.status,
+        );
         return (
           <div
-            onClick={() => openDetails(item)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[13px] font-semibold transition-all ${config.className}`}
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}
           >
-            <IconComponent size={15} className={config.iconColor} />
-            <span className="capitalize">{config.label}</span>
+            <config.icon size={12} className={config.iconColor} />
+            <span>{isIncompleteTab ? "Abandoned" : config.label}</span>
           </div>
+        );
+      },
+    },
+    {
+      header: "Track ID",
+      key: "tracking_code",
+      render: (item: any) => {
+        const code = item.tracking_code || item.trackingCode;
+        const url = getTrackingUrl(code, item.courier_name || item.courierName);
+        if (!code) return <span className="text-gray-300 text-[11px]">-</span>;
+        return (
+          <a
+            href={url || "#"}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-[#1DA1F2] hover:underline font-bold text-[12px]"
+          >
+            {code} <ExternalLink size={10} />
+          </a>
         );
       },
     },
@@ -592,9 +847,9 @@ export default function OrderTable() {
             setActiveMenuId(activeMenuId === order.id ? null : order.id);
             setShowStatusMenu(false);
           }}
-          className="p-1 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+          className="p-1 hover:bg-gray-100 rounded-full"
         >
-          <MoreVertical size={20} />
+          <MoreVertical size={20} className="text-gray-400" />
         </button>
       ),
     },
@@ -650,45 +905,38 @@ export default function OrderTable() {
       </div>
 
       {/* --- MODIFIED ACTION MENU --- */}
+{/* --- PROFESSIONAL ACTION MENU --- */}
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+          className="fixed bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
           style={{ top: menuPos.top, left: menuPos.left }}
         >
-          {/* Group 1: Core Actions (Hidden for Incomplete) */}
+          {/* Group 1: Core Actions */}
           {!isIncompleteTab && (
-            <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+            <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
               <button
-                onClick={() =>
-                  router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)
-                }
-                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+                onClick={() => router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)}
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
               >
-                <Edit
-                  size={16}
-                  className="text-gray-400 group-hover:text-[#1DA1F2]"
-                />
+                <Edit size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
                 <span className="font-medium">Edit Order</span>
               </button>
             </div>
           )}
 
-          {/* Group 2: View & Output (Conditional Print) */}
-          <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+          {/* Group 2: View & Output */}
+          <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
             {!isIncompleteTab && (
               <button
                 onClick={() => {
                   const o = orderList.find((x: any) => x.id === activeMenuId);
-                  setSelectedOrderForPrint(o);
+                  if (o) setSelectedOrderForPrint(o);
                   setActiveMenuId(null);
                 }}
-                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
               >
-                <Printer
-                  size={16}
-                  className="text-gray-400 group-hover:text-[#1DA1F2]"
-                />
+                <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
                 <span className="font-medium">Print Invoice</span>
               </button>
             )}
@@ -698,32 +946,35 @@ export default function OrderTable() {
                 const o = orderList.find((x: any) => x.id === activeMenuId);
                 openDetails(o);
               }}
-              className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group"
+              className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <FileText
-                size={16}
-                className="text-gray-400 group-hover:text-[#1DA1F2]"
-              />
+              <FileText size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
               <span className="font-medium">View Details</span>
             </button>
           </div>
 
-          {/* Group 3: Status Management (Hidden for Incomplete) */}
+          {/* Group 3: Status Management (With Hover-Out logic) */}
           {!isIncompleteTab && (
-            <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
-              <div className="relative group/status">
+            <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
+              <div 
+                className="relative"
+                onMouseLeave={() => setShowStatusMenu(false)} // Close when mouse leaves the entire area
+              >
                 <button
                   onMouseEnter={() => setShowStatusMenu(true)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg transition-colors"
+                  className={`w-full flex items-center justify-between px-3 py-2 text-[14px] rounded-lg transition-colors cursor-pointer ${
+                    showStatusMenu ? 'bg-blue-50 text-[#1DA1F2]' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
-                    <RefreshCw size={16} className="text-gray-400" />
+                    <RefreshCw size={16} className={showStatusMenu ? 'text-[#1DA1F2]' : 'text-gray-400'} />
                     <span className="font-medium">Update Status</span>
                   </div>
-                  <ChevronLeft size={14} className="opacity-50" />
+                  <ChevronLeft size={14} className={`transition-transform ${showStatusMenu ? 'rotate-180 text-[#1DA1F2]' : 'opacity-50'}`} />
                 </button>
+
                 {showStatusMenu && (
-                  <div className="absolute right-full mr-2 w-[180px] bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[10000]">
+                  <div className="absolute right-full top-[-8px] mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200">
                     {[
                       "PENDING",
                       "CONFIRMED",
@@ -733,111 +984,52 @@ export default function OrderTable() {
                       "CANCELED",
                       "RETURNED",
                       "REFUNDED",
-                      "SENT_TO_COURIER",
                     ].map((s) => (
                       <button
                         key={s}
-                        // Inside your showStatusMenu map
                         onClick={() => {
-                          if (s === "SENT_TO_COURIER") {
-                            // 🚀 Pass the target status (s) to the modal
-                            setShippedModal({
-                              open: true,
-                              id: activeMenuId,
-                              targetStatus: s,
-                            });
+                          if (s === "SHIPPED") {
+                            setShippedModal({ open: true, id: activeMenuId, targetStatus: s });
                             setActiveMenuId(null);
-                            setShowStatusMenu(false);
                           } else {
-                            statusMutation.mutate({
-                              id: activeMenuId!,
-                              payload: { status: s },
-                            });
+                            statusMutation.mutate({ id: activeMenuId!, payload: { status: s } });
+                            setActiveMenuId(null);
                           }
+                          setShowStatusMenu(false);
                         }}
-                        className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer"
+                        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
                       >
                         {s.replace(/_/g, " ")}
                       </button>
                     ))}
                   </div>
                 )}
-
-                {/* {[
-                  "PENDING",
-                  "CONFIRMED",
-                  "ON_HOLD",
-                  "SHIPPED",
-                  "DELIVERED",
-                  "CANCELED",
-                  "RETURNED",
-                  "REFUNDED",
-                  "SENT_TO_COURIER",
-                ].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      // 🚀 THE FIX: If the status is SHIPPED, open the modal instead of mutating immediately
-                      if (s === "SHIPPED" || s === "SENT_TO_COURIER") {
-                        setShippedModal({ open: true, id: activeMenuId });
-                        setActiveMenuId(null);
-                        setShowStatusMenu(false);
-                      } else {
-                        statusMutation.mutate({
-                          id: activeMenuId!,
-                          payload: { status: s },
-                        });
-                      }
-                    }}
-                    className="w-full text-left px-4 py-1.5 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2]"
-                  >
-                    {s}
-                  </button>
-                ))} */}
               </div>
             </div>
           )}
 
-          {/* Group 4: Dangerous Actions */}
+          {/* Group 4: Delete */}
           <div className="px-2">
             <button
               onClick={() => {
                 if (!activeMenuId) return;
-
-                // Confirmation dialog for professionalism
-                const msg = isIncompleteTab
-                  ? "Are you sure you want to delete this incomplete lead?"
-                  : "Are you sure you want to delete this order?";
-
+                const msg = isIncompleteTab ? "Delete lead?" : "Delete order?";
                 if (window.confirm(msg)) {
-                  if (isIncompleteTab) {
-                    deleteLeadMutation.mutate(activeMenuId);
-                  } else {
-                    // If you have a regular order delete mutation, call it here
-                    // orderDeleteMutation.mutate(activeMenuId);
-                    toast.error("Order deletion not implemented yet.");
-                  }
+                  if (isIncompleteTab) deleteLeadMutation.mutate(activeMenuId);
+                  else toast.error("Not implemented");
                 }
               }}
-              className="w-full text-left px-3 py-2.5 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-bold cursor-pointer"
+              className="w-full text-left px-3 py-2 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-bold cursor-pointer"
             >
-              {deleteLeadMutation.isPending ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Trash2 size={16} />
-              )}
-              <span>
-                {deleteLeadMutation.isPending
-                  ? "Deleting..."
-                  : `Delete ${isIncompleteTab ? "Lead" : "Order"}`}
-              </span>
+              <Trash2 size={16} />
+              <span>{deleteLeadMutation.isPending ? "Deleting..." : `Delete ${isIncompleteTab ? "Lead" : "Order"}`}</span>
             </button>
           </div>
         </div>
       )}
 
       {/* Hidden component for printing */}
-      <div className="hidden">
+     <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
         <InvoicePrint
           ref={invoiceRef}
           order={selectedOrderForPrint}
@@ -1203,3 +1395,864 @@ export default function OrderTable() {
     </div>
   );
 }
+
+// "use client";
+// import { useState, useRef, useEffect, useMemo } from "react";
+// import {
+//   useQuery,
+//   useMutation,
+//   useQueryClient,
+//   useQueries,
+// } from "@tanstack/react-query";
+// import {
+//   Search,
+//   MoreVertical,
+//   Edit,
+//   Printer,
+//   FileText,
+//   RefreshCw,
+//   Trash2,
+//   ChevronLeft,
+//   X,
+//   Loader2,
+//   User,
+//   MapPin,
+//   Package,
+//   Info,
+//   Clock,
+//   CheckCircle2,
+//   PauseCircle,
+//   Truck,
+//   PackageCheck,
+//   XCircle,
+//   RotateCcw,
+//   ExternalLink,
+// } from "lucide-react";
+// import Image from "next/image";
+// import { debounce } from "lodash";
+// import { toast } from "react-hot-toast";
+
+// import DataTable from "../common/DataTable";
+// import Pagination2 from "../common/Pagination2";
+// import TableTabs from "./TableTabs";
+
+// import {
+//   getAllOrdersService,
+//   updateOrderStatusService,
+//   fetchOrderCounts,
+// } from "@/services-api/orderService";
+// import { useRouter } from "next/navigation";
+// import { InvoicePrint } from "./InvoicePrint";
+// import {
+//   deleteIncompleteOrderService,
+//   getAllIncompleteOrdersService,
+// } from "@/services-api/incompleteOrderService";
+// import { apiFetch } from "@/utils/api";
+
+// // --- Helper for Courier Tracking Links ---
+// const getTrackingUrl = (code: string, provider: string) => {
+//   if (!code) return null;
+//   const p = provider?.toLowerCase() || "";
+//   if (p.includes("steadfast")) return `https://steadfast.com.bd/t/${code}`;
+//   if (p.includes("pathao"))
+//     return `https://pathao.com/courier-tracking?tracking_code=${code}`;
+//   if (p.includes("redx"))
+//     return `https://redx.com.bd/track-order/?trackingId=${code}`;
+//   if (p.includes("paperfly"))
+//     return `https://www.paperfly.com.bd/tracking.php?tracking_number=${code}`;
+//   return null;
+// };
+
+// const getStatusConfig = (status: string) => {
+//   if (!status) {
+//     return {
+//       label: "Unknown",
+//       icon: Info,
+//       className: "bg-gray-50 text-gray-500 border-gray-200",
+//       iconColor: "text-gray-400",
+//     };
+//   }
+//   const upper = status.toUpperCase();
+//   switch (upper) {
+//     case "PENDING":
+//       return {
+//         label: "Pending",
+//         icon: Clock,
+//         className: "bg-amber-50 text-amber-700 border-amber-200",
+//         iconColor: "text-amber-500",
+//       };
+//     case "CONFIRMED":
+//       return {
+//         label: "Confirmed",
+//         icon: CheckCircle2,
+//         className: "bg-blue-50 text-[#1DA1F2] border-blue-200",
+//         iconColor: "text-[#1DA1F2]",
+//       };
+//     case "SHIPPED":
+//       return {
+//         label: "Shipped",
+//         icon: Truck,
+//         className: "bg-purple-50 text-purple-700 border-purple-200",
+//         iconColor: "text-purple-500",
+//       };
+//     case "DELIVERED":
+//       return {
+//         label: "Delivered",
+//         icon: PackageCheck,
+//         className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+//         iconColor: "text-emerald-500",
+//       };
+//     case "CANCELED":
+//       return {
+//         label: "Canceled",
+//         icon: XCircle,
+//         className: "bg-rose-50 text-rose-700 border-rose-200",
+//         iconColor: "text-rose-500",
+//       };
+//     case "SENT_TO_COURIER":
+//       return {
+//         label: "To Courier",
+//         icon: Truck,
+//         className: "bg-indigo-50 text-indigo-700 border-indigo-200",
+//         iconColor: "text-indigo-500",
+//       };
+//     default:
+//       return {
+//         label: status.replace(/_/g, " "),
+//         icon: Info,
+//         className: "bg-gray-50 text-gray-600 border-gray-200",
+//         iconColor: "text-gray-400",
+//       };
+//   }
+// };
+
+// export default function OrderTable() {
+//   const router = useRouter();
+//   const queryClient = useQueryClient();
+//   const [activeTab, setActiveTab] = useState(0);
+//   const [page, setPage] = useState(1);
+//   const [searchQuery, setSearchQuery] = useState("");
+
+//   const tabs = [
+//     "All order",
+//     "Pending",
+//     "Confirmed",
+//     "Incomplete",
+//     "Delivered",
+//     "Canceled",
+//     "Returned",
+//   ];
+//   const isIncompleteTab = tabs[activeTab] === "Incomplete";
+
+//   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+//   const [menuPos, setMenuPos] = useState({
+//     top: 0,
+//     left: 0,
+//     opensUpward: false,
+//   });
+//   const [showStatusMenu, setShowStatusMenu] = useState(false);
+//   const [shippedModal, setShippedModal] = useState<{
+//     open: boolean;
+//     id: string | null;
+//     targetStatus?: string | null;
+//   }>({ open: false, id: null });
+//   const [detailsModal, setDetailsModal] = useState<{
+//     open: boolean;
+//     order: any | null;
+//   }>({ open: false, order: null });
+//   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<
+//     any | null
+//   >(null);
+//   const invoiceRef = useRef<HTMLDivElement>(null);
+//   const menuRef = useRef<HTMLDivElement>(null);
+//   const baseStorageUrl =
+//     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+//     "http://localhost:8082";
+
+//   // --- DATA FETCHING ---
+//   const { data: serverData, isLoading } = useQuery({
+//     queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
+//     queryFn: async () => {
+//       if (isIncompleteTab)
+//         return await getAllIncompleteOrdersService({ page, limit: 10 });
+//       const status =
+//         tabs[activeTab] === "All order" ? "" : tabs[activeTab].toUpperCase();
+//       return await getAllOrdersService({
+//         page,
+//         limit: 10,
+//         status,
+//         search: searchQuery,
+//         refresh: true,
+//       });
+//     },
+//     placeholderData: (previousData) => previousData,
+//   });
+
+//   const orderList = useMemo(() => {
+//     if (!serverData) return [];
+//     if (serverData.data && Array.isArray(serverData.data.data))
+//       return serverData.data.data;
+//     if (Array.isArray(serverData.data)) return serverData.data;
+//     return [];
+//   }, [serverData]);
+
+//   const meta = useMemo(() => {
+//     const m = serverData?.data?.meta || serverData?.meta;
+//     return m || { totalPages: 1, total: 0 };
+//   }, [serverData]);
+
+//   const { data: tabCountsData } = useQuery({
+//     queryKey: ["order-tab-counts"],
+//     queryFn: async () => {
+//       const standardCounts = await fetchOrderCounts(
+//         tabs.filter((t) => t !== "Incomplete"),
+//       );
+//       let incompleteCount = 0;
+//       try {
+//         const leadRes = await getAllIncompleteOrdersService({
+//           page: 1,
+//           limit: 1,
+//         });
+//         incompleteCount =
+//           leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
+//       } catch (e) {}
+//       return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
+//     },
+//   });
+
+//   const counts = useMemo(
+//     () =>
+//       tabCountsData?.reduce(
+//         (acc: any, curr: any) => ({ ...acc, [curr.tab]: curr.count }),
+//         {},
+//       ) || {},
+//     [tabCountsData],
+//   );
+
+//   // --- MUTATIONS ---
+//   const statusMutation = useMutation({
+//     mutationFn: ({ id, payload }: any) => updateOrderStatusService(id, payload),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+//       queryClient.invalidateQueries({ queryKey: ["order-tab-counts"] });
+//       toast.success("Status updated.");
+//       setActiveMenuId(null);
+//       setShippedModal({ open: false, id: null });
+//     },
+//   });
+
+//   const deleteLeadMutation = useMutation({
+//     mutationFn: (id: string) => deleteIncompleteOrderService(id),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+//       queryClient.invalidateQueries({ queryKey: ["order-tab-counts"] });
+//       toast.success("Removed successfully");
+//       setActiveMenuId(null);
+//     },
+//   });
+
+//   const handleSearch = debounce((val: string) => {
+//     setSearchQuery(val);
+//     setPage(1);
+//   }, 500);
+
+//   const getImgUrl = (rawImg: any) => {
+//     const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
+//     return cleanImg !== ""
+//       ? cleanImg.startsWith("http")
+//         ? cleanImg
+//         : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
+//       : "/images/products/product2.png";
+//   };
+
+//   // --- RESOLVING METADATA FOR MODAL ---
+//   const modalItems = useMemo(
+//     () =>
+//       detailsModal.open && detailsModal.order && isIncompleteTab
+//         ? detailsModal.order.cart_items || []
+//         : [],
+//     [detailsModal],
+//   );
+//   const resolvedModalProducts = useQueries({
+//     queries: modalItems.map((item: any) => ({
+//       queryKey: ["product-metadata", item.productId],
+//       queryFn: async () => {
+//         const res = await apiFetch(`/products/${item.productId}`);
+//         const json = await res.json();
+//         return json.data || json;
+//       },
+//       enabled: detailsModal.open && !!item.productId,
+//     })),
+//   });
+
+//   const productDetailsMap = useMemo(() => {
+//     const map: Record<string, any> = {};
+//     resolvedModalProducts.forEach((query) => {
+//       const product = query.data as Record<string, any>;
+//       if (product?.id) map[product.id] = product;
+//     });
+//     return map;
+//   }, [resolvedModalProducts]);
+
+//   // --- TABLE COLUMNS ---
+//   const columns = [
+//     {
+//       header: "No.",
+//       key: "index",
+//       render: (_: any, index: number) => (
+//         <span className="text-gray-500 font-medium">
+//           {(page - 1) * 10 + index + 1}
+//         </span>
+//       ),
+//     },
+//     {
+//       header: isIncompleteTab ? "Lead ID" : "Order Id",
+//       key: "id",
+//       render: (item: any) => (
+//         <span
+//           onClick={() => setDetailsModal({ open: true, order: item })}
+//           className="font-bold text-[13px] cursor-pointer text-gray-800 hover:text-[#1DA1F2]"
+//         >
+//           {isIncompleteTab ? `LEAD-${item.id.slice(0, 8)}` : item.order_number}
+//         </span>
+//       ),
+//     },
+//     {
+//       header: "Product",
+//       key: "product",
+//       render: (item: any) => {
+//         const items = isIncompleteTab
+//           ? item.cart_items || []
+//           : item.order_items || [];
+//         const first = items[0];
+//         const productInfo = first?.product || {};
+//         const img =
+//           productInfo.images?.[0] ||
+//           productInfo.featuredImage ||
+//           first?.image ||
+//           first?.externalImage;
+//         const name =
+//           productInfo.name ||
+//           first?.product_name ||
+//           first?.externalName ||
+//           "Product";
+//         return (
+//           <div className="flex items-center gap-2">
+//             <Image
+//               src={getImgUrl(img)}
+//               alt="p"
+//               width={38}
+//               height={38}
+//               unoptimized
+//               className="rounded border bg-white p-0.5"
+//             />
+//             <div className="flex flex-col">
+//               <span className="truncate max-w-[130px] text-[12px] font-bold text-gray-700">
+//                 {name}
+//               </span>
+//               {items.length > 1 && (
+//                 <span className="text-[10px] text-[#1DA1F2] font-bold">
+//                   +{items.length - 1} more
+//                 </span>
+//               )}
+//             </div>
+//           </div>
+//         );
+//       },
+//     },
+//     {
+//       header: "Customer Info",
+//       key: "customer",
+//       render: (item: any) => (
+//         <div className="text-[12px]">
+//           <p className="font-bold text-gray-900 leading-tight">
+//             {item.customer_name || "Guest"}
+//           </p>
+//           <p className="text-gray-500">{item.customer_phone || "N/A"}</p>
+//         </div>
+//       ),
+//     },
+//     {
+//       header: "Date",
+//       key: "created_at",
+//       render: (item: any) => (
+//         <div className="text-[11px] leading-tight text-gray-600">
+//           <p className="font-bold text-gray-800">
+//             {new Date(item.created_at).toLocaleDateString("en-GB", {
+//               day: "2-digit",
+//               month: "short",
+//               year: "numeric",
+//             })}
+//           </p>
+//           <p>
+//             {new Date(item.created_at).toLocaleTimeString([], {
+//               hour: "2-digit",
+//               minute: "2-digit",
+//             })}
+//           </p>
+//         </div>
+//       ),
+//     },
+//     {
+//       header: "Price",
+//       key: "amount",
+//       render: (item: any) => (
+//         <span className="font-bold text-[13px] text-gray-900 font-poppins">
+//           ৳{Number(item.total_bill || item.total_amount || 0).toLocaleString()}
+//         </span>
+//       ),
+//     },
+//     {
+//       header: "Supplier",
+//       key: "supplier",
+//       render: (item: any) => (
+//         <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase tracking-tighter">
+//           {item.courier_name || item.source || "System"}
+//         </span>
+//       ),
+//     },
+//     {
+//       header: "Status",
+//       key: "status",
+//       render: (item: any) => {
+//         const config = getStatusConfig(
+//           isIncompleteTab ? "PENDING" : item.status,
+//         );
+//         const Icon = config.icon;
+//         return (
+//           <div
+//             className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}
+//           >
+//             <Icon size={12} className={config.iconColor} />
+//             <span>{isIncompleteTab ? "Abandoned" : config.label}</span>
+//           </div>
+//         );
+//       },
+//     },
+//     {
+//       header: "Track ID",
+//       key: "tracking_code",
+//       render: (item: any) => {
+//         const code = item.tracking_code || item.trackingCode;
+//         const url = getTrackingUrl(code, item.courier_name || item.courierName);
+//         if (!code) return <span className="text-gray-300 text-[11px]">-</span>;
+//         return (
+//           <a
+//             href={url || "#"}
+//             target="_blank"
+//             rel="noreferrer"
+//             className="flex items-center gap-1 text-[#1DA1F2] hover:underline font-bold text-[12px]"
+//           >
+//             {code} <ExternalLink size={10} />
+//           </a>
+//         );
+//       },
+//     },
+//     {
+//       header: "Action",
+//       key: "action",
+//       render: (order: any) => (
+//         <button
+//           onClick={(e) => {
+//             e.stopPropagation();
+//             const rect = e.currentTarget.getBoundingClientRect();
+//             setMenuPos({
+//               top: rect.bottom + 8,
+//               left: rect.left - 165,
+//               opensUpward: false,
+//             });
+//             setActiveMenuId(activeMenuId === order.id ? null : order.id);
+//             setShowStatusMenu(false);
+//           }}
+//           className="p-1 hover:bg-gray-100 rounded-full"
+//         >
+//           <MoreVertical size={20} className="text-gray-400" />
+//         </button>
+//       ),
+//     },
+//   ];
+
+//   if (isLoading)
+//     return (
+//       <div className="h-64 flex flex-col items-center justify-center gap-2">
+//         <Loader2 className="animate-spin text-[#1DA1F2]" />
+//         <span className="text-xs text-gray-400">Loading order dataset...</span>
+//       </div>
+//     );
+
+//   return (
+//     <div className="w-full font-lato">
+//       <div className="bg-white rounded-lg mt-4 shadow-sm border border-gray-100">
+//         <div className="p-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+//           <TableTabs
+//             tabs={tabs.map((t) => `${t} (${counts[t] || 0})`)}
+//             activeTab={activeTab}
+//             setActiveTab={(idx) => {
+//               setActiveTab(idx);
+//               setPage(1);
+//             }}
+//           />
+//           {!isIncompleteTab && (
+//             <div className="relative lg:w-[316px]">
+//               <input
+//                 type="text"
+//                 placeholder="Search orders..."
+//                 onChange={(e) => handleSearch(e.target.value)}
+//                 className="w-full bg-gray-50 rounded-lg py-2.5 pl-4 pr-10 text-[14px] border border-gray-200 outline-none focus:ring-2 focus:ring-[#1DA1F2]/20"
+//               />
+//               <Search
+//                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+//                 size={20}
+//               />
+//             </div>
+//           )}
+//         </div>
+
+//         <DataTable data={orderList} columns={columns} rowKey="id" />
+
+//         <div className="py-5">
+//           <Pagination2
+//             currentPage={page}
+//             totalPages={meta.totalPages}
+//             onPageChange={setPage}
+//           />
+//         </div>
+//       </div>
+
+//       {/* --- ACTION MENU --- */}
+//       {activeMenuId && (
+//         <div
+//           ref={menuRef}
+//           className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+//           style={{ top: menuPos.top, left: menuPos.left }}
+//         >
+//           <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+//             {!isIncompleteTab && (
+//               <button
+//                 onClick={() =>
+//                   router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)
+//                 }
+//                 className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+//               >
+//                 <Edit size={16} /> Edit Order
+//               </button>
+//             )}
+//             <button
+//               onClick={() => {
+//                 const o = orderList.find((x: any) => x.id === activeMenuId);
+//                 setDetailsModal({ open: true, order: o });
+//                 setActiveMenuId(null);
+//               }}
+//               className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+//             >
+//               <FileText size={16} /> View Details
+//             </button>
+//           </div>
+//           {!isIncompleteTab && (
+//             <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+//               <button
+//                 onClick={() => {
+//                   const o = orderList.find((x: any) => x.id === activeMenuId);
+//                   setSelectedOrderForPrint(o);
+//                   setActiveMenuId(null);
+//                 }}
+//                 className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-3"
+//               >
+//                 <Printer size={16} /> Print Invoice
+//               </button>
+//               <div className="relative">
+//                 <button
+//                   onMouseEnter={() => setShowStatusMenu(true)}
+//                   className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+//                 >
+//                   <div className="flex items-center gap-3">
+//                     <RefreshCw size={16} /> Status
+//                   </div>
+//                   <ChevronLeft size={14} />
+//                 </button>
+//                 {showStatusMenu && (
+//                   <div className="absolute right-full top-0 mr-2 w-[170px] bg-white border border-gray-100 rounded-xl shadow-2xl py-2">
+//                     {[
+//                       "PENDING",
+//                       "CONFIRMED",
+//                       "SHIPPED",
+//                       "DELIVERED",
+//                       "CANCELED",
+//                       "RETURNED",
+//                       "SENT_TO_COURIER",
+//                     ].map((s) => (
+//                       <button
+//                         key={s}
+//                         onClick={() => {
+//                           if (s === "SENT_TO_COURIER" || s === "SHIPPED") {
+//                             setShippedModal({
+//                               open: true,
+//                               id: activeMenuId,
+//                               targetStatus: s,
+//                             });
+//                             setActiveMenuId(null);
+//                           } else {
+//                             statusMutation.mutate({
+//                               id: activeMenuId!,
+//                               payload: { status: s },
+//                             });
+//                           }
+//                         }}
+//                         className="w-full text-left px-4 py-1.5 text-xs font-bold hover:bg-blue-50 hover:text-[#1DA1F2] uppercase"
+//                       >
+//                         {s.replace(/_/g, " ")}
+//                       </button>
+//                     ))}
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           )}
+//           <div className="px-2">
+//             <button
+//               onClick={() => {
+//                 if (window.confirm("Confirm delete?"))
+//                   isIncompleteTab
+//                     ? deleteLeadMutation.mutate(activeMenuId!)
+//                     : toast.error("Not implemented");
+//               }}
+//               className="w-full text-left px-3 py-2 text-sm text-rose-500 hover:bg-rose-50 font-bold flex items-center gap-3"
+//             >
+//               <Trash2 size={16} /> Delete
+//             </button>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* --- INVOICE PRINT (HIDDEN) --- */}
+//       <div className="hidden">
+//         <InvoicePrint
+//           ref={invoiceRef}
+//           order={selectedOrderForPrint}
+//           baseStorageUrl={baseStorageUrl}
+//         />
+//       </div>
+
+//       {/* --- DETAILS MODAL --- */}
+//       {detailsModal.open && detailsModal.order && (
+//         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10001] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+//           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] shadow-2xl overflow-hidden font-lato flex flex-col text-left">
+//             <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50">
+//               <div className="flex items-center gap-3">
+//                 <Package className="text-[#1DA1F2]" />
+//                 <div>
+//                   <h3 className="text-lg font-bold text-[#023337]">
+//                     {detailsModal.order.cart_items
+//                       ? "Incomplete Lead"
+//                       : "Order Summary"}
+//                   </h3>
+//                   <p className="text-xs text-gray-500 font-medium">
+//                     {detailsModal.order.order_number ||
+//                       `LEAD-${detailsModal.order.id.slice(0, 8)}`}
+//                   </p>
+//                 </div>
+//               </div>
+//               <button
+//                 onClick={() => setDetailsModal({ open: false, order: null })}
+//                 className="p-2 hover:bg-gray-200 rounded-full"
+//               >
+//                 <X size={20} />
+//               </button>
+//             </div>
+//             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//                 <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3">
+//                   <User className="text-blue-500" size={20} />
+//                   <div>
+//                     <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+//                       Customer
+//                     </p>
+//                     <p className="font-bold text-[#023337]">
+//                       {detailsModal.order.customer_name || "Guest"}
+//                     </p>
+//                     <p className="text-sm text-gray-600">
+//                       {detailsModal.order.customer_phone}
+//                     </p>
+//                   </div>
+//                 </div>
+//                 <div className="bg-emerald-50 p-4 rounded-xl flex items-start gap-3">
+//                   <MapPin className="text-emerald-500" size={20} />
+//                   <div>
+//                     <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">
+//                       Address
+//                     </p>
+//                     <p className="text-sm font-medium text-gray-700 leading-tight">
+//                       {detailsModal.order.customer_address || "N/A"}
+//                     </p>
+//                   </div>
+//                 </div>
+//                 <div className="bg-purple-50 p-4 rounded-xl flex items-start gap-3">
+//                   <Info className="text-purple-500" size={20} />
+//                   <div>
+//                     <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">
+//                       Status
+//                     </p>
+//                     <p className="text-sm font-bold text-purple-700 uppercase">
+//                       {detailsModal.order.status || "Abandoned"}
+//                     </p>
+//                   </div>
+//                 </div>
+//               </div>
+//               <div className="border rounded-xl overflow-hidden">
+//                 <table className="w-full text-left">
+//                   <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+//                     <tr>
+//                       <th className="px-4 py-3">Product</th>
+//                       <th className="px-4 py-3 text-center">Price</th>
+//                       <th className="px-4 py-3 text-center">Qty</th>
+//                       <th className="px-4 py-3 text-right">Total</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody className="divide-y">
+//                     {(isIncompleteTab
+//                       ? detailsModal.order.cart_items
+//                       : detailsModal.order.order_items || []
+//                     ).map((item: any, idx: number) => {
+//                       const resolved =
+//                         productDetailsMap[item.productId || item.product?.id];
+//                       const price = Number(
+//                         item.price ||
+//                           item.unit_price ||
+//                           resolved?.sell_price ||
+//                           0,
+//                       );
+//                       const qty = Number(item.quantity || item.qty || 1);
+//                       return (
+//                         <tr key={idx} className="text-sm hover:bg-gray-50">
+//                           <td className="px-4 py-3 flex items-center gap-3">
+//                             <Image
+//                               src={getImgUrl(
+//                                 resolved?.featuredImage || item.image,
+//                               )}
+//                               width={36}
+//                               height={36}
+//                               unoptimized
+//                               className="rounded border"
+//                               alt="p"
+//                             />
+//                             <span className="font-bold text-gray-700">
+//                               {resolved?.name ||
+//                                 item.product_name ||
+//                                 "Loading..."}
+//                             </span>
+//                           </td>
+//                           <td className="px-4 py-3 text-center font-poppins">
+//                             ৳{price}
+//                           </td>
+//                           <td className="px-4 py-3 text-center font-bold">
+//                             {qty}
+//                           </td>
+//                           <td className="px-4 py-3 text-right font-bold text-[#1DA1F2] font-poppins">
+//                             ৳{price * qty}
+//                           </td>
+//                         </tr>
+//                       );
+//                     })}
+//                   </tbody>
+//                 </table>
+//               </div>
+//               <div className="flex justify-between items-end border-t pt-6">
+//                 <div className="bg-gray-50 p-4 rounded-xl w-64">
+//                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">
+//                     Internal Note
+//                   </p>
+//                   <p className="text-xs text-gray-600 italic">
+//                     "{detailsModal.order.customer_note || "No notes."}"
+//                   </p>
+//                 </div>
+//                 <div className="text-right space-y-1">
+//                   <p className="text-xs text-gray-500 uppercase font-bold">
+//                     Total Payable
+//                   </p>
+//                   <p className="text-3xl font-black text-[#023337] font-poppins">
+//                     ৳
+//                     {detailsModal.order.total_amount ||
+//                       detailsModal.order.total_bill ||
+//                       0}
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* --- SHIPPED MODAL --- */}
+//       {shippedModal.open && (
+//         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10002] p-4 backdrop-blur-sm">
+//           <div className="bg-white rounded-2xl w-full max-w-[380px] shadow-2xl p-6">
+//             <div className="flex justify-between items-center mb-6">
+//               <h3 className="font-bold text-gray-900 tracking-tight">
+//                 Courier Assignment
+//               </h3>
+//               <button
+//                 onClick={() => setShippedModal({ open: false, id: null })}
+//                 className="text-gray-400"
+//               >
+//                 <X size={20} />
+//               </button>
+//             </div>
+//             <form
+//               onSubmit={(e) => {
+//                 e.preventDefault();
+//                 const fd = new FormData(e.currentTarget);
+//                 statusMutation.mutate({
+//                   id: shippedModal.id,
+//                   payload: {
+//                     status: shippedModal.targetStatus,
+//                     courierName: fd.get("c"),
+//                     trackingCode: fd.get("t"),
+//                   },
+//                 });
+//               }}
+//               className="space-y-4"
+//             >
+//               <div>
+//                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
+//                   Provider
+//                 </label>
+//                 <select
+//                   name="c"
+//                   required
+//                   className="w-full border rounded-xl p-3 text-sm bg-gray-50 outline-none focus:border-[#FF7050]"
+//                 >
+//                   <option value="Steadfast">Steadfast Courier</option>
+//                   <option value="Pathao">Pathao Courier</option>
+//                   <option value="RedX">RedX Logistics</option>
+//                   <option value="Manual">Others / Manual</option>
+//                 </select>
+//               </div>
+//               <div>
+//                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">
+//                   Tracking ID (Manual)
+//                 </label>
+//                 <input
+//                   name="t"
+//                   type="text"
+//                   placeholder="Enter code if manual"
+//                   className="w-full border rounded-xl p-3 text-sm outline-none focus:border-[#FF7050]"
+//                 />
+//               </div>
+//               <button
+//                 type="submit"
+//                 disabled={statusMutation.isPending}
+//                 className="w-full py-4 bg-[#FF7050] text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-100 flex items-center justify-center gap-2"
+//               >
+//                 {statusMutation.isPending ? (
+//                   <Loader2 size={18} className="animate-spin" />
+//                 ) : (
+//                   "Confirm Shipment"
+//                 )}
+//               </button>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }

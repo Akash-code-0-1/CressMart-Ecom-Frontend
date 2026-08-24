@@ -412,6 +412,7 @@ import ChatInterfaceIcon from "@/components/store-front/svg/svg/ChatInterfaceIco
 import ShopSettingsIcon from "@/components/store-front/svg/svg/ShopSettingsIcon";
 import PrimaryButton from "../common/PrimaryButton";
 
+
 const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
   const { register } = useFormContext();
   return (

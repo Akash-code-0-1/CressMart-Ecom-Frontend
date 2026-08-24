@@ -1,6 +1,16 @@
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
 
+
+export interface CategoryQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  level?: number;    // 👈 🚀 ADD THIS: 1=Root, 2=Sub, 3=Child
+  parent_id?: string;
+}
+
 // 🚀 1. CREATE NEW SUB CATEGORY (FORCES RELATION PARENT IDS)
 export const createSubCategory = async (payload: {
   name: string;

@@ -173,66 +173,130 @@ export default function AddOrderMain() {
 
   // --- 2. POPULATE FORM (Render-time hydration when existingOrder is loaded) ---
   const [loadedOrderId, setLoadedOrderId] = useState<string | null>(null);
-  if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
-    setLoadedOrderId(existingOrder.id);
-    setCustomer({
-      customerName: existingOrder.customer_name || "",
-      customerPhone: existingOrder.customer_phone || "",
-      customerAddress: existingOrder.customer_address || "",
-      customerNote: existingOrder.customer_note || "",
-    });
 
-    const realShippingFee = Number(existingOrder.shipping_fee) || 0;
-    setShipping({
-      shippingArea: realShippingFee > 60 ? "outside" : "inside",
-      paymentMethod: existingOrder.payment_method || "COD",
-      source: existingOrder.source || "admin_panel",
-      status: existingOrder.status || "PENDING",
-      paymentStatus: existingOrder.payment_status || "UNPAID",
-      manualDiscount: Number(existingOrder.discount_amount) || 0,
-      advanceAmount: Number(existingOrder.advance_amount) || 0,
-      actualShippingFee: realShippingFee,
-      courier_city_id: existingOrder.courier_city_id ?? null,
-      courier_zone_id: existingOrder.courier_zone_id ?? null,
-      courier_area_id: existingOrder.courier_area_id ?? null,
-    });
+  
+  // if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
+  //   setLoadedOrderId(existingOrder.id);
+  //   setCustomer({
+  //     customerName: existingOrder.customer_name || "",
+  //     customerPhone: existingOrder.customer_phone || "",
+  //     customerAddress: existingOrder.customer_address || "",
+  //     customerNote: existingOrder.customer_note || "",
+  //   });
 
-    const mappedItems = existingOrder.order_items.map(
-      (item: OrderItemFromApi) => {
-        const itemImage =
-          item.variant?.images?.[0] ||
-          item.product?.images?.[0] ||
-          item.external_image ||
-          "";
-        return {
-          productId: String(item.product_id),
-          name: item.product_name,
-          sell_price: Number(item.unit_price),
-          quantity: item.quantity,
-          variantId: item.variant_id !== null ? String(item.variant_id) : null,
-          image: itemImage,
-        };
-      },
-    );
-    setItems(mappedItems);
-  }
+  //   const realShippingFee = Number(existingOrder.shipping_fee) || 0;
+  //   setShipping({
+  //     shippingArea: realShippingFee > 60 ? "outside" : "inside",
+  //     paymentMethod: existingOrder.payment_method || "COD",
+  //     source: existingOrder.source || "admin_panel",
+  //     status: existingOrder.status || "PENDING",
+  //     paymentStatus: existingOrder.payment_status || "UNPAID",
+  //     manualDiscount: Number(existingOrder.discount_amount) || 0,
+  //     advanceAmount: Number(existingOrder.advance_amount) || 0,
+  //     actualShippingFee: realShippingFee,
+  //     courier_city_id: existingOrder.courier_city_id ?? null,
+  //     courier_zone_id: existingOrder.courier_zone_id ?? null,
+  //     courier_area_id: existingOrder.courier_area_id ?? null,
+  //   });
+
+  //   const mappedItems = existingOrder.order_items.map(
+  //     (item: OrderItemFromApi) => {
+  //       const itemImage =
+  //         item.variant?.images?.[0] ||
+  //         item.product?.images?.[0] ||
+  //         item.external_image ||
+  //         "";
+  //       return {
+  //         productId: String(item.product_id),
+  //         name: item.product_name,
+  //         sell_price: Number(item.unit_price),
+  //         quantity: item.quantity,
+  //         variantId: item.variant_id !== null ? String(item.variant_id) : null,
+  //         image: itemImage,
+  //       };
+  //     },
+  //   );
+  //   setItems(mappedItems);
+  // }
+
+
+if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
+  setLoadedOrderId(existingOrder.id);
+  
+  // 1. Load Customer Data
+  setCustomer({
+    customerName: existingOrder.customer_name || "",
+    customerPhone: existingOrder.customer_phone || "",
+    customerAddress: existingOrder.customer_address || "",
+    customerNote: existingOrder.customer_note || "",
+  });
+
+  // 2. Load Shipping and Financial Data
+  const dbFee = Number(existingOrder.shipping_fee) || 0;
+  
+  setShipping({
+    // If the fee is 60, set dropdown to 'inside', otherwise 'outside'
+    shippingArea: dbFee === 60 ? "inside" : "outside", 
+    paymentMethod: existingOrder.payment_method || "COD",
+    source: existingOrder.source || "admin_panel",
+    status: existingOrder.status || "PENDING",
+    paymentStatus: existingOrder.payment_status || "UNPAID",
+    manualDiscount: Number(existingOrder.discount_amount) || 0,
+    advanceAmount: Number(existingOrder.advance_amount) || 0,
+    actualShippingFee: null, // We can set this to null now to enable dynamic math
+    courier_city_id: existingOrder.courier_city_id ?? null,
+    courier_zone_id: existingOrder.courier_zone_id ?? null,
+    courier_area_id: existingOrder.courier_area_id ?? null,
+  });
+
+  // 3. Load Items (Ensure sell_price is a number)
+  const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => {
+    const itemImage = item.variant?.images?.[0] || item.product?.images?.[0] || item.external_image || "";
+    return {
+      productId: String(item.product_id),
+      name: item.product_name,
+      sell_price: Number(item.unit_price), // Force Number
+      quantity: item.quantity,
+      variantId: item.variant_id !== null ? String(item.variant_id) : null,
+      image: itemImage,
+    };
+  });
+  setItems(mappedItems);
+}
+
+
+
+
+  // // --- Calculations ---
+  // const subtotal = items.reduce(
+  //   (acc: number, item: { sell_price: number; quantity: number }) =>
+  //     acc + item.sell_price * item.quantity,
+  //   0,
+  // );
+  // // In edit mode, use the real shipping fee from the API; in create mode derive from area
+  // const shippingFee =
+  //   isEditMode && shipping.actualShippingFee !== null
+  //     ? shipping.actualShippingFee
+  //     : shipping.shippingArea === "inside"
+  //       ? 60
+  //       : 120;
+  // const totalDue = subtotal + shippingFee - shipping.manualDiscount;
+  // // Remaining amount after advance payment
+  // const remainingDue = totalDue - shipping.advanceAmount;
+
 
   // --- Calculations ---
-  const subtotal = items.reduce(
-    (acc: number, item: { sell_price: number; quantity: number }) =>
-      acc + item.sell_price * item.quantity,
-    0,
-  );
-  // In edit mode, use the real shipping fee from the API; in create mode derive from area
-  const shippingFee =
-    isEditMode && shipping.actualShippingFee !== null
-      ? shipping.actualShippingFee
-      : shipping.shippingArea === "inside"
-        ? 60
-        : 120;
-  const totalDue = subtotal + shippingFee - shipping.manualDiscount;
-  // Remaining amount after advance payment
-  const remainingDue = totalDue - shipping.advanceAmount;
+const subtotal = items.reduce(
+  (acc: number, item: { sell_price: number; quantity: number }) =>
+    acc + item.sell_price * item.quantity,
+  0,
+);
+
+// 🚀 FIXED: Make shipping fee dynamic based on selection, even in edit mode
+const shippingFee = shipping.shippingArea === "inside" ? 60 : 120;
+
+const totalDue = subtotal + shippingFee - shipping.manualDiscount;
+const remainingDue = totalDue - shipping.advanceAmount;
 
   const handleSearch = async (val: string) => {
     setSearchTerm(val);
@@ -669,12 +733,7 @@ export default function AddOrderMain() {
                     type="number"
                     min={0}
                     value={shipping.manualDiscount}
-                    onChange={(e) =>
-                      setShipping({
-                        ...shipping,
-                        manualDiscount: Number(e.target.value),
-                      })
-                    }
+onChange={(e) => setShipping({ ...shipping, manualDiscount: Number(e.target.value) || 0 })}
                     className="w-20 p-1 border rounded text-right bg-red-50"
                   />
                 </div>
@@ -688,12 +747,7 @@ export default function AddOrderMain() {
                     type="number"
                     min={0}
                     value={shipping.advanceAmount}
-                    onChange={(e) =>
-                      setShipping({
-                        ...shipping,
-                        advanceAmount: Number(e.target.value),
-                      })
-                    }
+onChange={(e) => setShipping({ ...shipping, advanceAmount: Number(e.target.value) || 0 })}
                     className="w-20 p-1 border border-green-300 rounded text-right bg-green-50"
                   />
                 </div>

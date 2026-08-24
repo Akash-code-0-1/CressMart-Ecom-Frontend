@@ -13,6 +13,7 @@ import {
   FaYoutube,
   FaLinkedin,
   FaTelegramPlane,
+   FaTiktok,
 } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
@@ -42,6 +43,7 @@ const Footer = () => {
     youtube: <FaYoutube />,
     linkedin: <FaLinkedin />,
     telegram: <FaTelegramPlane />,
+     tiktok: <FaTiktok />,
   };
 
   const { language } = useLanguage();
@@ -272,7 +274,7 @@ const Footer = () => {
               ))}
             </div>
 
-            <a
+            {/* <a
               href="https://maps.app.goo.gl/Faf26v95RjUoYZ3D7"
               target="_blank"
               rel="noopener noreferrer"
@@ -283,7 +285,7 @@ const Footer = () => {
                   {t.storeLocation}
                 </span>
               </div>
-            </a>
+            </a> */}
           </div>
         </div>
 
