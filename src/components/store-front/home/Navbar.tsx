@@ -78,6 +78,13 @@ const Navbar = () => {
     ? rowImage
     : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
+  const primaryLogo = info?.primary_logo || "";
+  const usablePrimaryLogoUrl = primaryLogo
+    ? primaryLogo.startsWith("http")
+      ? primaryLogo
+      : `${backendBaseUrl}/${primaryLogo.replace(/^\/+/, "")}`
+    : "/images/minilogo.png"; // Fallback if no logo is set in DB
+
   const user = useAuthStore((state) => state.user);
 
   const isStoreReady = useAuthStore((state) => state._hasHydrated);
@@ -230,6 +237,13 @@ const Navbar = () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
     },
   });
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <>
@@ -713,6 +727,23 @@ const Navbar = () => {
 
           {/* Central Custom Floating Logo */}
           <div className="relative -top-5 z-[200]">
+            <button
+              onClick={scrollToTop} // Add scroll handler here
+              className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+            >
+              <div className="relative w-full h-full flex items-center justify-center">
+                <Image
+                  src={usablePrimaryLogoUrl} // Use the dynamic primary logo
+                  alt="Brand Logo"
+                  fill
+                  className="object-contain p-1" // Added slight padding so it doesn't touch edges
+                  unoptimized
+                />
+              </div>
+            </button>
+          </div>
+
+          {/* <div className="relative -top-5 z-[200]">
             <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
               <div className="relative w-full h-full flex items-center justify-center">
                 <Image
@@ -724,7 +755,7 @@ const Navbar = () => {
                 />
               </div>
             </button>
-          </div>
+          </div> */}
 
           {/* Chat Button (uses ChatIcon) */}
           <button

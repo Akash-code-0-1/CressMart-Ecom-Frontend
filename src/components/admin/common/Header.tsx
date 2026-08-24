@@ -385,7 +385,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           <Menu size={22} />
         </button>
 
-        <div className="relative w-[120px] h-[32px] md:w-[155px] md:h-[40px]">
+        {/* <div className="relative w-[120px] h-[32px] md:w-[155px] md:h-[40px]">
           <Image
             src="/images/logo.png"
             alt="Logo"
@@ -394,7 +394,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             sizes="(max-width: 768px) 120px, 155px"
             priority
           />
-        </div>
+        </div> */}
 
         <div className="hidden lg:flex items-center gap-4">
           <Link

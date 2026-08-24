@@ -24,8 +24,8 @@ const ProductDetailsTabs = ({ product }: Props) => {
   const isThirdPartyProduct = slug.toLowerCase().startsWith("mohasagor");
 
   const tabs: { label: string; id: TabType; count?: number }[] = [
-    { label: t.productDetails.description, id: "Description" },
     { label: t.productDetails.specification, id: "Specification" },
+    { label: t.productDetails.description, id: "Description" },
     { label: t.productDetails.faqs, id: "FAQs" },
     ...(!isThirdPartyProduct
       ? [

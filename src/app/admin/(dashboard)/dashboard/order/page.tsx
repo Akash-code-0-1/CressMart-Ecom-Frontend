@@ -1,6 +1,7 @@
 import PermissionGuard from "@/components/admin/common/PermissionGuard";
 import OrderHeader from "@/components/admin/order/OrderHeader";
 import OrderTable from "@/components/admin/order/OrderTable";
+import OrderSummerySection from "@/components/admin/order/OrderSummerySection";
 
 export default function Page() {
   return (
@@ -11,7 +12,7 @@ export default function Page() {
             <div className="mt-2">
               <OrderHeader />
             </div>
-            {/* <OrderSummery /> */}
+            {/* <OrderSummerySection /> */}
             <OrderTable />
           </div>
         </main>

@@ -144,7 +144,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 font-poppins relative">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 font-poppins relative">
       {/* 1. Best Selling Table (Main) */}
       <div className="lg:col-span-2 bg-white px-6 py-3 rounded-[8px] flex flex-col">
         <h2 className="text-lg font-bold text-[#23272E] font-lato mb-2 flex items-center gap-2">
@@ -242,7 +242,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
       </div>
 
       {/* 2. Sidebar */}
-      <div className="bg-white px-6 py-3 rounded-lg">
+      {/* <div className="bg-white px-6 py-3 rounded-lg">
         <div className="flex justify-between items-center mb-5 font-lato font-bold text-[#23272E]">
           <h2>Top Products</h2>
           <button
@@ -309,7 +309,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
             ),
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* 🚀 MODAL: Professional Paginated Report */}
       {isModalOpen && (

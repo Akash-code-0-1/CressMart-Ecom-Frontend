@@ -762,10 +762,13 @@ export default function LandingPageRenderer({
                   </span>
                 </div>
 
-                <p className="text-sm text-slate-500 leading-7 font-montserrat">
+                {/* <p className="text-sm text-slate-500 leading-7 font-montserrat">
                   {selectedProduct?.description || t.landingPage.detailedDescription}
-                </p>
+                </p> */}
+
               </div>
+
+
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ export interface CategoryQuery {
   limit?: number;
   search?: string;
   status?: string;
+  level?: number;  
 }
 
 // 🚀 1. FETCH ALL GENERAL CATEGORIES
@@ -25,30 +26,28 @@ export const fetchAllCategories = async (query: CategoryQuery) => {
   return { data: Array.isArray(records) ? records : [], meta };
 };
 
-// 🚀 2. FETCH ALL SUB-CATEGORIES (ONLY ONES WITH VALID PARENT ASSIGNMENTS)
+// 🚀 2. FETCH ALL SUB-CATEGORIES (ONLY Level 2)
 export const fetchAllSubCategories = async (query: CategoryQuery) => {
   const queryParams = new URLSearchParams();
   if (query.page) queryParams.set("page", String(query.page));
   if (query.limit) queryParams.set("limit", String(query.limit));
   if (query.search) queryParams.set("search", query.search);
   if (query.status) queryParams.set("status", query.status);
+  
+  // 🚀 CRITICAL: This was missing! We must send level to the backend
+  if (query.level) queryParams.set("level", String(query.level));
 
   const res = await apiFetch(`/categories?${queryParams.toString()}`);
-  if (!res.ok)
-    throw new Error(
-      "Failed to retrieve subcategories collection layout array.",
-    );
+  if (!res.ok) throw new Error("Failed to retrieve subcategories.");
+  
   const json = await res.json();
-  const rawRecords = json?.data?.data || json?.data || json || [];
 
-  const subCategoryRecords = Array.isArray(rawRecords)
-    ? rawRecords.filter(
-        (item: any) => item.parent_id !== null && item.parent_id !== undefined,
-      )
-    : [];
+  // 🚀 CRITICAL: Use the data directly from backend. 
+  // Do NOT filter parent_id !== null here, because that includes Child Categories.
+  const records = json?.data?.data || json?.data || json || [];
+  const meta = json?.meta || json?.data?.meta || { totalPages: 1, total: 0 };
 
-  const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  return { data: subCategoryRecords, meta };
+  return { data: Array.isArray(records) ? records : [], meta };
 };
 
 // 🚀 3. STRICT FIX: FETCH ONLY TRUE ROOT PARENT NODES
