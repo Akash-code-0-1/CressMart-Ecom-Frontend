@@ -27,6 +27,16 @@ export default {
     "Enter an Order ID above to display tracking details and timeline.",
   orderPlacing:
     "Enter your unique order ID below to check live status and shipment updates of your package.",
+
+
+home: {
+  newArrivals: "New Arrivals",
+  bestDeals: "Best Deals",
+  weeklyBestSellers: "Weekly Best Sellers",
+  viewAll: "View All",
+},
+  
+
   features: [
     {
       title: "Cash On Delivery",
