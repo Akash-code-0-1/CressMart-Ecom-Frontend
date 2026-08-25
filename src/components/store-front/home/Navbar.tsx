@@ -78,12 +78,19 @@ const Navbar = () => {
     ? rowImage
     : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
-  const primaryLogo = info?.primary_logo || "";
-  const usablePrimaryLogoUrl = primaryLogo
-    ? primaryLogo.startsWith("http")
-      ? primaryLogo
-      : `${backendBaseUrl}/${primaryLogo.replace(/^\/+/, "")}`
-    : "/images/minilogo.png"; // Fallback if no logo is set in DB
+  // const primaryLogo = info?.primary_logo || "";
+  // const usablePrimaryLogoUrl = primaryLogo
+  //   ? primaryLogo.startsWith("http")
+  //     ? primaryLogo
+  //     : `${backendBaseUrl}/${primaryLogo.replace(/^\/+/, "")}`
+  //   : "/images/minilogo.png"; // Fallback if no logo is set in DB
+
+  const favicon = info?.favicon || "";
+  const usableFaviconUrl = favicon
+    ? favicon.startsWith("http")
+      ? favicon
+      : `${backendBaseUrl}/${favicon.replace(/^\/+/, "")}`
+    : "/favicon.ico"; // Fallback to your local favicon file
 
   const user = useAuthStore((state) => state.user);
 
@@ -726,7 +733,7 @@ const Navbar = () => {
           </button>
 
           {/* Central Custom Floating Logo */}
-          <div className="relative -top-5 z-[200]">
+          {/* <div className="relative -top-5 z-[200]">
             <button
               onClick={scrollToTop} // Add scroll handler here
               className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
@@ -741,21 +748,25 @@ const Navbar = () => {
                 />
               </div>
             </button>
-          </div>
+          </div> */}
 
-          {/* <div className="relative -top-5 z-[200]">
-            <button className="bg-white rounded-full p-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer">
+          {/* Central Custom Floating Logo */}
+          <div className="relative -top-5 z-[200]">
+            <button
+              onClick={scrollToTop}
+              className="bg-white rounded-full p-2 shadow-[0_4px_15px_rgba(0,0,0,0.15)] w-[65px] h-[65px] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+            >
               <div className="relative w-full h-full flex items-center justify-center">
                 <Image
-                  src="/images/minilogo.png"
-                  alt="Brand"
+                  src={usableFaviconUrl} // 🚀 CHANGED FROM usablePrimaryLogoUrl
+                  alt="Favicon"
                   fill
-                  className="object-contain"
+                  className="object-contain p-3" // Increased padding as favicons are usually square
                   unoptimized
                 />
               </div>
             </button>
-          </div> */}
+          </div>
 
           {/* Chat Button (uses ChatIcon) */}
           <button
