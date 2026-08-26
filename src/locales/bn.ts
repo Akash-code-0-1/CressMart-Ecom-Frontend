@@ -175,12 +175,17 @@ export default {
   //legal information about company pages
   ///////////////////////
 
-  legal: {
+legal: {
     aboutUs: "আমাদের সম্পর্কে",
     privacyPolicy: "গোপনীয়তা নীতি",
     termsAndConditions: "শর্তাবলী",
     returnExchange: "রিটার্ন ও এক্সচেঞ্জ",
     home: "হোম",
+    shipping: "শিপিং ও ডেলিভারি",
+    displayCenter: "ডিসপ্লে সেন্টার",
+    career: "ক্যারিয়ার",
+    vendor: "ভেন্ডর হোন",
+    affiliate: "অ্যাফিলিয়েট প্রোগ্রাম",
   },
 
   ////////////////////////

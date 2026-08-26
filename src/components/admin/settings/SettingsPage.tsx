@@ -1,4 +1,3 @@
-
 // "use client";
 // import { useEffect } from "react";
 // import { useRouter, usePathname } from "next/navigation";
@@ -380,7 +379,6 @@
 //           ))}
 //         </div>
 
-        
 //       </div> */}
 //     </FormProvider>
 //   );
@@ -388,8 +386,9 @@
 
 
 
+
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   useForm,
@@ -400,7 +399,7 @@ import {
 } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings } from "@/services-api/settingsService";
-import { RotateCcw, Plus, User, Trash2 } from "lucide-react";
+import { RotateCcw, Plus, User, Trash2, Save, LayoutTemplate } from "lucide-react";
 
 // Components
 import CrystalOrangeButton from "./CrystalOrangeButton";
@@ -411,13 +410,14 @@ import ContentIcon from "@/components/store-front/svg/svg/ContentIcon";
 import ChatInterfaceIcon from "@/components/store-front/svg/svg/ChatInterfaceIcon";
 import ShopSettingsIcon from "@/components/store-front/svg/svg/ShopSettingsIcon";
 import PrimaryButton from "../common/PrimaryButton";
-
+import { PageBuilder } from "./PageBuilder";
+import toast from "react-hot-toast";
 
 const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
   const { register } = useFormContext();
   return (
     <div className="flex flex-col gap-3 w-full">
-      <label className="text-[15px] font-bold text-[#000000] font-lato">
+      <label className="text-[15px] font-bold text-[#000000] font-lato uppercase tracking-wider">
         {label}
       </label>
       <input
@@ -433,6 +433,9 @@ const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
 export default function SettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  // 1. Updated defaultValues to include all 9 dynamic pages
   const methods = useForm<any>({
     defaultValues: {
       primary_logo: "",
@@ -443,42 +446,115 @@ export default function SettingsPage() {
       offers: [],
       chat_support: {},
       site_toggles: {},
+      // Page Builders
+      about_content: [],
+      privacy_content: [],
+      terms_content: [],
+      return_content: [],
+      shipping_content: [],
+      display_center_content: [],
+      career_content: [],
+      vendor_content: [],
+      affiliate_content: [],
     },
   });
-  const { handleSubmit, reset, control } = methods;
+
+  const { handleSubmit, reset, control, formState: { isDirty } } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "social_links",
   });
-  const queryClient = useQueryClient();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: fetchSettings,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity, 
   });
 
   const mutation = useMutation({
     mutationFn: updateSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
-      alert("Settings saved!");
+      toast.success("Settings saved successfully!", {
+        duration: 4000,
+        position: "top-right",
+        style: { background: "#003032", color: "#fff", borderRadius: "10px" },
+      });
+    },
+    onError: () => {
+      toast.error("Failed to save settings.");
     },
   });
 
   useEffect(() => {
-    if (settings) {
-      // Look at your screenshot: the actual data is inside "data"
+    if (settings && !isDirty) {
       const settingsData = settings.data || settings;
 
-      console.log("Resetting form with:", settingsData);
-      reset(settingsData);
+      const safeParse = (val: any) => {
+        try {
+          return typeof val === "string" && val.startsWith("[")
+            ? JSON.parse(val)
+            : Array.isArray(val)
+              ? val
+              : [];
+        } catch (e) {
+          return [];
+        }
+      };
+
+      reset({
+        ...settingsData,
+        about_content: safeParse(settingsData.about_content),
+        privacy_content: safeParse(settingsData.privacy_content),
+        terms_content: safeParse(settingsData.terms_content),
+        return_content: safeParse(settingsData.return_content),
+        shipping_content: safeParse(settingsData.shipping_content),
+        display_center_content: safeParse(settingsData.display_center_content),
+        career_content: safeParse(settingsData.career_content),
+        vendor_content: safeParse(settingsData.vendor_content),
+        affiliate_content: safeParse(settingsData.affiliate_content),
+      });
     }
-  }, [settings, reset]);
+  }, [settings, reset, isDirty]);
+
+  const onSubmit = (formData: any) => {
+    // 💡 List of all fields that need to be stringified for the database
+    const builderFields = [
+        "about_content", "privacy_content", "terms_content", "return_content",
+        "shipping_content", "display_center_content", "career_content", 
+        "vendor_content", "affiliate_content"
+    ];
+
+    const payload = { ...formData };
+    
+    builderFields.forEach(field => {
+      payload[field] = JSON.stringify(formData[field] || []);
+    });
+
+    mutation.mutate(payload);
+  };
+
+  const pageTabs = [
+    { id: "about_content", label: "About Us" },
+    { id: "privacy_content", label: "Privacy Policy" },
+    { id: "terms_content", label: "Terms & Conditions" },
+    { id: "return_content", label: "Return Policy" },
+    { id: "shipping_content", label: "Shipping & Delivery" },
+    { id: "display_center_content", label: "Display Center" },
+    { id: "career_content", label: "Career" },
+    { id: "vendor_content", label: "Become a Vendor" },
+    { id: "affiliate_content", label: "Affiliate Program" },
+  ];
+
+  const [activePageTab, setActivePageTab] = useState("about_content");
+  const activeLabel = pageTabs.find((t) => t.id === activePageTab)?.label || "";
 
   return (
     <FormProvider {...methods}>
       <form
-        onSubmit={handleSubmit((d) => mutation.mutate(d))}
+        // onSubmit={handleSubmit((d) => mutation.mutate(d))}
+        onSubmit={handleSubmit(onSubmit)}
         className="w-full bg-white p-4 font-lato"
       >
         <h1 className="text-2xl font-bold text-[#003032] mb-6">Settings</h1>
@@ -527,13 +603,13 @@ export default function SettingsPage() {
             Website Information
           </h2>
           <div className="flex gap-3">
-            <button
+            {/* <button
               type="button"
               onClick={() => reset()}
               className="flex items-center gap-2 px-6 py-3 rounded-[8px] bg-[#F9F9F9] text-sm font-semibold"
             >
               <RotateCcw size={18} /> Reset
-            </button>
+            </button> */}
             <PrimaryButton
               label={mutation.isPending ? "Saving..." : "Save Changes"}
               type="submit"
@@ -682,8 +758,7 @@ export default function SettingsPage() {
           </section>
         </div>
 
-        {/* Rich Text Areas */}
-        <RichTextSection
+        {/* <RichTextSection
           title="About us"
           name="about_content"
           placeholder="About Your Brand"
@@ -702,7 +777,48 @@ export default function SettingsPage() {
           title="Return and Cancellation Policy"
           name="return_content"
           placeholder="Return and Cancellation Policy"
-        />
+        /> */}
+
+        <div className=" space-y-8 mt-16 pt-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="border-l-4 border-[#FF7050] pl-6 py-2">
+              <h2 className="text-2xl font-black text-[#003032] uppercase tracking-tight">
+                Dynamic Page Setup
+              </h2>
+              <p className="text-[#A2A2A2] font-poppins text-sm">
+                Select a page below to customize its structure.
+              </p>
+            </div>
+
+            {/* 3. NEW: Tab Switcher UI */}
+            <div className="flex bg-[#F9F9F9] p-1.5 rounded-xl border border-[#EEEEEE] overflow-x-auto scrollbar-none">
+              {pageTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActivePageTab(tab.id)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    activePageTab === tab.id
+                      ? "bg-[linear-gradient(90deg,#38BDF8_0%,#1E90FF_100%)] text-white shadow-md"
+                      : "text-[#A2A2A2] hover:text-[#003032]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. THE FIX: Only one PageBuilder that changes dynamically */}
+          <div className="transition-all duration-300 animate-in fade-in zoom-in-95">
+            <PageBuilder
+              key={activePageTab}
+              label={`${activeLabel} Customization`}
+              name={activePageTab}
+              control={control}
+            />
+          </div>
+        </div>
       </form>
 
       {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 mx-4 pb-8">

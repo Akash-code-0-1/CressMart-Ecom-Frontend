@@ -188,6 +188,12 @@ input[type=range].price-slider::-webkit-slider-thumb {
 }
 
 
+/* Typography for Dynamic Pages */
+.dynamic-prose h1 { @apply text-4xl md:text-6xl font-black mb-6 text-[#003032]; }
+.dynamic-prose h2 { @apply text-3xl md:text-4xl font-bold mb-4 text-[#003032]; }
+.dynamic-prose p { @apply text-lg text-gray-600 leading-relaxed mb-4; }
+.dynamic-prose ul { @apply space-y-3 mb-6; }
+.dynamic-prose li { @apply flex items-start gap-3 text-gray-700 font-medium; }
 
 /* product reich test */
 /* Tiptap / ProseMirror list fix — Tailwind Preflight overrides these by default */
