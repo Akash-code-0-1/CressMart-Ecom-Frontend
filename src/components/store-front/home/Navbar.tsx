@@ -35,7 +35,6 @@ import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { getWishlist } from "@/services-api/wishlistService";
 import { v4 as uuidv4 } from "uuid";
-
 interface SearchResponse {
   data: {
     data: Product[];
@@ -49,7 +48,7 @@ interface NavDropdownProps {
 
 type CartItem = {
   id: string;
-  image?: string | null;
+  image?: string | { url: string; alt_text?: string } | null;
   name?: string;
   variantInfo?:
     | Record<string, unknown>
@@ -281,7 +280,7 @@ const Navbar = () => {
           <form
             onSubmit={handleSearch}
             ref={searchRef}
-            className="hidden lg:flex relative flex-1 max-w-[846px] bg-[#F2F2F2] rounded-[8px] items-center p-2 px-4 gap-3"
+            className="hidden lg:flex relative flex-1 max-w-[846px] bg-[#F2F2F2] rounded-lg items-center p-2 px-4 gap-3"
           >
             <CategoryDropdown
               categories={categories}
@@ -314,10 +313,15 @@ const Navbar = () => {
                   </div>
                 ) : (
                   (searchResults || []).map((product) => {
-                    const rowImage = product.images?.[0] || "";
-                    const iconUrl = rowImage.startsWith("http")
-                      ? rowImage
-                      : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+                    const firstImg = product.images?.[0];
+                    const rowImage =
+                      typeof firstImg === "string"
+                        ? firstImg
+                        : firstImg?.url || "";
+                    const iconUrl =
+                      rowImage && rowImage.startsWith("http")
+                        ? rowImage
+                        : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
                     return (
                       <div
                         key={product.id}
@@ -550,7 +554,9 @@ const Navbar = () => {
             {cartItems.length > 0 ? (
               <div className="flex flex-col gap-5">
                 {cartItems.map((item: CartItem) => {
-                  const imageValue = item.image || "";
+                  const rawImg = item.image;
+                  const imageValue =
+                    typeof rawImg === "string" ? rawImg : rawImg?.url || "";
                   const usableImg = imageValue
                     ? imageValue.startsWith("http")
                       ? imageValue
@@ -562,13 +568,13 @@ const Navbar = () => {
                       key={item.id}
                       className="flex gap-4 border-b border-gray-50 pb-4"
                     >
-                      <div className="relative w-20 h-20 bg-gray-50 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                      <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
                         <Image
                           src={usableImg}
                           alt={item.name || "Product Image"}
                           fill
                           unoptimized
-                          className="object-contain p-1"
+                          className="object-cover rounded-lg"
                         />
                       </div>
 

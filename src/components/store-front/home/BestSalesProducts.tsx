@@ -7,8 +7,9 @@ import "swiper/css";
 import "swiper/css/navigation";
 import ProductCard from "../common/ProductCard";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { Product } from "@/@types/product.type";
 
-interface Product {
+interface BackendProduct {
   id: string;
   name: string;
   slug: string;
@@ -26,7 +27,7 @@ interface TagSection {
   id: string;
   title: string;
   slug: string;
-  products: Product[];
+  products: BackendProduct[];
 }
 
 interface BestSalesProductsProps {
@@ -34,23 +35,22 @@ interface BestSalesProductsProps {
 }
 
 const BestSalesProducts = ({ tags }: BestSalesProductsProps) => {
-  // Select the first tag object from the array without any filtering
   const section = tags?.[1];
 
-  // Return null if data is missing or if the product list is empty
   if (!section || !section.products || section.products.length === 0) {
     return null;
   }
 
-  // Map backend product data to match the format required by ProductCard component
-  const formattedProducts = section.products.map((product) => ({
+  const formattedProducts: Product[] = section.products.map((product) => ({
     id: product.id,
     name: product.name,
     slug: product.slug,
     sell_price: product.price.toString(),
     regular_price: product.old_price > 0 ? product.old_price.toString() : "0",
-    images: product.image ? [product.image] : ["/images/placeholder.svg"],
-    avg_rating: product.rating,
+    images: product.image
+      ? [{ url: product.image }]
+      : [{ url: "/images/placeholder.svg" }],
+    avg_rating: Number(product.rating) || 0,
     total_reviews: product.review_count,
     quantity: product.quantity_left,
     discount_tag: product.discount_tag,

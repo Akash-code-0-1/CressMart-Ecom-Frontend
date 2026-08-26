@@ -638,8 +638,6 @@
 
 // export default MainCheckoutSection;
 
-
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
@@ -719,8 +717,7 @@ const MainCheckoutSection: React.FC = () => {
   const normalizeShippingKey = (
     key: string,
   ): "inside" | "outside" | "sub_city" => {
-    if (key === "inside" || key === "outside" || key === "sub_city")
-      return key;
+    if (key === "inside" || key === "outside" || key === "sub_city") return key;
     return "outside";
   };
 
@@ -762,14 +759,18 @@ const MainCheckoutSection: React.FC = () => {
       const rawShippingConfig =
         existingProduct.shipping_config ?? pData?.shipping_config;
 
+      // ✅ derive the image from `images` array instead of a nonexistent `featuredImage`
+      const productImage =
+        existingProduct.images?.[0]?.url || pData?.images?.[0]?.url || "";
+
       return {
         ...item,
         product: {
           id: item.productId,
           name: item.name || existingProduct.name || pData?.name || "Product",
-          featuredImage: item.image || existingProduct.featuredImage || "",
+          featuredImage: item.image || productImage || "",
           price: Number(
-            item.price || existingProduct.price || pData?.sell_price || 0,
+            item.price || existingProduct.sell_price || pData?.sell_price || 0,
           ),
           shipping_type:
             existingProduct.shipping_type || pData?.shipping_type || "DEFAULT",

@@ -91,7 +91,7 @@ const mapRawProduct = (item: RawMohasagorProduct): Product => {
   const sellPrice = item.sale_price
     ? String(item.sale_price)
     : String(item.price || 0);
-  const priceNum = Number(sellPrice) || Number(regularPrice) || 0;
+  // const priceNum = Number(sellPrice) || Number(regularPrice) || 0;
 
   let images: string[] = [];
   if (Array.isArray(item.product_images) && item.product_images.length > 0) {
@@ -269,11 +269,11 @@ const mapRawProduct = (item: RawMohasagorProduct): Product => {
     id: `mohasagor-${item.id}`,
     name: item.name,
     slug: `mohasagor-${item.id}`,
-    images,
+    images: images.map((url) => ({ url })),
     video_urls: null,
     regular_price: regularPrice,
     sell_price: sellPrice,
-    price: priceNum,
+    // price: priceNum,
     quantity: 50,
     short_description: item.category || "Gadgets & Electronics",
     description: item.details || item.name,
