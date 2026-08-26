@@ -14,9 +14,7 @@ import { translations } from "@/locales";
 const Blog: React.FC = () => {
   const { language } = useLanguage();
   const t = translations[language];
-
   const router = useRouter();
-
   // 1. TanStack Query fetching
   const { data: blogResponse, isLoading } = useQuery({
     queryKey: ["public-blogs", 1, 4],
