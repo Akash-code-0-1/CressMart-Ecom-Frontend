@@ -9,7 +9,7 @@ export default function AddHeader() {
         Product Upload
       </h1>
       <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-        <button className="flex items-center gap-2 px-6 py-3.5 rounded-[8px] bg-white text-[#070606] font-semibold text-sm justify-center w-full sm:w-[171px] border border-gray-100 shadow-sm md:shadow-none">
+        <button className="flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-[#070606] font-semibold text-sm justify-center w-full sm:w-[171px]">
           <EditFileIcon /> Draft
         </button>
 

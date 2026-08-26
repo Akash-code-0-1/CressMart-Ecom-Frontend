@@ -14,7 +14,7 @@ import { translations } from "@/locales";
 interface Product {
   _id: string;
   name: string;
-  price: number;
+  price?: number;
   images: string | string[];
   total_reviews: number;
   slug?: string;
@@ -87,16 +87,15 @@ const RecentlyViewed = () => {
           className="mySwiper"
         >
           {productdata.map((product: Product) => {
-            // FIX: Handle if images is an array or a string
             const rawImage = Array.isArray(product?.images)
               ? product.images[0]
               : product?.images;
+            const rowImage = typeof rawImage === "string" ? rawImage : "";
 
-            const rowImage = rawImage || "";
-
-            const iconUrl = rowImage.startsWith("http")
-              ? rowImage
-              : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+            const iconUrl =
+              rowImage && rowImage.startsWith("http")
+                ? rowImage
+                : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
 
             return (
               <SwiperSlide key={product?._id}>
