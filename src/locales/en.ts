@@ -167,12 +167,17 @@ home: {
   //legal information about company pages
   ///////////////////////
 
-  legal: {
+legal: {
     aboutUs: "About Us",
     privacyPolicy: "Privacy Policy",
     termsAndConditions: "Terms & Conditions",
     returnExchange: "Return & Exchange",
     home: "Home",
+    shipping: "Shipping & Delivery",
+    displayCenter: "Display Center",
+    career: "Career",
+    vendor: "Become a Vendor",
+    affiliate: "Affiliate Program",
   },
 
   ////////////////////////

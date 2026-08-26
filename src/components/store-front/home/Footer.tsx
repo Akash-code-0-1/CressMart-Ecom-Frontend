@@ -49,30 +49,30 @@ const Footer = () => {
   const { language } = useLanguage();
   const t = translations[language];
 
-  const footerLinks = {
+const footerLinks = {
     company: [
       {
-        label: t.footer.companyLinks[0],
+        label: t.footer.companyLinks[0], // About Us
         path: "/legal/about-us",
       },
-      // {
-      //   label: t.footer.companyLinks[1],
-      //   path: "/shipping",
-      // },
       {
-        label: t.footer.companyLinks[2],
+        label: t.legal.shipping, // 💡 Added: Shipping & Delivery
+        path: "/legal/shipping-delivery",
+      },
+      {
+        label: t.footer.companyLinks[2], // Return & Exchange
         path: "/legal/return-exchange",
       },
       {
-        label: t.footer.companyLinks[3],
+        label: t.footer.companyLinks[3], // Privacy Policy
         path: "/legal/privacy-policy",
       },
       {
-        label: t.footer.companyLinks[4],
+        label: t.footer.companyLinks[4], // Terms & Condition
         path: "/legal/terms-condition",
       },
       {
-        label: t.footer.companyLinks[5],
+        label: t.footer.companyLinks[5], // FAQ
         path: "/faq",
       },
     ],
@@ -90,14 +90,6 @@ const Footer = () => {
         label: t.footer.accountLinks[2],
         path: "/profile/wishlist",
       },
-      // {
-      //   label: t.footer.accountLinks[3],
-      //   path: "/track-order",
-      // },
-      // {
-      //   label: t.footer.accountLinks[4],
-      //   path: "/help-ticket",
-      // },
       {
         label: t.footer.accountLinks[5],
         path: "/",
@@ -105,20 +97,28 @@ const Footer = () => {
     ],
 
     corporate: [
-      // {
-      //   label: t.footer.corporateLinks[0],
-      //   path: "/vendor/register",
-      // },
-      // {
-      //   label: t.footer.corporateLinks[1],
-      //   path: "/affiliate-program",
-      // },
       {
-        label: t.footer.corporateLinks[2],
-        path: "/blog",
+        label: t.legal.vendor, // 💡 Added: Become a Vendor
+        path: "/legal/become-vendor",
       },
       {
-        label: t.footer.corporateLinks[5],
+        label: t.legal.affiliate, // 💡 Added: Affiliate Program
+        path: "/legal/affiliate-program",
+      },
+      {
+        label: t.footer.corporateLinks[2], // Blog
+        path: "/blog",
+      },
+            {
+        label: t.legal.displayCenter, // 💡 Added: Display Center
+        path: "/legal/display-center",
+      },
+      {
+        label: t.legal.career, // 💡 Added: Career
+        path: "/legal/career",
+      },
+      {
+        label: t.footer.corporateLinks[5], // Suppliers
         path: "/suppliers",
       },
     ],
