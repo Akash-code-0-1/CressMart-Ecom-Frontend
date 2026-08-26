@@ -61,12 +61,21 @@ export const createCart = async (
       images: ["/images/placeholder.svg"],
       variants: [],
     };
-
     const safeName = productObj.name || "Mohasagor Product";
     const safePrice = Number(productObj.sell_price) || 0;
+
+    // ✅ normalize: images[0] might be a string or a { url } object
+    const getImageUrl = (img: unknown): string => {
+      if (!img) return "";
+      if (typeof img === "string") return img;
+      if (typeof img === "object" && "url" in img)
+        return String((img as { url: string }).url);
+      return "";
+    };
+
     const safeImage =
       Array.isArray(productObj.images) && productObj.images.length > 0
-        ? productObj.images[0]
+        ? getImageUrl(productObj.images[0])
         : "/images/placeholder.svg";
 
     const matchingVariant =

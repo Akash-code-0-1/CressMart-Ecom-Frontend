@@ -196,7 +196,7 @@ const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
           >
             <Image
               src={usableImage}
-              alt={imageAlt} 
+              alt={imageAlt}
               fill
               sizes="(max-width: 768px) 100vw, 350px"
               className="object-cover group-hover:scale-105 transition-transform duration-300"

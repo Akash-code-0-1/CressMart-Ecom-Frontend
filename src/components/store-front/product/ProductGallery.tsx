@@ -224,21 +224,24 @@ import "swiper/css/free-mode";
 import "swiper/css/navigation";
 import "swiper/css/thumbs";
 
+type ImageSource =
+  | string
+  | { url?: string; preview?: string; [key: string]: unknown };
+
 interface MediaItem {
   type: "image" | "video";
   src: string;
   videoId?: string;
-  title?: string; 
-  alt?: string; 
-  caption?: string; 
+  title?: string;
+  alt?: string;
+  caption?: string;
 }
-
 interface GalleryProps {
   items: MediaItem[];
 }
 
 // Safely resolve any src (string | object | undefined) into a plain string URL
-function resolveImageSrc(rawSrc: unknown): string {
+function resolveImageSrc(rawSrc: ImageSource): string {
   if (typeof rawSrc === "string") return rawSrc;
   if (rawSrc && typeof rawSrc === "object") {
     const obj = rawSrc as Record<string, unknown>;

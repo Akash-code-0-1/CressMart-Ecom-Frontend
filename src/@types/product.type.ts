@@ -2,6 +2,11 @@ export interface ShippingConfig {
   zone: string;
   charge: number;
 }
+export interface Supplier {
+  id: string;
+  name: string;
+  image_url?: string;
+}
 
 export interface ProductTag {
   id: string;
@@ -20,7 +25,7 @@ export interface TagRelation {
 export interface ProductVariant {
   id: string;
   product_id: string;
-  images: string[]; // ভ্যারিয়েন্টের ইমেজ সাধারণত স্ট্রিং অ্যারে হয়, তবে এপিআই চেক করে নেবেন
+  images: string[]; 
   attributes: {
     type: string;
     label: string;
@@ -43,7 +48,6 @@ export interface FAQItem {
   a: string;
 }
 
-// এটি আপনার JSON-এর ইমেজের সাথে মিলবে
 export interface ProductImage {
   url: string;
   title?: string;
@@ -60,7 +64,7 @@ export interface ProductCard {
   slug: string;
   sell_price: string;
   regular_price: string;
-  images: ProductImage[]; // অবজেক্ট অ্যারে
+  images: ProductImage[]; 
   avg_rating: number;
   total_reviews: number;
   quantity: number;
@@ -73,11 +77,11 @@ export interface ProductCard {
  */
 export interface Product {
   id: string;
-  uid?: string | null; // JSON-এ আছে
+  uid?: string | null; 
   name: string;
   slug: string;
 
-  // ফিক্সড: এটি string[] এর বদলে ProductImage[] হবে
+  suppliers?: Supplier[];
   images: ProductImage[];
 
   category_id?: string;
@@ -110,7 +114,7 @@ export interface Product {
   specifications?: SpecificationItem[] | null;
   faqs?: FAQItem[] | null;
 
-  shipping_config?: ShippingConfig[] | null; // JSON-এ null হতে পারে
+  shipping_config?: ShippingConfig[] | null; 
   shipping_type?: string;
 
   variants?: ProductVariant[];
