@@ -456,6 +456,7 @@ export default function SettingsPage() {
       career_content: [],
       vendor_content: [],
       affiliate_content: [],
+      faqs_content: [],
     },
   });
 
@@ -514,6 +515,7 @@ export default function SettingsPage() {
         career_content: safeParse(settingsData.career_content),
         vendor_content: safeParse(settingsData.vendor_content),
         affiliate_content: safeParse(settingsData.affiliate_content),
+        faqs_content: safeParse(settingsData.faqs_content),
       });
     }
   }, [settings, reset, isDirty]);
@@ -523,7 +525,7 @@ export default function SettingsPage() {
     const builderFields = [
         "about_content", "privacy_content", "terms_content", "return_content",
         "shipping_content", "display_center_content", "career_content", 
-        "vendor_content", "affiliate_content"
+        "vendor_content", "affiliate_content", "faqs_content"
     ];
 
     const payload = { ...formData };
@@ -545,6 +547,7 @@ export default function SettingsPage() {
     { id: "career_content", label: "Career" },
     { id: "vendor_content", label: "Become a Vendor" },
     { id: "affiliate_content", label: "Affiliate Program" },
+    { id: "faqs_content", label: "FAQs" },
   ];
 
   const [activePageTab, setActivePageTab] = useState("about_content");
@@ -574,12 +577,12 @@ export default function SettingsPage() {
               icon: ChatInterfaceIcon,
               path: "/admin/dashboard/settings/chat",
             },
-            // {
-            //   id: "shop",
-            //   label: "Manage Shop",
-            //   icon: ShopSettingsIcon,
-            //   path: "/admin/dashboard/settings/shop",
-            // },
+            {
+              id: "shop",
+              label: "Manage Shop",
+              icon: ShopSettingsIcon,
+              path: "/admin/dashboard/settings/shop",
+            },
             {
               id: "profile",
               label: "Profile Details",

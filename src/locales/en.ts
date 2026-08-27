@@ -178,6 +178,7 @@ legal: {
     career: "Career",
     vendor: "Become a Vendor",
     affiliate: "Affiliate Program",
+    faqs: "FAQs",
   },
 
   ////////////////////////

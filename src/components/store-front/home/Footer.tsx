@@ -73,7 +73,7 @@ const footerLinks = {
       },
       {
         label: t.footer.companyLinks[5], // FAQ
-        path: "/faq",
+        path: "/legal/faqs",
       },
     ],
 
