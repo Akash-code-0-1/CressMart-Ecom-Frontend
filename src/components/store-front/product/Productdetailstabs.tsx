@@ -18,7 +18,7 @@ interface Props {
 const ProductDetailsTabs = ({ product }: Props) => {
   const { language } = useLanguage();
   const t = translations[language];
-  const [activeTab, setActiveTab] = useState<TabType>("Description");
+  const [activeTab, setActiveTab] = useState<TabType>("Specification");
 
   const slug = product.slug ?? "";
   const isThirdPartyProduct = slug.toLowerCase().startsWith("mohasagor");

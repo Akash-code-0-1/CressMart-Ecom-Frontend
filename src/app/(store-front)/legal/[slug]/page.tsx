@@ -151,6 +151,7 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
   "career": data.career_content,
   "become-vendor": data.vendor_content,
   "affiliate-program": data.affiliate_content,
+  "faqs": data.faqs_content,
   };
 
   const titleMap: any = {
@@ -163,6 +164,8 @@ export default async function LegalPage({ params }: { params: Promise<{ slug: st
     "career": t.legal.career,                   
     "become-vendor": t.legal.vendor,            
     "affiliate-program": t.legal.affiliate,
+    "faqs": t.legal.faqs,
+
   };
 
   const getSections = (content: any) => {
