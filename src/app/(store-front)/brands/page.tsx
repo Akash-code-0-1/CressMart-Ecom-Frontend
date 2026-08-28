@@ -12,6 +12,7 @@ import React from "react";
 import { FaChevronRight } from "react-icons/fa";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { extractImageUrl } from "@/utils/image";
 
 export default function AllBrandsPage() {
   const { language } = useLanguage();
@@ -67,11 +68,8 @@ export default function AllBrandsPage() {
 
   const totalProducts = productsData?.pages[0]?.pagination?.total_items ?? 0;
 
-  const getImageUrl = (rawUrl: string | null | undefined) => {
-    if (!rawUrl) return "/images/placeholder.svg";
-    return rawUrl.startsWith("http")
-      ? rawUrl
-      : `${backendBaseUrl}/${rawUrl.replace(/^\/+/, "")}`;
+  const getImageUrl = (rawUrl?: unknown) => {
+    return extractImageUrl(rawUrl) || "/images/placeholder.svg";
   };
 
   const handleBrandClick = (brand: Brand) => {

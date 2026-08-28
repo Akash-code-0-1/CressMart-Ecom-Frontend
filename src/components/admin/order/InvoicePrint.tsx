@@ -3,6 +3,7 @@ import { getSettings } from "@/services-api/globalSettingsService";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import React from "react";
+import { extractImageUrl } from "@/utils/image";
 
 interface Product {
   id: string | number;
@@ -74,11 +75,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
       "http://localhost:8082";
 
-    const logoUrl = settingsdata?.primary_logo
-      ? settingsdata.primary_logo.startsWith("http")
-        ? settingsdata.primary_logo
-        : `${backendBaseUrl}${settingsdata.primary_logo.startsWith("/") ? "" : "/"}${settingsdata.primary_logo}`
-      : "/images/admin/logo.png";
+    const logoUrl = extractImageUrl(settingsdata?.primary_logo) || "/images/admin/logo.png";
 
     return (
       <div
@@ -176,11 +173,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
               const externalImg = item.external_image;
               const rawImg = variantImg || productImg || externalImg;
 
-              const finalImg = rawImg
-                ? rawImg.startsWith("http")
-                  ? rawImg
-                  : `${baseStorageUrl}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`
-                : "/images/placeholder.svg";
+              const finalImg = extractImageUrl(rawImg) || "/images/placeholder.svg";
 
               return (
                 <tr key={item.id} className="text-[14px]">

@@ -23,10 +23,10 @@ export const InvoiceHeader = ({
         Invoice
       </h2>
       <p className="text-[#727272] text-sm">
-        Invoice ID: {invoiceNo.startsWith("#") ? invoiceNo : `#${invoiceNo}`}
+        Invoice ID: {String(invoiceNo || "").startsWith("#") ? invoiceNo : `#${invoiceNo}`}
       </p>
       <p className="text-[#727272] text-sm">
-        Order ID: {orderNo.startsWith("#") ? orderNo : `#${orderNo}`}
+        Order ID: {String(orderNo || "").startsWith("#") ? orderNo : `#${orderNo}`}
       </p>
     </div>
     <div className="text-right">

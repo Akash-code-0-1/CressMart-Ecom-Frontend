@@ -34,13 +34,16 @@ export default function AddCategoryMain() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
-  // 🚀 DETECT MODE: If id parameter exists, form instantly shifts into Edit Mode
+  // If id parameter exists, form instantly shifts into Edit Mode
   const categoryId = searchParams.get("id");
   const isEditMode = !!categoryId;
 
   const [imageUrl, setImageUrl] = useState<string>("");
+  const [bannerUrl, setBannerUrl] = useState<string>("");
   const [uploading, setUploading] = useState<boolean>(false);
+  const [uploadingBanner, setUploadingBanner] = useState<boolean>(false);
 
   const baseStorageUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -52,8 +55,12 @@ export default function AddCategoryMain() {
       slug: "",
       parent_id: "",
       description: "",
+      priority: 0,
       status: "active" as "active" | "draft",
       autoSlug: true,
+      meta_title: "",
+      meta_tags: "",
+      meta_description: "",
     },
   });
 
@@ -65,9 +72,12 @@ export default function AddCategoryMain() {
     reset,
     formState: { errors },
   } = methods;
-  const autoSlugActive = watch("autoSlug");
 
-  // 🚀 QUERY: Fetch target entity values to pre-populate inputs if editing
+  const autoSlugActive = watch("autoSlug");
+  const parentId = watch("parent_id");
+  const isMainCategory = !parentId;
+
+  // Fetch target entity values to pre-populate inputs if editing
   const { data: existingCategory, isLoading: loadingExisting } = useQuery({
     queryKey: ["category-single-edit", categoryId],
     queryFn: () => fetchSingleCategory(categoryId!),
@@ -82,15 +92,22 @@ export default function AddCategoryMain() {
         slug: existingCategory.slug || "",
         parent_id: existingCategory.parent_id || "",
         description: existingCategory.description || "",
+        priority: existingCategory.priority || 0,
         status:
           existingCategory.status === "active" ||
           existingCategory.status === "PUBLISHED"
             ? "active"
             : "draft",
         autoSlug: false,
+        meta_title: existingCategory.meta_title || "",
+        meta_tags: existingCategory.meta_tags || "",
+        meta_description: existingCategory.meta_description || "",
       });
       if (existingCategory.image_url) {
         setImageUrl(existingCategory.image_url);
+      }
+      if (existingCategory.background_image_url) {
+        setBannerUrl(existingCategory.background_image_url);
       }
     }
   }, [existingCategory, isEditMode, reset]);
@@ -132,9 +149,41 @@ export default function AddCategoryMain() {
     }
   };
 
-  // 🚀 MUTATION WORKFLOW ROUTER: Switches targets cleanly between POST or PATCH methods
+  const handleBannerFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingBanner(true);
+      const data = await uploadCategoryImage(file);
+      if (data.image_url) setBannerUrl(data.image_url);
+      else if (data.data?.image_url) setBannerUrl(data.data.image_url);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(`Upload Failure: ${err.message}`);
+      } else {
+        toast.error("Upload Failure: An unknown error occurred");
+      }
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   const categoryMutation = useMutation({
-    mutationFn: (payload: unknown) => {
+    mutationFn: (payload: {
+      name: string;
+      slug: string;
+      parent_id?: string | null;
+      image_url?: string | null;
+      description?: string | null;
+      background_image_url?: string | null;
+      priority?: number;
+      status: string;
+      meta_title?: string;
+      meta_tags?: string;
+      meta_description?: string;
+    }) => {
       if (isEditMode && categoryId) {
         return updateCategory(categoryId, payload);
       }
@@ -142,6 +191,7 @@ export default function AddCategoryMain() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["categories-tree"] });
       toast.success(
         isEditMode
           ? "Category changes saved successfully!"
@@ -163,10 +213,17 @@ export default function AddCategoryMain() {
     slug: string;
     parent_id: string;
     description: string;
+    priority: number;
     status: string;
     autoSlug: boolean;
+    meta_title: string;
+    meta_tags: string;
+    meta_description: string;
   }) => {
     if (!data.name.trim()) return;
+
+    const isRoot = !data.parent_id;
+
     categoryMutation.mutate({
       name: data.name,
       slug:
@@ -177,8 +234,13 @@ export default function AddCategoryMain() {
           .replace(/(^-|-$)/g, ""),
       parent_id: data.parent_id || null,
       description: data.description || "",
+      priority: isRoot ? Number(data.priority) || 0 : 0,
       image_url: imageUrl || "",
+      background_image_url: isRoot ? bannerUrl || null : null,
       status: data.status,
+      meta_title: data.meta_title || "",
+      meta_tags: data.meta_tags || "",
+      meta_description: data.meta_description || "",
     });
   };
 
@@ -194,7 +256,7 @@ export default function AddCategoryMain() {
   return (
     <FormProvider {...methods}>
       <div className="w-full min-h-screen font-lato pb-12 bg-[#F9FAFB]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 p-4 bg-white border border-gray-100 rounded-[8px]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-4 p-4 bg-white border border-gray-100 rounded-lg mt-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -208,7 +270,7 @@ export default function AddCategoryMain() {
                 {isEditMode ? "Edit Category" : "Add Category"}
               </h1>
               <p className="text-xs text-gray-400">
-                Configure parameters mapping securely tied to server columns
+                Configure category settings and media assets
               </p>
             </div>
           </div>
@@ -216,7 +278,7 @@ export default function AddCategoryMain() {
 
         <form
           onSubmit={handleSubmit(onSubmitFormHandler)}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-4"
         >
           <div className="lg:col-span-8 bg-white rounded-[8px] p-5 border border-gray-100 space-y-5">
             <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
@@ -279,18 +341,18 @@ export default function AddCategoryMain() {
               <Label>Description</Label>
               <textarea
                 {...register("description")}
-                placeholder="Ex: Narrative scopes tracking profiles..."
+                placeholder="Ex: Category description..."
                 className="w-full bg-[#F9F9F9] rounded-[8px] p-4 min-h-[140px] outline-none text-sm text-black resize-none"
               />
             </div>
 
-            <div className="pt-2">
-              <Label>Parent Category Node Mapping Selection</Label>
+            <div>
+              <Label>Parent Category (Select for Subcategory)</Label>
               <select
                 {...register("parent_id")}
                 className="w-full bg-[#F9FAFB] p-3 rounded-[8px] text-sm border border-gray-200 text-black outline-none cursor-pointer"
               >
-                <option value="">None (Treat as Top Root Node)</option>
+                <option value="">None (Treat as Top Main Category)</option>
                 {flatCategoriesList
                   .filter((c: { id: string }) => c.id !== categoryId)
                   .map((cat: { id: string; name: string }) => (
@@ -299,6 +361,48 @@ export default function AddCategoryMain() {
                     </option>
                   ))}
               </select>
+            </div>
+
+            {/* Rendered ONLY for Main Category */}
+            {isMainCategory && (
+              <div>
+                <Label>Priority (Higher priority appears first)</Label>
+                <input
+                  type="number"
+                  {...register("priority", { valueAsNumber: true })}
+                  placeholder="Ex: 0"
+                  className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-800"
+                />
+              </div>
+            )}
+
+            <div>
+              <Label>Meta Title</Label>
+              <input
+                type="text"
+                {...register("meta_title")}
+                placeholder="Ex: Electronics Category"
+                className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
+              />
+            </div>
+
+            <div>
+              <Label>Meta Tags</Label>
+              <input
+                type="text"
+                {...register("meta_tags")}
+                placeholder="Ex: electronics, gadgets, devices"
+                className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
+              />
+            </div>
+
+            <div>
+              <Label>Meta Description</Label>
+              <textarea
+                {...register("meta_description")}
+                placeholder="Ex: Discover the latest electronics and gadgets..."
+                className="w-full bg-[#F9F9F9] rounded-[8px] p-4 min-h-[100px] outline-none text-sm text-black resize-none"
+              />
             </div>
           </div>
 
@@ -340,6 +444,7 @@ export default function AddCategoryMain() {
               />
             </div>
 
+            {/* Icon Image */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
               <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
                 Category Icon Media
@@ -374,7 +479,7 @@ export default function AddCategoryMain() {
                   >
                     <IamgeIcon size="54" color="#A2A2A2" />
                     <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
-                      Click to select asset photo
+                      Click to select icon photo
                     </p>
                   </div>
                 )}
@@ -387,12 +492,69 @@ export default function AddCategoryMain() {
                   disabled={uploading}
                 />
                 {uploading && (
-                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-[8px]">
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
                     <Loader2 className="animate-spin text-sky-500" />
                   </div>
                 )}
               </div>
             </div>
+
+            {/* Banner Image - Rendered ONLY for Main Category */}
+            {isMainCategory && (
+              <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
+                <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
+                  Category Banner Media
+                </h3>
+                <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
+                  {bannerUrl ? (
+                    <div className="relative group w-full h-32 rounded-[8px] border overflow-hidden bg-white shadow-xs">
+                      <Image
+                        src={
+                          bannerUrl.startsWith("http")
+                            ? bannerUrl
+                            : `${baseStorageUrl}${bannerUrl}`
+                        }
+                        className="w-full h-full object-cover"
+                        alt="banner image"
+                        width={400}
+                        height={128}
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setBannerUrl("")}
+                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer text-xs"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center cursor-pointer outline-none"
+                    >
+                      <IamgeIcon size="54" color="#A2A2A2" />
+                      <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
+                        Click to select banner photo
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={bannerFileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleBannerFileChange}
+                    disabled={uploadingBanner}
+                  />
+                  {uploadingBanner && (
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-lg">
+                      <Loader2 className="animate-spin text-sky-500" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </form>
       </div>

@@ -22,6 +22,7 @@ import {
 } from "@/services-api/orderService";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
+import { extractImageUrl } from "@/utils/image";
 
 type orderItem = {
   productId: string;
@@ -154,13 +155,8 @@ export default function AddOrderMain() {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const getImgUrl = (rawImg?: string) => {
-    const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
-    return cleanImg !== ""
-      ? cleanImg.startsWith("http")
-        ? cleanImg
-        : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
-      : "/images/products/product2.png";
+  const getImgUrl = (rawImg?: any) => {
+    return extractImageUrl(rawImg) || "/images/products/product2.png";
   };
 
   // --- 1. FETCH DATA (Edit Mode) ---
@@ -251,7 +247,13 @@ if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
 
   // 3. Load Items (Ensure sell_price is a number)
   const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => {
-    const itemImage = item.variant?.images?.[0] || item.product?.images?.[0] || item.external_image || "";
+    const itemImage =
+      item.variant?.images?.[0] ||
+      item.product?.images?.[0] ||
+      item.external_image ||
+      (item as any).product_image ||
+      (item as any).image ||
+      "";
     return {
       productId: String(item.product_id),
       name: item.product_name,

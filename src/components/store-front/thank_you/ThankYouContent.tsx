@@ -20,6 +20,7 @@ import EditOrderModal, {
 import { OrderItem } from "@/@types/order.type";
 import { invoiceItem } from "@/@types/invoice.type";
 import { getSettings } from "@/services-api/globalSettingsService";
+import { extractImageUrl } from "@/utils/image";
 
 export default function ThankYouContent() {
   const searchParams = useSearchParams();
@@ -51,11 +52,9 @@ export default function ThankYouContent() {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const invoiceLogo = settingsdata?.primary_logo
-    ? settingsdata.primary_logo.startsWith("http")
-      ? settingsdata.primary_logo
-      : `${backendBaseUrl}${settingsdata.primary_logo.startsWith("/") ? "" : "/"}${settingsdata.primary_logo}`
-    : "/images/admin/logo.png";
+  const invoiceLogo =
+    extractImageUrl(settingsdata?.primary_logo, backendBaseUrl) ||
+    "/images/admin/logo.png";
 
   // edit invoice mutation
   const editInvoiceMutation = useMutation({
@@ -189,15 +188,13 @@ export default function ThankYouContent() {
             <tbody className="divide-y divide-gray-50">
               {apiResponse.order_items?.map(
                 (item: invoiceItem, idx: number) => {
-                  const variantImg = item.variant?.images?.[0];
-                  const productImg = item.product?.images?.[0];
-                  const externalImg = item.external_image;
+                  const variantImg = item.variant?.images?.[0] || (item.variant as any)?.image;
+                  const productImg = item.product?.images?.[0] || (item.product as any)?.image || (item.product as any)?.featuredImage;
+                  const externalImg = item.external_image || (item as any)?.image;
                   const rawImg = variantImg || productImg || externalImg;
-                  const finalImg = rawImg
-                    ? rawImg.startsWith("http")
-                      ? rawImg
-                      : `${backendBaseUrl}${rawImg.startsWith("/") ? "" : "/"}${rawImg}`
-                    : "/images/placeholder.svg";
+                  const finalImg =
+                    extractImageUrl(rawImg, backendBaseUrl) ||
+                    "/images/placeholder.svg";
 
                   let vInfo = "";
                   if (item.variant?.attributes) {

@@ -241,6 +241,7 @@ import StatusBadge from "@/components/store-front/profile/StatusBadge";
 import { getMyOrdersService } from "@/services-api/orderService";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { extractImageUrl } from "@/utils/image";
 
 const backendBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -319,17 +320,15 @@ const OrdersPage = () => {
     meta?.totalPages ?? (meta ? Math.ceil(meta.total / meta.limit) : 1);
 
   const resolveImageUrl = (item: OrderItem): string | null => {
-    // Priority: 1. External image > 2. Variant image > 3. Product image
     const raw =
       item.external_image ||
       item.variant?.images?.[0] ||
       item.product?.images?.[0] ||
+      (item as any).product_image ||
+      (item as any).image ||
       "";
 
-    if (!raw) return null;
-    if (raw.startsWith("http")) return raw;
-
-    return `${backendBaseUrl}${raw.startsWith("/") ? "" : "/"}${raw}`;
+    return extractImageUrl(raw) || null;
   };
 
   const getVariantDisplay = (item: OrderItem): string | null => {

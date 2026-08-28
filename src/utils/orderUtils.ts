@@ -16,8 +16,9 @@ export const extractOrderData = (
         const variantImage = it.variant?.images?.[0];
         const productImage = it.product?.images?.[0];
         const externalImage = it.external_image || it.externalImage || "";
+        const directImage = (it as any).product_image || (it as any).image || "";
         const image = extractImageUrl(
-          variantImage || productImage || externalImage,
+          variantImage || productImage || externalImage || directImage,
           backendBaseUrl,
         );
 

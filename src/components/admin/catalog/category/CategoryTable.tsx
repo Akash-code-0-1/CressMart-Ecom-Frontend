@@ -93,7 +93,7 @@
 //   useEffect(() => {
 //     const handleClickOutside = (event: MouseEvent) => {
 //       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-//         setActiveMenuId(null); 
+//         setActiveMenuId(null);
 //       }
 //     };
 
@@ -209,7 +209,7 @@
 //               <button
 //                 type="button"
 //                 onClick={() => {
-//                   setActiveMenuId(null); 
+//                   setActiveMenuId(null);
 //                   router.push(
 //                     `/admin/dashboard/category/add?id=${category.id}`,
 //                   );
@@ -270,13 +270,6 @@
 //     </div>
 //   );
 // }
-
-
-
-
-
-
-
 
 // "use client";
 
@@ -611,24 +604,18 @@
 //   );
 // }
 
-
-
-
-
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { 
-  MoreVertical, 
-  Trash2, 
-  Edit3, 
-  Loader2, 
-  ChevronLeft, 
-  RefreshCw 
+import {
+  MoreVertical,
+  Trash2,
+  Edit3,
+  Loader2,
+  ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
 import {
   fetchAllCategories,
@@ -660,7 +647,7 @@ export default function CategoryTable() {
   const status = searchParams.get("status") || "";
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  
+
   // --- 🚀 Professional Menu States ---
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -707,7 +694,8 @@ export default function CategoryTable() {
         setShowStatusMenu(false);
       }
     };
-    if (activeMenuId) document.addEventListener("mousedown", handleClickOutside);
+    if (activeMenuId)
+      document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuId]);
 
@@ -756,7 +744,7 @@ export default function CategoryTable() {
     if (selectedIds.length === 0) return;
     if (
       confirm(
-        `Are you sure you want to permanently delete ${selectedIds.length} category(ies)?`
+        `Are you sure you want to permanently delete ${selectedIds.length} category(ies)?`,
       )
     ) {
       bulkDeleteMutation.mutate(selectedIds);
@@ -928,7 +916,10 @@ export default function CategoryTable() {
               }}
               className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <Edit3 size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+              <Edit3
+                size={16}
+                className="text-gray-400 group-hover:text-[#1DA1F2]"
+              />
               <span className="font-medium">Edit Item</span>
             </button>
           </div>

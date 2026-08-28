@@ -6,6 +6,7 @@ import { dashboardApi } from "@/services-api/dashboardService";
 import Pagination from "../common/Pagination";
 import DataTable from "../common/DataTable";
 import Image from "next/image";
+import { extractImageUrl } from "@/utils/image";
 
 interface ProductAnalyticsProps {
   bestSellingData: {
@@ -33,11 +34,8 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const getImgUrl = (rawImg: string) => {
-    if (!rawImg) return "/images/products/product.png";
-    return rawImg.startsWith("http")
-      ? rawImg
-      : `${baseStorageUrl}/${rawImg.replace(/^\/+/, "")}`;
+  const getImgUrl = (rawImg: unknown) => {
+    return extractImageUrl(rawImg) || "/images/products/product.png";
   };
 
   const filteredSidebarData = useMemo(() => {

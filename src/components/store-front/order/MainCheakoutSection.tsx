@@ -709,16 +709,13 @@ const MainCheckoutSection: React.FC = () => {
     phone: "",
     address: "",
     note: "",
-    shippingArea: "outside" as "inside" | "outside" | "sub_city",
+    shippingArea: "outside" as string,
     paymentMethod: "COD",
   });
 
-  // Helper to ensure any string is narrowed to the ShippingArea union
-  const normalizeShippingKey = (
-    key: string,
-  ): "inside" | "outside" | "sub_city" => {
-    if (key === "inside" || key === "outside" || key === "sub_city") return key;
-    return "outside";
+  // Helper to ensure shipping key is valid or fallback to outside
+  const normalizeShippingKey = (key: string): string => {
+    return key || "outside";
   };
 
   const [couponInput, setCouponInput] = useState("");
@@ -894,11 +891,11 @@ const MainCheckoutSection: React.FC = () => {
       if (!exists) {
         setFormData((prev) => ({
           ...prev,
-          shippingArea: normalizeShippingKey(dynamicShippingOptions[0].key),
+          shippingArea: dynamicShippingOptions[0].key,
         }));
       }
     }
-  }, [dynamicShippingOptions]);
+  }, [dynamicShippingOptions, formData.shippingArea]);
 
   const calculatedShippingFee = useMemo(() => {
     const selectedOpt = dynamicShippingOptions.find(

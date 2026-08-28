@@ -110,9 +110,8 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
-  const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(
-    null,
-  );
+  const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(null);
+  const [openMobileSubDropdown, setOpenMobileSubDropdown] = useState<string | null>(null);
   const searchRef = useRef<HTMLFormElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -480,38 +479,74 @@ const Navbar = () => {
           </div>
           <div className="flex-1 overflow-y-auto">
             {(categories || []).map((link, idx) => (
-              <div key={link.id} className="border-b border-gray-50">
+              <div key={link.id} className="border-b border-gray-100">
+                {/* Category row */}
                 <div
-                  onClick={() =>
-                    setOpenMobileDropdown(
-                      openMobileDropdown === idx ? null : idx,
-                    )
-                  }
+                  onClick={() => {
+                    if (link.children && link.children.length > 0) {
+                      setOpenMobileDropdown(openMobileDropdown === idx ? null : idx);
+                      setOpenMobileSubDropdown(null);
+                    } else {
+                      router.push(`/category/${link.slug}`);
+                      setIsDrawerOpen(false);
+                    }
+                  }}
                   className="flex justify-between py-4 text-gray-700 font-semibold cursor-pointer"
                 >
                   <span>{link.name}</span>
                   {link.children && link.children.length > 0 && (
                     <FiChevronDown
-                      className={openMobileDropdown === idx ? "rotate-180" : ""}
+                      className={`transition-transform duration-200 ${openMobileDropdown === idx ? "rotate-180" : ""}`}
                     />
                   )}
                 </div>
-                {openMobileDropdown === idx &&
-                  link.children &&
-                  link.children.length > 0 && (
-                    <div className="pl-4 pb-4 space-y-3">
-                      {link.children.map((sub) => (
-                        <Link
-                          key={sub.id}
-                          href={`/category/${sub.slug}`}
-                          onClick={() => setIsDrawerOpen(false)}
-                          className="block text-gray-500 text-sm"
+
+                {/* Subcategory list */}
+                {openMobileDropdown === idx && link.children && link.children.length > 0 && (
+                  <div className="pl-3 pb-3 space-y-1">
+                    {link.children.map((sub) => (
+                      <div key={sub.id}>
+                        {/* Sub row */}
+                        <div
+                          onClick={() => {
+                            if (sub.children && sub.children.length > 0) {
+                              setOpenMobileSubDropdown(
+                                openMobileSubDropdown === sub.id ? null : sub.id
+                              );
+                            } else {
+                              router.push(`/category/${sub.slug}`);
+                              setIsDrawerOpen(false);
+                            }
+                          }}
+                          className="flex justify-between items-center py-2.5 pr-2 text-gray-600 text-sm font-medium cursor-pointer hover:text-[#FF7050]"
                         >
-                          {sub.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                          <span>{sub.name}</span>
+                          {sub.children && sub.children.length > 0 && (
+                            <FiChevronDown
+                              className={`transition-transform duration-200 text-gray-400 ${openMobileSubDropdown === sub.id ? "rotate-180" : ""}`}
+                            />
+                          )}
+                        </div>
+
+                        {/* Child category list */}
+                        {openMobileSubDropdown === sub.id && sub.children && sub.children.length > 0 && (
+                          <div className="pl-3 pb-2 space-y-1 border-l border-gray-100">
+                            {sub.children.map((child) => (
+                              <Link
+                                key={child.id}
+                                href={`/category/${child.slug}`}
+                                onClick={() => setIsDrawerOpen(false)}
+                                className="block py-1.5 text-gray-500 text-xs hover:text-[#FF7050] transition-colors"
+                              >
+                                {child.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -819,18 +854,22 @@ const Navbar = () => {
 const NavDropdown = ({ items, isRoot }: NavDropdownProps) => {
   return (
     <div
-      className={`absolute ${isRoot ? "top-full left-0 mt-4" : "top-0 left-full ml-1"} w-56 bg-white shadow-xl rounded-lg border border-gray-100 z-[9999] opacity-0 invisible group-hover/main:opacity-100 group-hover/main:visible transition-all duration-300 transform origin-top`}
+      className={`absolute ${
+        isRoot
+          ? "top-full left-0 mt-4 group-hover/main:opacity-100 group-hover/main:visible"
+          : "top-0 left-full ml-1 group-hover/sub:opacity-100 group-hover/sub:visible"
+      } w-56 bg-white shadow-xl rounded-lg border border-gray-100 z-[9999] opacity-0 invisible transition-all duration-200 origin-top-left`}
     >
       <ul className="py-2">
         {items.map((subItem) => (
           <li key={subItem.id} className="relative group/sub">
             <Link
               href={`/category/${subItem.slug}`}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-[#FF7050] hover:bg-gray-50 flex items-center justify-between transition-colors"
+              className="px-4 py-2.5 text-sm text-gray-600 hover:text-[#FF7050] hover:bg-gray-50 flex items-center justify-between transition-colors"
             >
-              {subItem.name}
+              <span>{subItem.name}</span>
               {subItem.children && subItem.children.length > 0 && (
-                <FiChevronDown className="-rotate-90 text-gray-400" />
+                <FiChevronDown className="-rotate-90 text-gray-400 shrink-0" />
               )}
             </Link>
             {subItem.children && subItem.children.length > 0 && (

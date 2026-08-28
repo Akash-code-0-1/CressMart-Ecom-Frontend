@@ -32,6 +32,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Image from "next/image";
+import { extractImageUrl } from "@/utils/image";
 import { debounce } from "lodash";
 import { toast } from "react-hot-toast";
 
@@ -299,12 +300,7 @@ export default function OrderTable() {
   }, [resolvedModalProducts]);
 
   const getImgUrl = (rawImg: any) => {
-    const cleanImg = typeof rawImg === "string" ? rawImg.trim() : "";
-    return cleanImg !== ""
-      ? cleanImg.startsWith("http")
-        ? cleanImg
-        : `${baseStorageUrl}/${cleanImg.replace(/^\/+/, "")}`
-      : "/images/products/product2.png";
+    return extractImageUrl(rawImg) || "/images/products/product2.png";
   };
 
   const fetchedCustomer = detailsModal.order
@@ -681,7 +677,10 @@ useEffect(() => {
           productInfo.images?.[0] ||
           productInfo.featuredImage ||
           first?.image ||
-          first?.externalImage;
+          first?.product_image ||
+          first?.externalImage ||
+          first?.external_image ||
+          first?.variant?.images?.[0];
         return (
           <div className="flex items-center gap-2">
             <Image
@@ -1168,7 +1167,11 @@ useEffect(() => {
                         resolvedProduct?.featuredImage ||
                         resolvedProduct?.images?.[0] ||
                         item.image ||
-                        item.product?.images?.[0];
+                        item.product_image ||
+                        item.product?.images?.[0] ||
+                        item.variant?.images?.[0] ||
+                        item.external_image ||
+                        item.externalImage;
 
                       const price = Number(
                         item.price ||

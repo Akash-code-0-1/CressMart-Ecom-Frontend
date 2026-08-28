@@ -4,9 +4,10 @@ import Image from "next/image";
 import { SectionHeader } from "../common/SectionHeader";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { getCategoryTree, Category } from "@/services-api/categoryService";
+import { Category, getFeaturedCategory } from "@/services-api/categoryService";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { extractImageUrl } from "@/utils/image";
 
 export default function FeaturedCategory() {
   const router = useRouter();
@@ -14,23 +15,19 @@ export default function FeaturedCategory() {
     Category[]
   >({
     queryKey: ["categories-tree"],
-    queryFn: getCategoryTree,
+    queryFn: getFeaturedCategory,
     staleTime: 1000 * 60 * 30,
   });
 
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
-
-    const { language } = useLanguage();
-    const t = translations[language];
+  const { language } = useLanguage();
+  const t = translations[language];
 
   return (
     <section className="w-full pb-[40px] md:pb-[80px] px-4 md:px-10">
       <div className="max-w-[1720px] mx-auto">
         <SectionHeader title={t.featuredCategory} link="/category" />
 
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-2 sm:gap-x-3 md:gap-x-5 xl:gap-x-[35px] gap-y-3 md:gap-y-6">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-2 sm:gap-x-3 md:gap-x-5 xl:gap-x-[35px] gap-y-3 md:gap-y-6">
           {isLoading
             ? Array.from({ length: 10 }).map((_, i) => (
                 <div
@@ -39,10 +36,9 @@ export default function FeaturedCategory() {
                 />
               ))
             : categories.slice(0, 10).map((category) => {
-                const rowImage = category?.image_url || "";
-                const iconUrl = rowImage.startsWith("http")
-                  ? rowImage
-                  : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+                const iconUrl =
+                  extractImageUrl(category?.image_url) ||
+                  "/images/placeholder.svg";
 
                 return (
                   <div
@@ -65,10 +61,10 @@ export default function FeaturedCategory() {
                   "
                   >
                     {/* Icon Container */}
-                    <div className="relative w-[110px] h-[65px]">
+                    <div className="relative w-[110px] h-[65px] shrink-0">
                       <Image
                         src={iconUrl}
-                        alt={category.name}
+                        alt={category.name || "Category"}
                         fill
                         className="object-cover rounded-[8px]"
                         unoptimized

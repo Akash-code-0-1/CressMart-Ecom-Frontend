@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
 import Image from "next/image";
@@ -6,7 +6,7 @@ import Image from "next/image";
 export interface RelatedProduct {
   id: string;
   name: string;
-  images: string[];
+  images: Array<{ url: string; alt_text?: string } | string>;
   sell_price: string;
 }
 
@@ -15,6 +15,18 @@ interface BlogBodyProps {
   relatedProducts?: RelatedProduct[];
 }
 
+function extractImageUrl(val: unknown): string {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object") {
+    const inner = (val as Record<string, unknown>).url;
+    if (typeof inner === "string") return inner;
+    if (inner && typeof inner === "object") {
+      const deepUrl = (inner as Record<string, unknown>).url;
+      if (typeof deepUrl === "string") return deepUrl;
+    }
+  }
+  return "";
+}
 export default function BlogBody({ content, relatedProducts }: BlogBodyProps) {
   const { language } = useLanguage();
   const t = translations[language];
@@ -44,19 +56,22 @@ export default function BlogBody({ content, relatedProducts }: BlogBodyProps) {
       {relatedProducts && relatedProducts.length > 0 && (
         <div className="mt-12">
           <h4 className="text-black font-bold text-xl mb-6 uppercase tracking-wide">
-           {t.relatedProducts.title}
+            {t.relatedProducts.title}
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {relatedProducts.map((product: RelatedProduct) => {
-              const imageUrl = product.images[0].startsWith("http")
-                ? product.images[0]
-                : `${backendBaseUrl}/${product.images[0].replace(/^\/+/, "")}`;
+              const rowimage = extractImageUrl(product?.images[0]).trim();
+              const usableImage = rowimage.startsWith("http")
+                ? rowimage
+                : rowimage
+                  ? `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`
+                  : "/images/placeholder.svg";
 
               return (
                 <div key={product.id} className="space-y-3">
                   <div className="relative h-[250px] md:h-[400px] rounded-xl overflow-hidden border border-gray-100">
                     <Image
-                      src={imageUrl}
+                      src={usableImage}
                       alt={product.name}
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-500"
