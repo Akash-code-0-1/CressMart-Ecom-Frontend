@@ -19,10 +19,10 @@ import {
   FaGoogle, 
   FaWhatsapp 
 } from "react-icons/fa";
-import { SiCodefactor } from "react-icons/si"; 
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
 import { fetchSettings } from "@/services-api/settingsService";
+import { extractImageUrl } from "@/utils/image";
 
 /**
  * Config for colors and icons. 
@@ -152,15 +152,8 @@ const OrderOriginSection = ({ activeFilter, selectedDate }: OrderOriginProps) =>
   // Construct Logo URL (Matching your Navbar logic)
   const primaryLogoUrl = useMemo(() => {
     const info = settings?.data || settings;
-    const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
-    
-    const logoPath = info?.primary_logo || "";
-    
-    if (!logoPath) return "/images/minilogo.png";
-
-    return logoPath.startsWith("http")
-      ? logoPath
-      : `${backendBaseUrl}/${logoPath.replace(/^\/+/, "")}`;
+    const logoPath = info?.primary_logo;
+    return extractImageUrl(logoPath) || "/images/minilogo.png";
   }, [settings]);
 
   const chartData = Array.isArray(statsData) ? statsData : [];

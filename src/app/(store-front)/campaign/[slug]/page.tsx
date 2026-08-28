@@ -8,6 +8,7 @@ import ProductCard from "@/components/store-front/common/ProductCard";
 import { Product } from "@/@types/product.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { extractImageUrl } from "@/utils/image";
 
 interface CampaignDetailsData {
   id: string;
@@ -59,11 +60,8 @@ export default function SingleCampaignPage() {
   const products: Product[] = campaign?.products || [];
 
   // Helper to format image URL
-  const getImageUrl = (rawUrl?: string | null): string => {
-    if (!rawUrl || rawUrl.trim().length <= 1) return "/images/placeholder.svg";
-    return rawUrl.startsWith("http") || rawUrl.startsWith("/images/")
-      ? rawUrl
-      : `${backendBaseUrl}/${rawUrl.replace(/^\/+/, "")}`;
+  const getImageUrl = (rawUrl?: unknown): string => {
+    return extractImageUrl(rawUrl) || "/images/placeholder.svg";
   };
 
   // Helper to format end date

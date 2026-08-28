@@ -73,7 +73,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useFormContext } from "react-hook-form";
 import { apiFetch } from "@/utils/api";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 
 interface CategoryNode {
   id: string | number;
@@ -143,7 +143,7 @@ export default function SidebarCatalogSection() {
   const { data: treeResponse, isLoading } = useQuery({
     queryKey: ["categories-nested-tree-upload"],
     queryFn: async () => {
-      const res = await apiFetch("/categories/tree");
+      const res = await apiFetch("/categories/tree?limit=200");
       if (!res.ok) throw new Error("Tree serialization error");
       return res.json();
     },

@@ -3,7 +3,8 @@ export const extractImageUrl = (candidate: any, backendBaseUrl?: string): string
 
   const baseUrl =
     backendBaseUrl ||
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
+    process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api(\/v1)?\/?$/, "") ||
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(\/v1)?\/?$/, "") ||
     "http://localhost:8082";
 
   let raw = candidate;
@@ -45,6 +46,7 @@ export const extractImageUrl = (candidate: any, backendBaseUrl?: string): string
       trimmed.startsWith("http://") ||
       trimmed.startsWith("https://") ||
       trimmed.startsWith("data:") ||
+      trimmed.startsWith("blob:") ||
       trimmed.startsWith("/images/")
     ) {
       return trimmed;
@@ -54,3 +56,4 @@ export const extractImageUrl = (candidate: any, backendBaseUrl?: string): string
 
   return "";
 };
+

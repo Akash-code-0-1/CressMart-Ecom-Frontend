@@ -11,18 +11,14 @@ import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 import Link from "next/link";
 import { FiExternalLink } from "react-icons/fi";
 
+import { extractImageUrl } from "@/utils/image";
+
 interface Props {
   slug: string;
 }
 
 function getImageUrl(img: unknown): string {
-  if (typeof img === "string") return img;
-  if (img && typeof img === "object") {
-    const obj = img as Record<string, unknown>;
-    if (typeof obj.url === "string") return obj.url;
-    if (typeof obj.preview === "string") return obj.preview;
-  }
-  return "";
+  return extractImageUrl(img);
 }
 
 export default function ProductDetailContent({ slug }: Props) {

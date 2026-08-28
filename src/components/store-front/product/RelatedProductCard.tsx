@@ -2,36 +2,34 @@
 
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
+import { extractImageUrl } from "@/utils/image";
 import Image from "next/image";
 import Link from "next/link";
 import { FaStar } from "react-icons/fa";
 
+// images can be array of objects {url, ...} or array of strings
+type ImageEntry = string | { url?: string; [key: string]: unknown };
+
 export interface ProductData {
   id: string;
   name: string;
-  regular_price: string;
-  sell_price: string;
+  regular_price: string | number;
+  sell_price: string | number;
   avg_rating: number;
   total_reviews: number;
-  images: string[];
+  images: ImageEntry | ImageEntry[];
   slug: string;
 }
 
 const RelatedProductCard = ({ product }: { product: ProductData }) => {
   const { language } = useLanguage();
   const t = translations[language];
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
 
-  const rawFirstImg = product.images?.[0];
-  const isValidImg =
-    typeof rawFirstImg === "string" && rawFirstImg.trim().length > 1;
-  const productImage = isValidImg
-    ? rawFirstImg.startsWith("http") || rawFirstImg.startsWith("/images/")
-      ? rawFirstImg
-      : `${backendBaseUrl}/${rawFirstImg.replace(/^\/+/, "")}`
-    : "/images/placeholder.svg";
+  // Resolve image robustly: handles {url} objects, plain strings, nested arrays
+  const rawImages = product.images;
+  const firstImage = Array.isArray(rawImages) ? rawImages[0] : rawImages;
+  const productImage =
+    extractImageUrl(firstImage) || "/images/placeholder.svg";
 
   return (
     <Link href={`/product/${product.slug}`}>
@@ -58,7 +56,7 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
               {t.product.bdt} {product.sell_price}
             </span>
 
-            {product.regular_price !== product.sell_price && (
+            {String(product.regular_price) !== String(product.sell_price) && (
               <span className="text-xs text-gray-400 line-through">
                 {t.product.bdt} {product.regular_price}
               </span>
@@ -70,7 +68,7 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
                 <FaStar
                   key={i}
                   className={
-                    i < Math.round(product.avg_rating)
+                    i < Math.round(product.avg_rating || 0)
                       ? "text-[#FFB800]"
                       : "text-gray-300"
                   }
@@ -78,7 +76,7 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
               ))}
             </div>
             <span className="text-xs text-gray-500">
-              ({product.total_reviews})
+              ({product.total_reviews || 0})
             </span>
           </div>
         </div>

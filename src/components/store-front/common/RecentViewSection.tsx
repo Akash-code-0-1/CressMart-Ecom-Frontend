@@ -10,27 +10,29 @@ import { recentViewProduct } from "@/services-api/productService";
 import Link from "next/link";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { extractImageUrl } from "@/utils/image";
+
+// Image can be a string path, a URL string, or an object with {url}
+type ImageEntry = string | { url?: string; [key: string]: unknown };
 
 interface Product {
-  _id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  price?: number;
-  images: string | string[];
-  total_reviews: number;
+  sell_price?: number | string;
+  regular_price?: number | string;
+  price?: number | string;
+  images?: ImageEntry | ImageEntry[];
+  total_reviews?: number;
   slug?: string;
-  avg_rating: number;
-  regular_price: number;
-}
-
-interface ApiResponse {
-  data: Product[];
+  avg_rating?: number;
 }
 
 const RecentlyViewed = () => {
   const { language } = useLanguage();
   const t = translations[language];
-  // 1. Fetch data using TanStack Query with Types
-  const { data: products, isLoading } = useQuery<ApiResponse | null>({
+
+  const { data: productdata, isLoading } = useQuery<Product[] | null>({
     queryKey: ["recentlyViewed"],
     queryFn: () => recentViewProduct(1, 12),
   });
@@ -41,12 +43,6 @@ const RecentlyViewed = () => {
         {t.recentlyViewed.loading}
       </div>
     );
-
-  const productdata = products?.data;
-
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
 
   if (!productdata || productdata.length === 0) return null;
 
@@ -87,18 +83,25 @@ const RecentlyViewed = () => {
           className="mySwiper"
         >
           {productdata.map((product: Product) => {
-            const rawImage = Array.isArray(product?.images)
-              ? product.images[0]
-              : product?.images;
-            const rowImage = typeof rawImage === "string" ? rawImage : "";
+            const productId = product?.id || product?._id || "";
 
+            // Resolve image: can be array of objects {url}, array of strings, or single value
+            const rawImages = product?.images;
+            const firstImage = Array.isArray(rawImages)
+              ? rawImages[0]
+              : rawImages;
             const iconUrl =
-              rowImage && rowImage.startsWith("http")
-                ? rowImage
-                : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
+              extractImageUrl(firstImage) || "/imageslaceholder.svg";
+
+            // Resolve price: prefer sell_price → price → regular_price
+            const displayPrice =
+              product?.sell_price ??
+              product?.price ??
+              product?.regular_price ??
+              0;
 
             return (
-              <SwiperSlide key={product?._id}>
+              <SwiperSlide key={productId}>
                 <Link href={`/product/${product?.slug}`}>
                   <div className="bg-[#F3F3F3] rounded-lg p-4 flex items-center gap-4 h-[130px]">
                     <div className="relative min-w-[100px] h-[100px] rounded-xl flex items-center justify-center p-2">
@@ -106,7 +109,7 @@ const RecentlyViewed = () => {
                         src={iconUrl}
                         alt={product?.name || "Product"}
                         fill
-                        className="w-full h-full object-contain rounded-xl"
+                        className="w-full h-full object-cover rounded-xl"
                         unoptimized
                       />
                     </div>
@@ -117,15 +120,16 @@ const RecentlyViewed = () => {
                       </h3>
 
                       <p className="text-[#FF7050] font-poppins text-[12px] font-bold mb-1">
-                        {t.product.bdt} {product?.price}
+                        {t.product.bdt} {displayPrice}
                       </p>
+
                       <div className="flex items-center gap-1">
                         <div className="flex text-[#FFB800] text-xs gap-[1px]">
                           {[...Array(5)].map((_, i) => (
                             <FaStar
                               key={i}
                               className={
-                                i < Math.round(product.avg_rating)
+                                i < Math.round(product?.avg_rating || 0)
                                   ? "text-[#FFB800]"
                                   : "text-gray-300"
                               }
@@ -133,7 +137,7 @@ const RecentlyViewed = () => {
                           ))}
                         </div>
                         <span className="text-xs text-gray-500">
-                          ({product.total_reviews})
+                          ({product?.total_reviews || 0})
                         </span>
                       </div>
                     </div>

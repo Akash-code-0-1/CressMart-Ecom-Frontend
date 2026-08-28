@@ -6,7 +6,7 @@ export interface CategoryQuery {
   limit?: number;
   search?: string;
   status?: string;
-  level?: number;  
+  level?: number;
 }
 
 // 🚀 1. FETCH ALL GENERAL CATEGORIES
@@ -33,16 +33,16 @@ export const fetchAllSubCategories = async (query: CategoryQuery) => {
   if (query.limit) queryParams.set("limit", String(query.limit));
   if (query.search) queryParams.set("search", query.search);
   if (query.status) queryParams.set("status", query.status);
-  
+
   // 🚀 CRITICAL: This was missing! We must send level to the backend
   if (query.level) queryParams.set("level", String(query.level));
 
   const res = await apiFetch(`/categories?${queryParams.toString()}`);
   if (!res.ok) throw new Error("Failed to retrieve subcategories.");
-  
+
   const json = await res.json();
 
-  // 🚀 CRITICAL: Use the data directly from backend. 
+  // 🚀 CRITICAL: Use the data directly from backend.
   // Do NOT filter parent_id !== null here, because that includes Child Categories.
   const records = json?.data?.data || json?.data || json || [];
   const meta = json?.meta || json?.data?.meta || { totalPages: 1, total: 0 };
@@ -141,7 +141,7 @@ export const updateCategory = async (id: string, payload: any) => {
 // 🚀 9. BULK DELETE CATEGORIES
 export const bulkDeleteCategories = async (ids: string[]) => {
   const token = await getAdminTokenAction();
-  
+
   const res = await apiFetch("/categories/bulk-delete", {
     method: "DELETE",
     headers: {
@@ -153,9 +153,7 @@ export const bulkDeleteCategories = async (ids: string[]) => {
 
   if (!res.ok) {
     const errorJson = await res.json().catch(() => ({}));
-    throw new Error(
-      errorJson?.message || "Failed to execute bulk deletion."
-    );
+    throw new Error(errorJson?.message || "Failed to execute bulk deletion.");
   }
 
   return res.json();
@@ -205,6 +203,14 @@ export const getAllcategoryFlatList = async (): Promise<{
 
 export const getCategoryTree = async (): Promise<Category[]> => {
   const res = await apiFetch("/categories/tree?page=1&limit=30");
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  const result = await res.json();
+  const data = result?.data?.data || result?.data || result || [];
+  return Array.isArray(data) ? data : [];
+};
+
+export const getFeaturedCategory = async (): Promise<Category[]> => {
+  const res = await apiFetch("/categories/tree?page=1&limit=10");
   if (!res.ok) throw new Error("Failed to fetch categories");
   const result = await res.json();
   const data = result?.data?.data || result?.data || result || [];

@@ -6,6 +6,7 @@ import { MoreVertical, Edit3, Trash2, Loader2 } from "lucide-react";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
 import { Blog } from "@/@types/blogpost.type";
+import { extractImageUrl } from "@/utils/image";
 
 interface BlogTableSectionProps {
   blogs: Blog[];
@@ -27,7 +28,6 @@ type RelatedProduct = {
   title?: string;
   images?: string[];
 };
-
 export default function BlogTableSection({
   blogs,
   isLoading,
@@ -98,10 +98,7 @@ export default function BlogTableSection({
       header: "Name",
       key: "name",
       render: (item: Blog) => {
-        // Safe image URL calculation
-        const imageUrl = item.featured_image?.startsWith("http")
-          ? item.featured_image
-          : `${backendBaseUrl}/${item.featured_image?.replace(/^\/+/, "")}`;
+        const imageUrl = extractImageUrl(item.featured_image) || "/images/placeholder.svg";
 
         return (
           <div className="flex items-center gap-3">
@@ -134,11 +131,7 @@ export default function BlogTableSection({
           <div className="flex flex-col gap-2">
             {products && products.length > 0 ? (
               products.map((product: RelatedProduct, index: number) => {
-                const imageUrl = product.images?.[0]?.startsWith("http")
-                  ? product.images[0]
-                  : product.images?.[0]
-                    ? `${backendBaseUrl}/${product.images[0].replace(/^\/+/, "")}`
-                    : "/placeholder.png";
+                const usableImage = extractImageUrl(product?.images?.[0]) || "/images/placeholder.svg";
 
                 return (
                   <div
@@ -147,7 +140,7 @@ export default function BlogTableSection({
                   >
                     <div className="relative shrink-0 w-10 h-10 rounded-md overflow-hidden">
                       <Image
-                        src={imageUrl}
+                        src={usableImage}
                         alt={product.name || "Product Image"}
                         fill
                         className="object-cover"

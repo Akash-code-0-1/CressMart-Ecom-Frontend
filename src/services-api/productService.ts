@@ -355,5 +355,6 @@ export const recentViewProduct = async (page: number, limit: number) => {
   if (!res.ok) return null;
   const result = await res.json();
 
-  return result?.data || null;
+  // API returns { data: { data: [...], meta: {...} } }
+  return result?.data?.data || result?.data || null;
 };

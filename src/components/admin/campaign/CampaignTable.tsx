@@ -23,6 +23,19 @@ interface TableColumn<T> {
   render?: (item: T, index: number) => React.ReactNode;
 }
 
+function extractImageUrl(val: unknown): string {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object") {
+    const inner = (val as Record<string, unknown>).url;
+    if (typeof inner === "string") return inner;
+    if (inner && typeof inner === "object") {
+      const deepUrl = (inner as Record<string, unknown>).url;
+      if (typeof deepUrl === "string") return deepUrl;
+    }
+  }
+  return "";
+}
+
 export default function CampaignTable() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -111,11 +124,12 @@ export default function CampaignTable() {
         return (
           <div className="flex gap-1">
             {imgs.slice(0, 2).map((src: string, i: number) => {
-              const rowImage = src || "";
-              const productImage = rowImage.startsWith("http")
-                ? rowImage
-                : `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`;
-
+              const rowimage = extractImageUrl(src).trim();
+              const productImage = rowimage.startsWith("http")
+                ? rowimage
+                : rowimage
+                  ? `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`
+                  : "/images/placeholder.svg";
               return (
                 <div className="relative w-10 h-10" key={i}>
                   <Image
