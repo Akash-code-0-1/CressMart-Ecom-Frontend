@@ -48,7 +48,7 @@ const RecentlyViewed = () => {
 
   return (
     <div className="w-full bg-white">
-      <div className="max-w-[1720px] mx-auto px-4">
+      <div className="max-w-[1720px] mx-auto">
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="md:text-[32px] text-[20px] font-semibold text-black font-poppins">

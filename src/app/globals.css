@@ -329,3 +329,133 @@ input[type=range].price-slider::-webkit-slider-thumb {
 .prose p:empty {
   min-height: 1.5em;
 }
+
+/* ── Category Description Rich Text Editor ── */
+.category-rte-wrapper {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #F9F9F9;
+}
+
+.category-rte-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.category-rte-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.category-rte-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.category-rte-btn--active {
+  background: #003032;
+  color: #fff;
+}
+
+.category-rte-btn--active:hover {
+  background: #00494c;
+  color: #fff;
+}
+
+.category-rte-divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: #e5e7eb;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+.category-rte-content {
+  min-height: 140px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  color: #111827;
+  outline: none;
+}
+
+.category-rte-content:focus { outline: none; }
+
+.category-rte-content p { margin: 0.4rem 0; }
+.category-rte-content p:first-child { margin-top: 0; }
+.category-rte-content p:last-child  { margin-bottom: 0; }
+.category-rte-content h2 { font-size: 1.2rem; font-weight: 700; margin: 0.8rem 0 0.3rem; }
+.category-rte-content h3 { font-size: 1rem;   font-weight: 600; margin: 0.6rem 0 0.2rem; }
+.category-rte-content strong { font-weight: 700; }
+.category-rte-content em     { font-style: italic; }
+.category-rte-content u      { text-decoration: underline; }
+.category-rte-content s      { text-decoration: line-through; }
+.category-rte-content ul { list-style: disc;    padding-left: 1.4rem; margin: 0.4rem 0; }
+.category-rte-content ol { list-style: decimal; padding-left: 1.4rem; margin: 0.4rem 0; }
+.category-rte-content li { margin: 0.15rem 0; }
+.category-rte-content li p { margin: 0; display: inline; }
+.category-rte-content blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 0.9rem;
+  margin: 0.6rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+.category-rte-content p:empty::before { content: "\00a0"; }
+.category-rte-content p:empty { min-height: 1.4em; }
+
+
+/* Global safety-net fix for broken rich-text ordered/unordered lists */
+.product-description ol,
+.ProseMirror ol,
+.prose ol,
+.blog-rich-text ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.product-description ul,
+.ProseMirror ul,
+.prose ul,
+.blog-rich-text ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.product-description li,
+.ProseMirror li,
+.prose li,
+.blog-rich-text li {
+  display: list-item !important;
+  margin: 0.25rem 0 !important;
+  line-height: 1.7 !important;
+}
+
+/* Force any <p> directly inside <li> to sit inline, no matter the wrapper class */
+li > p {
+  display: inline !important;
+  margin: 0 !important;
+}
+
+/* If <p> follows <li> as a SIBLING (broken structure), at least remove extra gap */
+li + p {
+  margin-top: -0.5rem;
+}

@@ -10,6 +10,7 @@ interface Props {
   activeCategoryId: string;
   activePath: Set<string>;
   onUpdate: (key: string, val: string) => void;
+  onSelectCategory?: (slug: string, id: string) => void;
 }
 
 export default function CategorySection({
@@ -17,6 +18,7 @@ export default function CategorySection({
   activeCategoryId,
   activePath,
   onUpdate,
+  onSelectCategory,
 }: Props) {
   const { language } = useLanguage();
   const t = translations[language];
@@ -29,6 +31,30 @@ export default function CategorySection({
         <HiMiniMinusSmall className="md:text-2xl text-xl text-gray-400" />
       </div>
       <ul className="flex flex-col gap-4">
+        {/* All Option */}
+        <li
+          onClick={() => {
+            if (onSelectCategory) onSelectCategory("", "");
+            else onUpdate("category_id", "");
+          }}
+          className="flex justify-between items-center group cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <IoCheckmarkCircleSharp
+              size={24}
+              className={!activeCategoryId ? "text-[#FF7050]" : "text-[#D9D9D9]"}
+            />
+            <span
+              className={`transition-colors md:text-[20px] text-base group-hover:text-black ${
+                !activeCategoryId
+                  ? "text-[#FF7050] font-medium"
+                  : "text-black font-medium"
+              }`}
+            >
+              All
+            </span>
+          </div>
+        </li>
         {tree.map((node) => (
           <CategoryItem
             key={node.id}
@@ -37,6 +63,7 @@ export default function CategorySection({
             activeCategoryId={activeCategoryId}
             activePath={activePath}
             onUpdate={onUpdate}
+            onSelectCategory={onSelectCategory}
           />
         ))}
       </ul>
@@ -50,6 +77,7 @@ interface CategoryItemProps {
   activeCategoryId: string;
   activePath: Set<string>;
   onUpdate: (key: string, val: string) => void;
+  onSelectCategory?: (slug: string, id: string) => void;
 }
 
 function CategoryItem({
@@ -58,6 +86,7 @@ function CategoryItem({
   activeCategoryId,
   activePath,
   onUpdate,
+  onSelectCategory,
 }: CategoryItemProps) {
   const isActive = activeCategoryId === node.id;
   const isBranchOpen = activePath.has(node.id);
@@ -66,7 +95,13 @@ function CategoryItem({
   return (
     <li className="flex flex-col gap-3">
       <div
-        onClick={() => onUpdate("category_id", node.id)}
+        onClick={() => {
+          if (onSelectCategory && node.slug) {
+            onSelectCategory(node.slug, node.id);
+          } else {
+            onUpdate("category_id", node.id);
+          }
+        }}
         className="flex justify-between items-center group cursor-pointer"
       >
         <div className="flex items-center gap-2">
@@ -100,7 +135,7 @@ function CategoryItem({
         <span
           className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"} md:text-[20px] text-base font-normal`}
         >
-          {node._count?.products || 0}
+          {node.product_count ?? node._count?.products ?? 0}
         </span>
       </div>
 
@@ -115,6 +150,7 @@ function CategoryItem({
                 activeCategoryId={activeCategoryId}
                 activePath={activePath}
                 onUpdate={onUpdate}
+                onSelectCategory={onSelectCategory}
               />
             ))}
           </ul>

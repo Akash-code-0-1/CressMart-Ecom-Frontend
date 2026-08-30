@@ -736,10 +736,6 @@ export default function SubCategoryTable() {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset row selections when changing pages or filter options
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [page, status, search]);
 
   // --- 🚀 Close menu on click outside ---
   useEffect(() => {
@@ -768,7 +764,6 @@ export default function SubCategoryTable() {
         limit,
         search: search || undefined,
         status: status || undefined,
-        level: 2, // 🚀 THIS IS THE KEY
       });
     },
   });
@@ -810,6 +805,7 @@ export default function SubCategoryTable() {
   });
 
   const handlePageChange = (targetPage: number) => {
+    setSelectedIds([]);
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(targetPage));
     router.push(`${pathname}?${params.toString()}`);

@@ -124,8 +124,6 @@
 //   return res.json();
 // };
 
-
-
 // // ================= store front  ====================
 
 // export interface Brand {
@@ -162,7 +160,6 @@
 //   if (!res.ok) throw new Error("Failed to fetch brands");
 //   return res.json();
 // };
-
 
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
@@ -317,6 +314,7 @@ export interface Brand {
   name: string;
   slug: string;
   logo_url: string;
+  product_count?: number;
   meta_title?: string;
   meta_description?: string;
   meta_tags?: string;

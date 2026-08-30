@@ -16,8 +16,8 @@ export default function CategoryBanner({
   const Banner = rowImage.startsWith("http")
     ? rowImage
     : rowImage
-    ? `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`
-    : "";
+      ? `${backendBaseUrl}/${rowImage.replace(/^\/+/, "")}`
+      : "";
 
   return (
     <div
@@ -25,17 +25,18 @@ export default function CategoryBanner({
     flex items-center px-8 md:px-16 bg-cover bg-center bg-[#FF7050]"
       style={{
         backgroundImage: Banner
-          ? `url(${Banner})`
-          : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          ? `linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.15)), url(${Banner})`
+          : "linear-gradient(135deg, #FF7050 0%, #E85A3B 55%, #C4432A 100%)",
+        backgroundColor: "#FF7050",
       }}
     >
       <div className="z-10 text-white">
         <h1 className="text-3xl md:text-5xl font-semibold mb-2 font-poppins">
-          {categoryName}
+          {categoryName || "All Categories"}
         </h1>
-        <p className="text-[#B1B1B1] font-medium text-xl font-poppins mt-1">
+        {/* <p className="text-[#B1B1B1] font-medium text-xl font-poppins mt-1">
           {description}
-        </p>
+        </p> */}
       </div>
     </div>
   );

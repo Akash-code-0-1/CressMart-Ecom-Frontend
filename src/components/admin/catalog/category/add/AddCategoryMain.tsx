@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import CategoryRichTextEditor from "./CategoryRichTextEditor";
 import { useForm, FormProvider } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -191,7 +192,10 @@ export default function AddCategoryMain() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-subcategories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-childcategories-list"] });
       queryClient.invalidateQueries({ queryKey: ["categories-tree"] });
+      queryClient.invalidateQueries({ queryKey: ["all-categories"] });
       toast.success(
         isEditMode
           ? "Category changes saved successfully!"
@@ -232,11 +236,11 @@ export default function AddCategoryMain() {
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/(^-|-$)/g, ""),
-      parent_id: data.parent_id || null,
+      parent_id: null, // Always Top Level Main Category
       description: data.description || "",
-      priority: isRoot ? Number(data.priority) || 0 : 0,
+      priority: Number(data.priority) || 0,
       image_url: imageUrl || "",
-      background_image_url: isRoot ? bannerUrl || null : null,
+      background_image_url: bannerUrl || null,
       status: data.status,
       meta_title: data.meta_title || "",
       meta_tags: data.meta_tags || "",
@@ -284,7 +288,6 @@ export default function AddCategoryMain() {
             <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
               General Info
             </h3>
-
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <Label required>Category Name</Label>
@@ -326,7 +329,6 @@ export default function AddCategoryMain() {
                 </p>
               )}
             </div>
-
             <div>
               <Label>Product Link Slug (URL Path)</Label>
               <input
@@ -336,16 +338,13 @@ export default function AddCategoryMain() {
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-gray-800 disabled:opacity-60"
               />
             </div>
-
             <div>
               <Label>Description</Label>
-              <textarea
-                {...register("description")}
-                placeholder="Ex: Category description..."
-                className="w-full bg-[#F9F9F9] rounded-[8px] p-4 min-h-[140px] outline-none text-sm text-black resize-none"
+              <CategoryRichTextEditor
+                value={watch("description") || ""}
+                onChange={(html) => setValue("description", html, { shouldDirty: true })}
               />
             </div>
-
             <div>
               <Label>Parent Category (Select for Subcategory)</Label>
               <select
@@ -362,7 +361,6 @@ export default function AddCategoryMain() {
                   ))}
               </select>
             </div>
-
             {/* Rendered ONLY for Main Category */}
             {isMainCategory && (
               <div>
@@ -375,7 +373,6 @@ export default function AddCategoryMain() {
                 />
               </div>
             )}
-
             <div>
               <Label>Meta Title</Label>
               <input
@@ -385,7 +382,6 @@ export default function AddCategoryMain() {
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
               />
             </div>
-
             <div>
               <Label>Meta Tags</Label>
               <input
@@ -395,7 +391,6 @@ export default function AddCategoryMain() {
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
               />
             </div>
-
             <div>
               <Label>Meta Description</Label>
               <textarea

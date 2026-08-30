@@ -24,6 +24,7 @@ import PrimaryButton from "../../../common/PrimaryButton";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
 import Image from "next/image";
 import toast from "react-hot-toast";
+import CategoryRichTextEditor from "../../category/add/CategoryRichTextEditor";
 
 const Label = ({
   children,
@@ -134,9 +135,11 @@ export default function AddSubCategoryMain() {
       return createSubCategory(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["catalog-subcategories-list"],
-      });
+      queryClient.invalidateQueries({ queryKey: ["catalog-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-subcategories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["catalog-childcategories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["categories-tree"] });
+      queryClient.invalidateQueries({ queryKey: ["all-categories"] });
       toast.success(
         isEditMode
           ? "Sub Category updates saved successfully!"
@@ -322,10 +325,11 @@ export default function AddSubCategoryMain() {
 
             <div>
               <Label>Description</Label>
-              <textarea
-                {...register("description")}
-                placeholder="Write specific nested scope parameters description summary text..."
-                className="w-full bg-[#F9F9F9] rounded-[8px] p-4 min-h-[140px] outline-none text-sm text-black resize-none"
+              <CategoryRichTextEditor
+                value={watch("description") || ""}
+                onChange={(html) =>
+                  setValue("description", html, { shouldDirty: true })
+                }
               />
             </div>
           </div>

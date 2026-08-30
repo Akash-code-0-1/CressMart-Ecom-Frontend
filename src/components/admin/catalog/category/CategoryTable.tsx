@@ -614,8 +614,6 @@ import {
   Trash2,
   Edit3,
   Loader2,
-  ChevronLeft,
-  RefreshCw,
 } from "lucide-react";
 import {
   fetchAllCategories,
@@ -660,26 +658,17 @@ export default function CategoryTable() {
 
   const { data: serverPayload, isLoading } = useQuery({
     queryKey: ["catalog-categories-list", page, limit, search, status],
-    queryFn: async () => {
+    queryFn: () => {
       let mappedStatus = "";
       if (status === "PUBLISHED") mappedStatus = "active";
       if (status === "DRAFT") mappedStatus = "draft";
 
-      const response = await fetchAllCategories({
+      return fetchAllCategories({
         page,
         limit,
         search,
         status: mappedStatus,
-        level: 1,
       });
-
-      if (response && Array.isArray(response.data)) {
-        response.data = response.data.filter(
-          (item: Category) =>
-            item.parent_id === null || item.parent_id === undefined,
-        );
-      }
-      return response;
     },
   });
 
@@ -698,11 +687,6 @@ export default function CategoryTable() {
       document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuId]);
-
-  // Reset selections when changing pages
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [page]);
 
   // Single item deletion
   const deleteMutation = useMutation({
@@ -947,6 +931,7 @@ export default function CategoryTable() {
             currentPage={page}
             totalPages={meta.totalPages}
             onPageChange={(p) => {
+              setSelectedIds([]);
               const params = new URLSearchParams(searchParams.toString());
               params.set("page", String(p));
               router.push(`${pathname}?${params.toString()}`);

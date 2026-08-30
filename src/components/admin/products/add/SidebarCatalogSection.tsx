@@ -73,7 +73,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useFormContext } from "react-hook-form";
 import { apiFetch } from "@/utils/api";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 interface CategoryNode {
   id: string | number;
@@ -136,9 +136,10 @@ function CatalogSelect({
 export default function SidebarCatalogSection() {
   const { setValue, watch } = useFormContext();
 
-  const categoryId = watch("category_id");
-  const subCategoryId = watch("sub_category_id");
-  const childCategoryId = watch("child_category_id");
+  const activeCatId = watch("category_id");
+  const rootCatId = watch("root_category_id");
+  const subCatId = watch("sub_category_id");
+  const childCatId = watch("child_category_id");
 
   const { data: treeResponse, isLoading } = useQuery({
     queryKey: ["categories-nested-tree-upload"],
@@ -159,33 +160,67 @@ export default function SidebarCatalogSection() {
     return [];
   }, [treeResponse]);
 
-  // Level 2: children of selected category
+  // Pre-fill root/sub/child dropdowns when editing an existing product (activeCatId is set)
+  useEffect(() => {
+    if (!activeCatId || rootNodes.length === 0 || rootCatId) return;
+
+    for (const root of rootNodes) {
+      if (String(root.id) === String(activeCatId)) {
+        setValue("root_category_id", String(root.id));
+        return;
+      }
+      if (root.children) {
+        for (const sub of root.children) {
+          if (String(sub.id) === String(activeCatId)) {
+            setValue("root_category_id", String(root.id));
+            setValue("sub_category_id", String(sub.id));
+            return;
+          }
+          if (sub.children) {
+            for (const child of sub.children) {
+              if (String(child.id) === String(activeCatId)) {
+                setValue("root_category_id", String(root.id));
+                setValue("sub_category_id", String(sub.id));
+                setValue("child_category_id", String(child.id));
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+  }, [activeCatId, rootNodes, rootCatId, setValue]);
+
+  // Level 2: children of selected root category
   const subCategoryNodes: CategoryNode[] = useMemo(() => {
-    const selected = rootNodes.find((n) => String(n.id) === String(categoryId));
+    const selected = rootNodes.find((n) => String(n.id) === String(rootCatId));
     return selected?.children ?? [];
-  }, [rootNodes, categoryId]);
+  }, [rootNodes, rootCatId]);
 
   // Level 3: children of selected sub category
   const childCategoryNodes: CategoryNode[] = useMemo(() => {
     const selected = subCategoryNodes.find(
-      (n) => String(n.id) === String(subCategoryId),
+      (n) => String(n.id) === String(subCatId),
     );
     return selected?.children ?? [];
-  }, [subCategoryNodes, subCategoryId]);
+  }, [subCategoryNodes, subCatId]);
 
   const handleCategoryChange = (val: string) => {
-    setValue("category_id", val);
+    setValue("root_category_id", val);
     setValue("sub_category_id", "");
     setValue("child_category_id", "");
+    setValue("category_id", val);
   };
 
   const handleSubCategoryChange = (val: string) => {
     setValue("sub_category_id", val);
     setValue("child_category_id", "");
+    setValue("category_id", val || rootCatId);
   };
 
   const handleChildCategoryChange = (val: string) => {
     setValue("child_category_id", val);
+    setValue("category_id", val || subCatId || rootCatId);
   };
 
   return (
@@ -193,26 +228,26 @@ export default function SidebarCatalogSection() {
       <h3 className="text-black font-medium text-lg mb-4">Catalog</h3>
 
       <CatalogSelect
-        value={categoryId || ""}
+        value={rootCatId || ""}
         onChange={handleCategoryChange}
         placeholder={isLoading ? "Loading..." : "Select Category*"}
         options={rootNodes}
       />
 
-      {/* Sub Category shows only after Category is selected */}
-      {categoryId && (
+      {/* Sub Category shows only after Category is selected and has sub-categories */}
+      {rootCatId && subCategoryNodes.length > 0 && (
         <CatalogSelect
-          value={subCategoryId || ""}
+          value={subCatId || ""}
           onChange={handleSubCategoryChange}
           placeholder="Select Sub Category*"
           options={subCategoryNodes}
         />
       )}
 
-      {/* Child Category shows only after Sub Category is selected */}
-      {categoryId && subCategoryId && (
+      {/* Child Category shows only after Sub Category is selected and has child-categories */}
+      {rootCatId && subCatId && childCategoryNodes.length > 0 && (
         <CatalogSelect
-          value={childCategoryId || ""}
+          value={childCatId || ""}
           onChange={handleChildCategoryChange}
           placeholder="Select Child Category*"
           options={childCategoryNodes}
