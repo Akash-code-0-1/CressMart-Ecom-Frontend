@@ -233,6 +233,7 @@ export interface Category {
   created_at?: string;
   updated_at?: string;
   _count?: { products: number };
+  product_count?: number;
   status?: string;
   sl?: number;
 }
