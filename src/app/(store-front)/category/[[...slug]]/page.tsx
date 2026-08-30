@@ -12,38 +12,72 @@ import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { getCategory } from "@/services-api/categoryService";
 import { useParams, useSearchParams } from "next/navigation";
-import { filterProducts } from "@/services-api/productService";
-import { getBrands } from "@/services-api/brandService";
+import {
+  filterProducts,
+  fetchFilterBrands,
+} from "@/services-api/productService";
 import { Product } from "@/@types/product.type";
 import React from "react";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const params = useParams();
+  const slugParam = params.slug;
+  const targetCategorySlug = Array.isArray(slugParam)
+    ? slugParam[slugParam.length - 1]
+    : slugParam || "";
+
   const searchParams = useSearchParams();
   const activeSort = searchParams.get("sort") || "popularity";
-
-  const slug = params.slug as string;
+  const [isOpen, setIsOpen] = useState(false);
   const activeBrandId = searchParams.get("brand_id") || "";
-  const activeCategoryId = searchParams.get("category_id") || "";
+  const activeBrandSlug =
+    searchParams.get("brand_slug") || searchParams.get("brand") || "";
+  const queryCategoryId = searchParams.get("category_id") || "";
   const maxPrice = searchParams.get("max") || "100000";
   const { language } = useLanguage();
   const t = translations[language];
 
   // category data fetch
   const { data: category, isLoading: categoryLoading } = useQuery({
-    queryKey: ["category", slug],
-    queryFn: () => getCategory(slug),
-    enabled: !!slug,
+    queryKey: ["category", targetCategorySlug],
+    queryFn: () => getCategory(targetCategorySlug),
+    enabled: !!targetCategorySlug,
   });
 
-  // brand data fetch
+  const activeCategoryId =
+    queryCategoryId || (category?.id ? String(category.id) : "");
+
+  // Determine category_id and category_slug for API
+  const finalCategoryId =
+    queryCategoryId || (targetCategorySlug ? "" : category?.id || "");
+  const finalCategorySlug = queryCategoryId ? "" : targetCategorySlug;
+
+  // brand data fetch with consistent brand counts
   const { data: brandsResponse } = useQuery({
-    queryKey: ["brands"],
-    queryFn: () => getBrands(1, 50),
+    queryKey: ["filter-brands"],
+    queryFn: () => fetchFilterBrands(),
   });
+
+  const brandList = Array.isArray(brandsResponse)
+    ? brandsResponse
+    : brandsResponse?.data?.data || brandsResponse?.data || [];
+
+  const selectedBrand = brandList.find(
+    (b: { id: string; slug: string; name: string }) =>
+      b.id === activeBrandId ||
+      b.slug === activeBrandSlug ||
+      (activeBrandSlug && b.id === activeBrandSlug),
+  );
+
+  const displayTitle = selectedBrand?.name
+    ? category?.name
+      ? `${category.name} - ${selectedBrand.name}`
+      : selectedBrand.name
+    : category?.name || "All Products";
 
   // product fetch
   const {
@@ -56,9 +90,11 @@ const CategoryPage = () => {
   } = useInfiniteQuery({
     queryKey: [
       "products",
+      targetCategorySlug,
       category?.id,
-      activeCategoryId,
+      finalCategoryId,
       activeBrandId,
+      activeBrandSlug,
       maxPrice,
       activeSort,
     ],
@@ -69,19 +105,24 @@ const CategoryPage = () => {
         search: "",
         min_price: 0,
         max_price: Number(maxPrice),
-        category_id: activeBrandId ? "" : activeCategoryId || category!.id,
+        category_id: finalCategoryId,
+        category_slug: finalCategorySlug,
         brand_id: activeBrandId,
+        brand_slug: activeBrandSlug,
         sort: activeSort,
       }),
     initialPageParam: 1,
-    enabled: !!category?.id,
+    enabled: true,
     getNextPageParam: (lastPage) => {
       const { current_page, total_pages } = lastPage.pagination;
       return current_page < total_pages ? current_page + 1 : undefined;
     },
   });
 
-  if (categoryLoading || (productsLoading && !filterProductsData)) {
+  if (
+    (targetCategorySlug && categoryLoading) ||
+    (productsLoading && !filterProductsData)
+  ) {
     return (
       <div className="h-screen flex justify-center items-center font-poppins text-xl">
         Loading Products...
@@ -105,12 +146,12 @@ const CategoryPage = () => {
             Home
           </Link>{" "}
           <FaChevronRight color="#FF7050" size={15} />
-          <span className="text-[#FF7050]">{category?.name}</span>
+          <span className="text-[#FF7050]">{displayTitle}</span>
         </nav>
         <CategoryBanner
           bannerImage={category?.background_image_url}
           description={category?.description}
-          categoryName={category?.name}
+          categoryName={displayTitle}
         />
       </div>
 
@@ -125,7 +166,7 @@ const CategoryPage = () => {
           totalProducts={
             filterProductsData?.pages[0]?.pagination?.total_items || 0
           }
-          categoryName={category?.name}
+          categoryName={displayTitle}
         />
 
         {/* Mobile Filter Trigger Button (Visible only below lg breakpoint) */}
@@ -144,8 +185,13 @@ const CategoryPage = () => {
           <aside className="hidden lg:block w-[390px] shrink-0">
             {/* <FilterSidebar /> */}
             <FilterSidebar
-              brands={brandsResponse?.data?.data}
+              brands={
+                Array.isArray(brandsResponse)
+                  ? brandsResponse
+                  : brandsResponse?.data?.data || brandsResponse?.data || []
+              }
               activeCategoryName={category?.name}
+              activeCategorySlug={targetCategorySlug}
               totalProductCount={
                 filterProductsData?.pages[0]?.pagination?.total_items || 0
               }
@@ -192,6 +238,39 @@ const CategoryPage = () => {
             )}
           </main>
         </div>
+        {category?.description && (
+          <div className="pt-8 md:pt-16">
+            <div className="overflow-hidden rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="flex cursor-pointer w-full items-center justify-between gap-4 bg-gray-50 px-5 py-4 text-left transition-colors hover:bg-gray-100"
+              >
+                <h2 className="font-poppins text-lg md:text-2xl font-semibold text-gray-800">
+                  {category?.name} Description
+                </h2>
+                <ChevronDown
+                  className={`h-5 w-5 flex-shrink-0 text-gray-500 transition-transform duration-300 ${
+                    isOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${
+                  isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div
+                    className="product-description px-5 py-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100"
+                    dangerouslySetInnerHTML={{ __html: category.description }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pt-8 md:pt-16">
@@ -231,7 +310,18 @@ const CategoryPage = () => {
 
           {/* Scrollable Sidebar Wrapper */}
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            <FilterSidebar />
+            <FilterSidebar
+              brands={
+                Array.isArray(brandsResponse)
+                  ? brandsResponse
+                  : brandsResponse?.data?.data || brandsResponse?.data || []
+              }
+              activeCategoryName={category?.name}
+              activeCategorySlug={targetCategorySlug}
+              totalProductCount={
+                filterProductsData?.pages[0]?.pagination?.total_items || 0
+              }
+            />
           </div>
         </div>
       </div>

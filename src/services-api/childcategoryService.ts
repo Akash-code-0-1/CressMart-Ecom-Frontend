@@ -17,19 +17,23 @@ export const fetchAllChildCategories = async (query: CategoryQuery) => {
   if (query.search) queryParams.set("search", query.search);
   if (query.status) queryParams.set("status", query.status);
 
-  // We bring the list with a deep nested tree parse configuration
-  const res = await apiFetch(`/categories?${queryParams.toString()}`);
+  // We bring the list with sufficient limit or level parameter
+  const res = await apiFetch(`/categories?limit=1000${query.search ? `&search=${encodeURIComponent(query.search)}` : ""}${query.status ? `&status=${query.status}` : ""}`);
   if (!res.ok) throw new Error("Failed to retrieve child categories collection layout.");
   const json = await res.json();
   const rawRecords = json?.data?.data || json?.data || json || [];
 
-  // Strict structural filtering: A child category has a parent that ALSO has a parent
+  // Strict structural filtering: A child category has a parent that ALSO has a parent (or parent_id is not null and parent.parent_id is not null)
   const childRecords = Array.isArray(rawRecords)
-    ? rawRecords.filter((item: any) => item.parent_id !== null && item.parent?.parent_id !== null && item.parent?.parent_id !== undefined)
+    ? rawRecords.filter((item: any) => item.parent_id !== null && item.parent_id !== undefined && item.parent && item.parent.parent_id !== null && item.parent.parent_id !== undefined)
     : [];
 
-  const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  return { data: childRecords, meta };
+  const startIndex = ((query.page || 1) - 1) * (query.limit || 10);
+  const paginatedData = childRecords.slice(startIndex, startIndex + (query.limit || 10));
+  const totalPages = Math.ceil(childRecords.length / (query.limit || 10)) || 1;
+
+  const meta = { totalPages, total: childRecords.length };
+  return { data: paginatedData, meta };
 };
 
 // 🚀 2. STRICT FILTER: FETCH ONLY GENUINE LEVEL-2 SUB-CATEGORIES FOR DROPDOWN
@@ -41,7 +45,7 @@ export const fetchSubCategoriesOnly = async () => {
 
   // Subcategories have a parent_id, but their parent has NO parent_id (it's root)
   return Array.isArray(rawRecords)
-    ? rawRecords.filter((item: any) => item.parent_id !== null && item.parent_id !== undefined && (!item.parent?.parent_id))
+    ? rawRecords.filter((item: any) => item.parent_id !== null && item.parent_id !== undefined && (!item.parent || !item.parent.parent_id))
     : [];
 };
 

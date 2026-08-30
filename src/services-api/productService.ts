@@ -215,7 +215,9 @@ export interface FilterProductsQuery {
   min_price?: number;
   max_price?: number;
   category_id?: string;
+  category_slug?: string;
   brand_id?: string;
+  brand_slug?: string;
   supplier_id?: string;
   sort?: string;
 }
@@ -246,14 +248,21 @@ export const filterProducts = async (
     queryParams.set("maxPrice", String(query.max_price));
   }
   if (query.category_id) queryParams.set("category_id", query.category_id);
-  if (query.brand_id) queryParams.set("brand_id", query.brand_id);
+  if (query.category_slug) queryParams.set("category_slug", query.category_slug);
+  if (query.brand_id) {
+    queryParams.set("brand_id", query.brand_id);
+    queryParams.set("brandId", query.brand_id);
+  }
+  if (query.brand_slug) {
+    queryParams.set("brand_slug", query.brand_slug);
+  }
   if (query.supplier_id) {
     queryParams.set("supplier_id", query.supplier_id);
     queryParams.set("supplierId", query.supplier_id);
   }
   if (query.sort) queryParams.set("sort", query.sort);
 
-  const res = await apiFetch(`/products?${queryParams.toString()}`, {
+  const res = await apiFetch(`/products/filter?${queryParams.toString()}`, {
     method: "GET",
   });
 
@@ -261,10 +270,6 @@ export const filterProducts = async (
 
   const json = await res.json();
 
-  // Support multiple response shapes from backend:
-  // Shape A: { data: { data: [...], meta: {...} } }
-  // Shape B: { data: [...], pagination: {...} }
-  // Shape C: { data: [...], meta: {...} }
   const data =
     json?.data?.data || (Array.isArray(json?.data) ? json.data : null) || [];
   const meta = json?.data?.meta || json?.pagination || json?.meta || {};
@@ -357,4 +362,43 @@ export const recentViewProduct = async (page: number, limit: number) => {
 
   // API returns { data: { data: [...], meta: {...} } }
   return result?.data?.data || result?.data || null;
+};
+
+//filter product
+
+// 🚀 Sidebar: category list with product counts
+export const fetchFilterCategories = async () => {
+  const res = await apiFetch(`/products/filter/categories`, {
+    method: "GET",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch category filter options.");
+  const json = await res.json();
+  return json?.data || json || [];
+};
+
+// 🚀 Sidebar: brand list with product counts
+export const fetchFilterBrands = async () => {
+  const res = await apiFetch(`/products/filter/brands`, {
+    method: "GET",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch brand filter options.");
+  const json = await res.json();
+  return json?.data || json || [];
+};
+
+// 🚀 Price slider min/max bounds
+export const fetchPriceRange = async (): Promise<{
+  min: number;
+  max: number;
+}> => {
+  const res = await apiFetch(`/products/filter/price`, {
+    method: "GET",
+  });
+
+  if (!res.ok) throw new Error("Failed to fetch price range.");
+  const json = await res.json();
+  const result = json?.data || json || {};
+  return { min: result.min ?? 0, max: result.max ?? 0 };
 };

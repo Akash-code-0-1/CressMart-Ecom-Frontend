@@ -9,45 +9,68 @@ export interface CategoryQuery {
   level?: number;
 }
 
-// 🚀 1. FETCH ALL GENERAL CATEGORIES
+// 🚀 1. FETCH ALL GENERAL CATEGORIES (ONLY Level 1 Root Nodes)
 export const fetchAllCategories = async (query: CategoryQuery) => {
-  const queryParams = new URLSearchParams();
-  if (query.page) queryParams.set("page", String(query.page));
-  if (query.limit) queryParams.set("limit", String(query.limit));
-  if (query.search) queryParams.set("search", query.search);
-  if (query.status) queryParams.set("status", query.status);
-
-  const res = await apiFetch(`/categories?${queryParams.toString()}`);
+  const res = await apiFetch(
+    `/categories?limit=1000${query.search ? `&search=${encodeURIComponent(query.search)}` : ""}${query.status ? `&status=${query.status}` : ""}`,
+  );
   if (!res.ok)
     throw new Error("Failed to retrieve categories collection array");
+
   const json = await res.json();
-  const records = json?.data?.data || json?.data || json || [];
-  const meta = json?.data?.meta || json?.meta || { totalPages: 1, total: 0 };
-  return { data: Array.isArray(records) ? records : [], meta };
+  const rawRecords = json?.data?.data || json?.data || json || [];
+
+  // Filter ONLY Root Level 1 categories (no parent_id)
+  const rootRecords = Array.isArray(rawRecords)
+    ? rawRecords.filter(
+        (item: { parent_id?: string | null }) =>
+          item.parent_id === null || item.parent_id === undefined || item.parent_id === "",
+      )
+    : [];
+
+  const limit = query.limit || 10;
+  const page = query.page || 1;
+  const startIndex = (page - 1) * limit;
+  const paginatedData = rootRecords.slice(startIndex, startIndex + limit);
+  const totalPages = Math.ceil(rootRecords.length / limit) || 1;
+
+  return {
+    data: paginatedData,
+    meta: { totalPages, total: rootRecords.length },
+  };
 };
 
-// 🚀 2. FETCH ALL SUB-CATEGORIES (ONLY Level 2)
+// 🚀 2. FETCH ALL SUB-CATEGORIES (ONLY Level 2 Direct Sub-Categories)
 export const fetchAllSubCategories = async (query: CategoryQuery) => {
-  const queryParams = new URLSearchParams();
-  if (query.page) queryParams.set("page", String(query.page));
-  if (query.limit) queryParams.set("limit", String(query.limit));
-  if (query.search) queryParams.set("search", query.search);
-  if (query.status) queryParams.set("status", query.status);
-
-  // 🚀 CRITICAL: This was missing! We must send level to the backend
-  if (query.level) queryParams.set("level", String(query.level));
-
-  const res = await apiFetch(`/categories?${queryParams.toString()}`);
+  const res = await apiFetch(
+    `/categories?limit=1000${query.search ? `&search=${encodeURIComponent(query.search)}` : ""}${query.status ? `&status=${query.status}` : ""}`,
+  );
   if (!res.ok) throw new Error("Failed to retrieve subcategories.");
 
   const json = await res.json();
+  const rawRecords = json?.data?.data || json?.data || json || [];
 
-  // 🚀 CRITICAL: Use the data directly from backend.
-  // Do NOT filter parent_id !== null here, because that includes Child Categories.
-  const records = json?.data?.data || json?.data || json || [];
-  const meta = json?.meta || json?.data?.meta || { totalPages: 1, total: 0 };
+  // Filter ONLY Level 2 Sub-Categories: Has parent_id, but parent has NO parent_id (or parent is null)
+  const subRecords = Array.isArray(rawRecords)
+    ? rawRecords.filter(
+        (item: { parent_id?: string | null; parent?: { parent_id?: string | null } }) =>
+          item.parent_id !== null &&
+          item.parent_id !== undefined &&
+          item.parent_id !== "" &&
+          (!item.parent || item.parent.parent_id === null || item.parent.parent_id === undefined || item.parent.parent_id === ""),
+      )
+    : [];
 
-  return { data: Array.isArray(records) ? records : [], meta };
+  const limit = query.limit || 10;
+  const page = query.page || 1;
+  const startIndex = (page - 1) * limit;
+  const paginatedData = subRecords.slice(startIndex, startIndex + limit);
+  const totalPages = Math.ceil(subRecords.length / limit) || 1;
+
+  return {
+    data: paginatedData,
+    meta: { totalPages, total: subRecords.length },
+  };
 };
 
 // 🚀 3. STRICT FIX: FETCH ONLY TRUE ROOT PARENT NODES
@@ -58,7 +81,8 @@ export const fetchRootCategoriesOnly = async () => {
   const rawRecords = json?.data?.data || json?.data || json || [];
   return Array.isArray(rawRecords)
     ? rawRecords.filter(
-        (item: any) => item.parent_id === null || item.parent_id === undefined,
+        (item: { parent_id: string | null | undefined }) =>
+          item.parent_id === null || item.parent_id === undefined,
       )
     : [];
 };
@@ -99,7 +123,20 @@ export const uploadCategoryImage = async (file: File) => {
 };
 
 // 🚀 7. CREATE CATEGORY TRANSACTION
-export const createCategory = async (payload: any) => {
+export const createCategory = async (payload: {
+  name: string;
+  slug: string;
+  description?: string | null;
+  meta_title?: string;
+  meta_description?: string;
+  meta_tags?: string;
+  parent_id?: string | null;
+  image_url?: string | null;
+  background_image_url?: string | null;
+  priority?: number;
+  status?: string;
+  image?: File;
+}) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch("/categories", {
     method: "POST",
@@ -119,7 +156,23 @@ export const createCategory = async (payload: any) => {
 };
 
 // 🚀 8. UPDATE SINGLE CATEGORY RECORD (PATCH ROW)
-export const updateCategory = async (id: string, payload: any) => {
+export const updateCategory = async (
+  id: string,
+  payload: {
+    name?: string;
+    slug?: string;
+    description?: string | null;
+    meta_title?: string;
+    meta_description?: string;
+    meta_tags?: string;
+    parent_id?: string | null;
+    image_url?: string | null;
+    background_image_url?: string | null;
+    priority?: number;
+    status?: string;
+    image?: File;
+  },
+) => {
   const token = await getAdminTokenAction();
   const res = await apiFetch(`/categories/${id}`, {
     method: "PATCH",
@@ -181,6 +234,9 @@ export interface CategoryDetail extends Category {
   background_image_url?: string | null;
   children?: CategoryDetail[];
   _count?: { products: number };
+  meta_title: string;
+  meta_description: string;
+  meta_tags: string;
 }
 
 export const getCategory = async (slug: string): Promise<CategoryDetail> => {
