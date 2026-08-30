@@ -24,7 +24,9 @@ export const fetchAllCategories = async (query: CategoryQuery) => {
   const rootRecords = Array.isArray(rawRecords)
     ? rawRecords.filter(
         (item: { parent_id?: string | null }) =>
-          item.parent_id === null || item.parent_id === undefined || item.parent_id === "",
+          item.parent_id === null ||
+          item.parent_id === undefined ||
+          item.parent_id === "",
       )
     : [];
 
@@ -53,11 +55,17 @@ export const fetchAllSubCategories = async (query: CategoryQuery) => {
   // Filter ONLY Level 2 Sub-Categories: Has parent_id, but parent has NO parent_id (or parent is null)
   const subRecords = Array.isArray(rawRecords)
     ? rawRecords.filter(
-        (item: { parent_id?: string | null; parent?: { parent_id?: string | null } }) =>
+        (item: {
+          parent_id?: string | null;
+          parent?: { parent_id?: string | null };
+        }) =>
           item.parent_id !== null &&
           item.parent_id !== undefined &&
           item.parent_id !== "" &&
-          (!item.parent || item.parent.parent_id === null || item.parent.parent_id === undefined || item.parent.parent_id === ""),
+          (!item.parent ||
+            item.parent.parent_id === null ||
+            item.parent.parent_id === undefined ||
+            item.parent.parent_id === ""),
       )
     : [];
 
@@ -225,6 +233,7 @@ export interface Category {
   created_at?: string;
   updated_at?: string;
   _count?: { products: number };
+  product_count?: number;
   status?: string;
   sl?: number;
 }

@@ -243,18 +243,31 @@ export default function FilterSidebar({
     return matched?.id || "";
   }, [queryCategoryId, activeCategorySlug, categoryResponse]);
 
-  // Build recursive tree structure
+  // Build recursive tree structure with cumulative product count
   const categoryTree = useMemo(() => {
     const list = categoryResponse?.data || [];
-    const build = (parentId: string | null): CategoryTreeNode[] => {
-      return list
-        .filter((item) => item.parent_id === parentId)
-        .map((item) => ({
+
+    // Helper function to recursively build nodes and compute total product count
+    const buildNodes = (parentId: string | null): CategoryTreeNode[] => {
+      const items = list.filter((item) => item.parent_id === parentId);
+      return items.map((item) => {
+        const children = buildNodes(item.id);
+        const directCount = item.product_count ?? item._count?.products ?? 0;
+        const childrenCount = children.reduce(
+          (sum, child) => sum + (child.product_count ?? 0),
+          0,
+        );
+        const totalCount = directCount + childrenCount;
+
+        return {
           ...item,
-          children: build(item.id),
-        }));
+          product_count: totalCount,
+          children,
+        };
+      });
     };
-    return build(null);
+
+    return buildNodes(null);
   }, [categoryResponse]);
 
   // Determine which branches of the tree should be open
