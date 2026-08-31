@@ -12,7 +12,11 @@ const DeliveryChargeContent = () => {
   return (
     <div className="space-y-6 pb-20 font-poppins text-gray-800">
       {/* 1. Specific Delivery Charge */}
+
+      <h3 className="text-[16px] font-normal text-black mb-4">Delivery Charge</h3>
       <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+
+
         <h3 className="text-[16px] font-normal text-black mb-4">
           Specific Delivery Charge
         </h3>

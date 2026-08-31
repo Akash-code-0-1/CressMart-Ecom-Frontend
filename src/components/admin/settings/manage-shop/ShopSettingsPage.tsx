@@ -1,68 +1,3 @@
-// "use client";
-// import TabItem from "../../catalog/TabItem";
-// import { usePathname, useRouter } from "next/navigation";
-// import ShopManagementGrid from "./ShopManagementGrid";
-// import { User } from "lucide-react";
-// import ContentIcon from "@/components/store-front/svg/svg/ContentIcon";
-// import ChatInterfaceIcon from "@/components/store-front/svg/svg/ChatInterfaceIcon";
-// import ShopSettingsIcon from "@/components/store-front/svg/svg/ShopSettingsIcon";
-
-// export default function ShopSettingsPage() {
-//   const router = useRouter();
-//   const pathname = usePathname();
-//   const tabs = [
-//     {
-//       id: "web",
-//       label: "Website Information",
-//       icon: ContentIcon,
-//       path: "/admin/dashboard/settings/information",
-//     },
-//     {
-//       id: "chat",
-//       label: "Chat Settings",
-//       icon: ChatInterfaceIcon,
-//       path: "/admin/dashboard/settings/chat",
-//     },
-//     {
-//       id: "shop",
-//       label: "Manage Shop",
-//       icon: ShopSettingsIcon,
-//       path: "/admin/dashboard/settings/manage-shop",
-//     },
-//     {
-//       id: "profile",
-//       label: "Profile Details",
-//       icon: User,
-//       path: "/admin/dashboard/settings/profile",
-//     },
-//   ];
-
-//   return (
-//     <>
-//       <div className="w-full p-8 font-lato bg-white">
-//         <h1 className="text-2xl font-bold text-[#003032] mb-6">Settings</h1>
-//         {/* Tabs Navigation */}
-//         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
-//           {tabs.map((tab) => (
-//             <TabItem
-//               key={tab.id}
-//               label={tab.label}
-//               icon={tab.icon}
-//               isActive={pathname === tab.path}
-//               onClick={() => router.push(tab.path)}
-//             />
-//           ))}
-//         </div>
-//       </div>
-//       <div className="mt-2">
-//         <ShopManagementGrid />
-//       </div>
-//     </>
-//   );
-// }
-
-
-
 "use client";
 import { useState } from "react";
 import TabItem from "../../catalog/TabItem";
@@ -73,6 +8,11 @@ import { User, ChevronLeft } from "lucide-react";
 import ContentIcon from "@/components/store-front/svg/svg/ContentIcon";
 import ChatInterfaceIcon from "@/components/store-front/svg/svg/ChatInterfaceIcon";
 import ShopSettingsIcon from "@/components/store-front/svg/svg/ShopSettingsIcon";
+import PaymentGatewayContent from "./PaymentGatewayContent";
+import MarketingIntegrationsContent from "./MarketingIntegrationsContent";
+import ShopDomainContent from "./ShopDomainContent";
+import SMSSupportContent from "./SMSSupportContent";
+import OTPVerificationContent from "./OTPVerificationContent";
 
 export default function ShopSettingsPage() {
   const router = useRouter();
@@ -142,12 +82,27 @@ export default function ShopSettingsPage() {
             {/* Sub-Tab Content Rendering */}
             <div className="mt-4">
                {activeInternalTab === "delivery" && <DeliveryChargeContent />}
-               {activeInternalTab !== "delivery" && (
+               
+               {/* Render Payment Gateway here */}
+               {activeInternalTab === "payment" && <PaymentGatewayContent />}
+
+               {activeInternalTab === "integrations" && <MarketingIntegrationsContent />}
+
+
+               {activeInternalTab === "domain" && <ShopDomainContent />}
+               
+               {activeInternalTab === "sms" && <SMSSupportContent />}
+               {activeInternalTab === "otp" && <OTPVerificationContent />}
+
+
+               {/* Fallback for other tabs */}
+               {activeInternalTab !== "delivery" && activeInternalTab !== "payment" && activeInternalTab !== "integrations" && activeInternalTab !== "domain" && activeInternalTab !== "sms" && activeInternalTab !== "otp" &&(
                  <div className="bg-white p-20 rounded-2xl border text-center text-gray-300 italic">
                     {subTabs.find(t => t.id === activeInternalTab)?.label} Settings Coming Soon
                  </div>
                )}
             </div>
+
           </div>
         )}
       </div>
