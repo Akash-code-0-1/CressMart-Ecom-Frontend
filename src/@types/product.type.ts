@@ -125,8 +125,12 @@ export interface Product {
   status?: string;
 
   priority?: number;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  meta_tags?: string | null;
   created_at?: string;
   updated_at?: string;
 
   discount_tag?: string | null;
 }
+

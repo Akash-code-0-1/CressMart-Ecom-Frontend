@@ -384,9 +384,6 @@
 //   );
 // }
 
-
-
-
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -399,12 +396,11 @@ import {
 } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchSettings, updateSettings } from "@/services-api/settingsService";
-import { RotateCcw, Plus, User, Trash2, Save, LayoutTemplate } from "lucide-react";
+import { Plus, User, Trash2 } from "lucide-react";
 
 // Components
 import CrystalOrangeButton from "./CrystalOrangeButton";
 import { LogoUploadCard } from "./LogoUploadCard";
-import { RichTextSection } from "./RichTextSection";
 import TabItem from "../catalog/TabItem";
 import ContentIcon from "@/components/store-front/svg/svg/ContentIcon";
 import ChatInterfaceIcon from "@/components/store-front/svg/svg/ChatInterfaceIcon";
@@ -460,7 +456,12 @@ export default function SettingsPage() {
     },
   });
 
-  const { handleSubmit, reset, control, formState: { isDirty } } = methods;
+  const {
+    handleSubmit,
+    reset,
+    control,
+    formState: { isDirty },
+  } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "social_links",
@@ -470,7 +471,7 @@ export default function SettingsPage() {
     queryKey: ["settings"],
     queryFn: fetchSettings,
     refetchOnWindowFocus: false,
-    staleTime: Infinity, 
+    staleTime: Infinity,
   });
 
   const mutation = useMutation({
@@ -523,14 +524,21 @@ export default function SettingsPage() {
   const onSubmit = (formData: any) => {
     // 💡 List of all fields that need to be stringified for the database
     const builderFields = [
-        "about_content", "privacy_content", "terms_content", "return_content",
-        "shipping_content", "display_center_content", "career_content", 
-        "vendor_content", "affiliate_content", "faqs_content"
+      "about_content",
+      "privacy_content",
+      "terms_content",
+      "return_content",
+      "shipping_content",
+      "display_center_content",
+      "career_content",
+      "vendor_content",
+      "affiliate_content",
+      "faqs_content",
     ];
 
     const payload = { ...formData };
-    
-    builderFields.forEach(field => {
+
+    builderFields.forEach((field) => {
       payload[field] = JSON.stringify(formData[field] || []);
     });
 

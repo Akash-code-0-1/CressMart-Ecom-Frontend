@@ -12,10 +12,36 @@ const CategoryNavigation = () => {
 
   // 🚀 FIXED: Paths mapped fully to absolute dashboard routing tree parameters
   const tabs = [
-    { id: "category", label: "Category", path: "/admin/dashboard/category", icon: Shapes },
-    { id: "sub-category", label: "Sub Category", path: "/admin/dashboard/sub-category", icon: SubCategoryIcon },
-    { id: "child-category", label: "Child Category", path: "/admin/dashboard/child-category", icon: SubCategoryIcon },
-    { id: "brand", label: "Brand", path: "/admin/dashboard/brand", icon: BrandIcon },
+    {
+      id: "category",
+      label: "Category",
+      path: "/admin/dashboard/category",
+      icon: Shapes,
+    },
+    {
+      id: "sub-category",
+      label: "Sub Category",
+      path: "/admin/dashboard/sub-category",
+      icon: SubCategoryIcon,
+    },
+    {
+      id: "child-category",
+      label: "Child Category",
+      path: "/admin/dashboard/child-category",
+      icon: SubCategoryIcon,
+    },
+    {
+      id: "supplier",
+      label: "Supplier",
+      path: "/admin/dashboard/supplier",
+      icon: SubCategoryIcon,
+    },
+    {
+      id: "brand",
+      label: "Brand",
+      path: "/admin/dashboard/brand",
+      icon: BrandIcon,
+    },
     { id: "tags", label: "Tags", path: "/admin/dashboard/tag", icon: Hash },
     { id: "unit", label: "Units", path: "/admin/dashboard/unit", icon: Hash },
   ];

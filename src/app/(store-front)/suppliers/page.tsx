@@ -44,11 +44,11 @@ function SuppliersContent() {
     [],
   );
 
-  // Process supplier list
+  // Process supplier list (Only active suppliers for Store Front)
   const suppliers: Supplier[] = useMemo(() => {
     const arr = supplierResponse?.data?.data;
     if (!Array.isArray(arr)) return [];
-    return arr.filter((s) => s.status !== "inactive");
+    return arr.filter((s) => s.status === "active");
   }, [supplierResponse]);
 
   // Check if selected supplier is Mohasagor

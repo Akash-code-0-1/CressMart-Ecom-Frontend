@@ -192,8 +192,12 @@ export default function AddCategoryMain() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog-categories-list"] });
-      queryClient.invalidateQueries({ queryKey: ["catalog-subcategories-list"] });
-      queryClient.invalidateQueries({ queryKey: ["catalog-childcategories-list"] });
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-subcategories-list"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-childcategories-list"],
+      });
       queryClient.invalidateQueries({ queryKey: ["categories-tree"] });
       queryClient.invalidateQueries({ queryKey: ["all-categories"] });
       toast.success(
@@ -284,7 +288,7 @@ export default function AddCategoryMain() {
           onSubmit={handleSubmit(onSubmitFormHandler)}
           className="grid grid-cols-1 lg:grid-cols-12 gap-4"
         >
-          <div className="lg:col-span-8 bg-white rounded-[8px] p-5 border border-gray-100 space-y-5">
+          <div className="lg:col-span-8 bg-white rounded-lg p-5 border border-gray-100 space-y-5">
             <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
               General Info
             </h3>
@@ -342,7 +346,9 @@ export default function AddCategoryMain() {
               <Label>Description</Label>
               <CategoryRichTextEditor
                 value={watch("description") || ""}
-                onChange={(html) => setValue("description", html, { shouldDirty: true })}
+                onChange={(html) =>
+                  setValue("description", html, { shouldDirty: true })
+                }
               />
             </div>
             <div>

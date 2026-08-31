@@ -33,6 +33,7 @@ import FaqsSection from "./FaqsSection";
 import GeneralInfoSection, { ProductImageItem } from "./GeneralInfoSection";
 import SeoSection from "./SeoSection";
 import SidebarCatalogSection from "./SidebarCatalogSection";
+import SidebarSupplierSection from "./SidebarSupplierSection";
 import SidebarTagSection from "./SidebarTagSection";
 import toast from "react-hot-toast";
 
@@ -87,6 +88,7 @@ export default function ProductUploadMain() {
       seoKeywords: "",
       seoDescription: "",
       seoTitle: "",
+      supplier_ids: [] as string[],
       tag_ids: [] as string[],
       video_urls: [] as string[],
       specifications: [] as { type: string; desc: string }[],
@@ -205,6 +207,12 @@ export default function ProductUploadMain() {
         seoTitle: existingProduct.meta_title || "",
         seoDescription: existingProduct.meta_description || "",
         seoKeywords: existingProduct.meta_tags || "",
+        supplier_ids: extractIds(
+          existingProduct.supplier_ids ??
+            existingProduct.product_suppliers ??
+            existingProduct.suppliers ??
+            (existingProduct.supplier_id ? [existingProduct.supplier_id] : []),
+        ),
         tag_ids: extractIds(
           existingProduct.tag_ids ??
             existingProduct.product_tags ??
@@ -301,8 +309,9 @@ export default function ProductUploadMain() {
             : {}),
       };
 
-      // Include tags in payload for both Create and Edit mode
+      // Include tags & supplier_ids in payload for both Create and Edit mode
       finalPayload.tag_ids = formPayload.tag_ids || [];
+      finalPayload.supplier_ids = formPayload.supplier_ids || [];
 
       // Include variants in payload for both create and edit mode
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -351,8 +360,11 @@ export default function ProductUploadMain() {
       router.push("/admin/dashboard/products");
       router.refresh();
     },
-    onError: (err) => {
-      toast.error(`Rejection Error: ${err.message}`);
+    onError: (err: any) => {
+      console.error("Product submission error:", err);
+      toast.error(
+        `Rejection Error: ${err?.message || "Failed to process product submit request"}`,
+      );
     },
   });
 
@@ -379,7 +391,7 @@ export default function ProductUploadMain() {
         onSubmit={(e) => e.preventDefault()}
         className="w-full min-h-screen font-lato pb-12"
       >
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center my-2 p-4 rounded-[8px]">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center my-2 p-4 rounded-lg">
           <div>
             <h1 className="text-xl font-bold text-black sm:text-2xl">
               {isEditMode ? "Edit Product Workspace" : "Product Upload"}
@@ -494,7 +506,7 @@ export default function ProductUploadMain() {
             <ShippingSection isEditMode={isEditMode} />
           </div>
 
-          <div className="lg:col-span-4 flex flex-col gap-4">
+          <div className="lg:col-span-4 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
             <div className="bg-white rounded-lg p-5 border border-gray-100">
               <h3 className="text-black font-medium text-[20px] mb-2">
                 Ready To Publish
@@ -539,6 +551,7 @@ export default function ProductUploadMain() {
             </div>
 
             <SidebarCatalogSection />
+            <SidebarSupplierSection isEditMode={isEditMode} />
             {/* <SidebarBrandSection /> */}
             <SidebarTagSection isEditMode={isEditMode} />
           </div>

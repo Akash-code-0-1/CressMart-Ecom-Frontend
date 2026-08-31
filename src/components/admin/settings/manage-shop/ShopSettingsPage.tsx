@@ -98,7 +98,7 @@ export default function ShopSettingsPage() {
   ];
 
   return (
-    <div className="w-full font-lato min-h-screen bg-[#FAFAFA]">
+    <div className="w-full font-lato bg-[#FAFAFA]">
       {/* 1. Main Header Tabs */}
       <div className="bg-white p-8">
         <h1 className="text-2xl font-bold text-[#003032] mb-6">Settings</h1>
