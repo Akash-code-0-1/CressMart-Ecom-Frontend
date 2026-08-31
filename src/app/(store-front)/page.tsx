@@ -83,13 +83,14 @@ export default async function Page() {
 
   let collections = { newArrivals: [], bestSales: [], weeklyBestSellers: [] };
 
-try {
-    const res = await fetch(`${baseUrl}/products/home-collections`, { cache: "no-store" });
+  try {
+    const res = await fetch(`${baseUrl}/products/home-collections`, {
+      cache: "no-store",
+    });
     const json = await res.json();
 
     // Standard NestJS Response uses .data
     collections = json.data ? json.data : json;
-    
   } catch (e) {
     console.error("❌ Fetch error on Page:", e);
   }
@@ -109,7 +110,7 @@ try {
     <>
       <BannerSlider />
       <Features />
-      <PromotionDiscountProduct />
+      {/* <PromotionDiscountProduct /> */}
       <FeaturedCategory />
 
       {/* ✔️ Automated Sliders */}

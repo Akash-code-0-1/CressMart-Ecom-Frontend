@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -38,6 +37,12 @@ const CatalogHead = () => {
     }
     if (pathname.includes("/unit")) {
       return { label: "Add Unit", route: "/admin/dashboard/unit/add" };
+    }
+    if (pathname.includes("/supplier")) {
+      return {
+        label: "Add Supplier",
+        route: "/admin/dashboard/supplier/add",
+      };
     }
     return { label: "Add Category", route: "/admin/dashboard/category/add" };
   })();

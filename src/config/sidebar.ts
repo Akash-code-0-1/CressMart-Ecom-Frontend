@@ -1,4 +1,3 @@
-
 import AOrderIcon from "@/components/store-front/svg/svg/AOrderIcon";
 import ADashboardIcon from "@/components/store-front/svg/svg/ADashboardIcon";
 import DashboardIcon from "@/components/store-front/svg/svg/DashboardIcon";
@@ -62,6 +61,10 @@ export const sidebarMenu = [
             href: "/admin/dashboard/child-category",
           },
           {
+            label: "Supplier",
+            href: "/admin/dashboard/supplier",
+          },
+          {
             label: "Brands",
             href: "/admin/dashboard/brand",
           },
@@ -122,7 +125,7 @@ export const sidebarMenu = [
             label: "Landing Page",
             href: "/admin/dashboard/landing-page",
           },
-                    {
+          {
             label: "Testimonials",
             href: "/admin/dashboard/testimonials",
           },
