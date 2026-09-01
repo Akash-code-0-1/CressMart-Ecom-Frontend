@@ -941,6 +941,9 @@ const MainCheckoutSection: React.FC = () => {
     onSuccess: async (data) => {
       toast.success("Order placed successfully!");
 
+          // 🔥 NEW: Clear the incomplete order session marker
+    sessionStorage.removeItem("active_lead_id");
+
       const orderUUID = data?.data?.id || data?.id || "";
       const hasMohasagor = cartItems.some((i) =>
         i.productId?.startsWith(MOHASAGOR_PREFIX),
@@ -1089,27 +1092,63 @@ const MainCheckoutSection: React.FC = () => {
     placeOrderMutation.mutate(payload);
   };
 
+  // const debouncedTrack = useCallback(
+  //   debounce(async (data, items, source, gid) => {
+  //     if (!items || items.length === 0) return;
+
+  //     const payload = {
+  //       guestId: gid,
+  //       customerName: data.name || "",
+  //       customerPhone: data.phone || "",
+  //       customerAddress: data.address || "",
+  //       source: source || "direct",
+  //       items: items.map((item: any) => ({
+  //         productId: item.productId,
+  //         variantId: item.variantId !== "null" ? item.variantId : undefined,
+  //         qty: Number(item.quantity || 1),
+  //       })),
+  //     };
+
+  //     await trackIncompleteOrder(payload);
+  //   }, 1500),
+  //   [],
+  // );
+
+
   const debouncedTrack = useCallback(
-    debounce(async (data, items, source, gid) => {
-      if (!items || items.length === 0) return;
+  debounce(async (data, items, source, gid) => {
+    // Only track if there is at least a name or phone number
+    if (!data.phone && !data.name) return;
+    if (!items || items.length === 0) return;
 
-      const payload = {
-        guestId: gid,
-        customerName: data.name || "",
-        customerPhone: data.phone || "",
-        customerAddress: data.address || "",
-        source: source || "direct",
-        items: items.map((item: any) => ({
-          productId: item.productId,
-          variantId: item.variantId !== "null" ? item.variantId : undefined,
-          qty: Number(item.quantity || 1),
-        })),
-      };
+    // Check if we already have an active lead ID in this session to avoid duplicating rows
+    const existingLeadId = sessionStorage.getItem("active_lead_id");
 
-      await trackIncompleteOrder(payload);
-    }, 1500),
-    [],
-  );
+    const payload = {
+      id: existingLeadId || undefined, // If ID exists, backend should update; otherwise create
+      customerName: data.name || "Guest",
+      customerPhone: data.phone || "",
+      customerAddress: data.address || "",
+      source: source || "direct",
+      shippingArea: data.shippingArea || "outside",
+      paymentMethod: data.paymentMethod || "COD",
+      status: "INCOMPLETE", // 🔥 This is the critical addition
+      items: items.map((item: any) => ({
+        productId: item.productId,
+        variantId: item.variantId && item.variantId !== "null" ? item.variantId : undefined,
+        quantity: Number(item.quantity || 1),
+      })),
+    };
+
+    const res = await trackIncompleteOrder(payload);
+    
+    // Store the ID returned by the backend so the next debounce updates the SAME row
+    if (res?.id || res?.data?.id) {
+      sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
+    }
+  }, 1000), // Increased to 2s to reduce server load
+  [],
+);
 
   useEffect(() => {
     if (isStoreReady && cartItems.length > 0) {
