@@ -679,7 +679,10 @@ import { MOHASAGOR_PREFIX } from "@/constants/checkout";
 import debounce from "lodash/debounce";
 import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
 import { v4 as uuidv4 } from "uuid";
-import { fetchPaymentSettings } from "@/services-api/paymentSettingsService";
+import {
+  fetchPaymentSettings,
+  PAYMENT_SETTINGS_QUERY_KEY,
+} from "@/services-api/paymentSettingsService";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -1210,20 +1213,36 @@ const MainCheckoutSection: React.FC = () => {
   }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
 
   const { data: paymentSettings } = useQuery({
-    queryKey: ["payment-settings"],
+    queryKey: PAYMENT_SETTINGS_QUERY_KEY,
     queryFn: fetchPaymentSettings,
   });
 
   const availablePaymentMethods = useMemo(() => {
     const methods: { key: string; label: string }[] = [];
-    if (paymentSettings?.data?.cod_enabled !== false) {
+    const settingsObj = paymentSettings?.data || (paymentSettings as unknown as { cod_enabled?: boolean; online_payment_enabled?: boolean });
+    if (settingsObj?.cod_enabled !== false) {
       methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
     }
-    if (paymentSettings?.data?.online_payment_enabled) {
+    if (settingsObj?.online_payment_enabled) {
       methods.push({ key: "Online", label: t.checkout.onlinePayment });
     }
     return methods;
   }, [paymentSettings, t]);
+
+  // Keep formData.paymentMethod synced with available payment options
+  useEffect(() => {
+    if (availablePaymentMethods.length > 0) {
+      const exists = availablePaymentMethods.some(
+        (m) => m.key === formData.paymentMethod,
+      );
+      if (!exists) {
+        setFormData((prev) => ({
+          ...prev,
+          paymentMethod: availablePaymentMethods[0].key,
+        }));
+      }
+    }
+  }, [availablePaymentMethods, formData.paymentMethod]);
 
   if (isLoading)
     return (
