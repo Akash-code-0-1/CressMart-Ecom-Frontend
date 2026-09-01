@@ -1155,10 +1155,20 @@ export default function VariantsSection({
     },
   ]);
 
-  // seed builders from already-saved variants (edit mode) — runs once
+  // guard: seed only once — after API data actually arrives (fixes production race condition)
+  const hasSeeded = useRef(false);
+  const variantsValue = watch("variants") as VariantRow[];
+
+  // seed builders from already-saved variants (edit mode)
+  // runs whenever variantsValue changes, but seeds only once (hasSeeded guard)
+  // this fixes the production race condition where the component mounted before
+  // the API response arrived, causing the empty-dep [] effect to always bail out
   useEffect(() => {
-    const existingVariants = (watch("variants") || []) as VariantRow[];
+    if (hasSeeded.current) return;
+    const existingVariants = (variantsValue || []) as VariantRow[];
     if (!existingVariants.length) return;
+
+    hasSeeded.current = true;
 
     const map = new Map<string, VariantTypeDraft>();
     existingVariants.forEach((v) => {
@@ -1178,10 +1188,9 @@ export default function VariantsSection({
       });
     });
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (map.size > 0) setVariantTypes(Array.from(map.values()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [variantsValue]);
 
   const updateType = (id: string, patch: Partial<VariantTypeDraft>) =>
     setVariantTypes((prev) =>
