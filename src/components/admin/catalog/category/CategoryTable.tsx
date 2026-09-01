@@ -785,7 +785,7 @@ export default function CategoryTable() {
             src={srcUrl}
             alt={category.name}
             unoptimized
-            className="rounded-[8px] object-cover h-11 w-11 bg-gray-50"
+            className="rounded-[8px] object-contain h-11 w-11 bg-gray-50"
           />
         );
       },

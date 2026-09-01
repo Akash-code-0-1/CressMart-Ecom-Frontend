@@ -75,6 +75,8 @@ import AutomatedProductSlider from "@/components/store-front/home/AutomatedProdu
 import Suppliers from "@/components/store-front/home/Suppliers";
 import Testimonials from "@/components/store-front/home/Testimonials";
 import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
+import NewArrivals from "@/components/store-front/home/NewArrivals";
+import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +114,8 @@ export default async function Page() {
       <Features />
       {/* <PromotionDiscountProduct /> */}
       <FeaturedCategory />
-
+      <NewArrivals tags={tags} />
+      <WeeklyBestSellerProduct tags={tags} />
       {/* ✔️ Automated Sliders */}
       <AutomatedProductSlider
         title="New Arrivals"

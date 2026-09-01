@@ -5,6 +5,7 @@ import QueryProvider from "@/providers/QueryProvider";
 import { fetchSettings } from "@/services-api/settingsService";
 import { Toaster } from "react-hot-toast";
 import NextTopLoader from "nextjs-toploader";
+import MarketingScripts from "@/components/common/MarketingScripts";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -46,9 +47,30 @@ export async function generateMetadata(): Promise<Metadata> {
     ? `${baseUrl}/uploads/settings/${info.favicon.replace("/uploads/settings/", "")}`
     : "/favicon.ico";
 
+  // Fetch marketing verification codes
+  let googleVerification = undefined;
+  let fbVerification = undefined;
+  try {
+    const mRes = await fetch(`${baseUrl}/marketing-settings/public`, { cache: "no-store" });
+    if (mRes.ok) {
+      const mJson = await mRes.json();
+      const mData = mJson?.data || mJson;
+      googleVerification = mData?.googleVerificationCode || undefined;
+      fbVerification = mData?.fbDomainVerificationCode || undefined;
+    }
+  } catch {}
+
   return {
     title: "Creass Mart",
     description: "Premium E-Commerce Platform",
+    verification: {
+      google: googleVerification,
+      other: fbVerification
+        ? {
+            "facebook-domain-verification": [fbVerification],
+          }
+        : undefined,
+    },
     icons: {
       icon: [
         {
@@ -61,11 +83,21 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let mData = null;
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
+    const mRes = await fetch(`${baseUrl}/marketing-settings/public`, { cache: "no-store" });
+    if (mRes.ok) {
+      const mJson = await mRes.json();
+      mData = mJson?.data || mJson;
+    }
+  } catch {}
+
   return (
     <html
       lang="en"
@@ -88,8 +120,10 @@ export default function RootLayout({
           shadow="0 0 10px #3b82f6,0 0 5px #3b82f6"
         />
         <QueryProvider>{children}</QueryProvider>
+        <MarketingScripts initialSettings={mData} />
         <Toaster position="top-right" reverseOrder={false} />
       </body>
     </html>
   );
 }
+

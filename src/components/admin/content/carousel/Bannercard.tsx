@@ -41,7 +41,7 @@ export const BannerCard = ({
             src={thumbSrc}
             alt={banner.meta_title || "Banner"}
             fill
-            className="object-cover rounded-[12px_12px_0_0]"
+            className="object-contain rounded-[12px_12px_0_0]"
             unoptimized
           />
         ) : (

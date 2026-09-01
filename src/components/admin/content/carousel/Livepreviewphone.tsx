@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -35,14 +34,13 @@ export const LivePreviewPhone = ({
 
         {/* Dynamic banner preview */}
         <div className="px-4">
-          <div className="relative aspect-[16/9] bg-slate-50 rounded-2xl overflow-hidden">
+          <div className="relative aspect-[20/8] bg-slate-50 rounded-2xl overflow-hidden">
             {heroSrc ? (
               <Image
                 src={heroSrc}
                 alt={previewBanner?.meta_title || "Hero banner"}
                 fill
-                className="object-cover"
-                unoptimized
+                className="object-contain"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-2">
@@ -88,14 +86,6 @@ export const LivePreviewPhone = ({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Bottom tab bar */}
-      <div className="absolute bottom-0 inset-x-0 h-16 bg-white border-t border-slate-100 flex items-center justify-around px-4">
-        <Home size={20} className="text-slate-900" />
-        <Search size={20} className="text-slate-300" />
-        <ShoppingBag size={20} className="text-slate-300" />
-        <User size={20} className="text-slate-300" />
       </div>
     </div>
   );

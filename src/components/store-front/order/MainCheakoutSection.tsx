@@ -666,6 +666,8 @@ import {
 import {
   fetchShippingSettings,
   calculateCartShippingDetails,
+  buildZoneShippingOptions,
+  ZoneShippingOption,
 } from "@/services-api/shippingService";
 import { fetchSingleProduct } from "@/services-api/productService";
 import { CartItem, OrderPayload } from "@/@types/order.type";
@@ -677,6 +679,7 @@ import { MOHASAGOR_PREFIX } from "@/constants/checkout";
 import debounce from "lodash/debounce";
 import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
 import { v4 as uuidv4 } from "uuid";
+import { fetchPaymentSettings } from "@/services-api/paymentSettingsService";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -778,8 +781,18 @@ const MainCheckoutSection: React.FC = () => {
   }, [rawCartItems, productQueries]);
 
   const courierConfig = shippingSettings?.courier_config;
+
+  // Check sub_city availability from new zones-array format OR old flat format
   const isSubCityAvailable = useMemo(() => {
-    if (!courierConfig?.sub_city) return false;
+    const hasSubCity =
+      // new format: zones[0].subcity
+      (courierConfig?.zones &&
+        courierConfig.zones.length > 0 &&
+        Number(courierConfig.zones[0].subcity) > 0) ||
+      // old flat format fallback
+      (courierConfig?.sub_city && Number(courierConfig.sub_city) > 0);
+
+    if (!hasSubCity) return false;
     return cartItems.every((item) => {
       const prod = (item.product || {}) as unknown as Product;
       if (String(prod.shipping_type).toUpperCase() === "CUSTOM") {
@@ -805,9 +818,17 @@ const MainCheckoutSection: React.FC = () => {
     }
   }, [isSubCityAvailable, formData.shippingArea]);
 
-  const dynamicShippingOptions = useMemo(() => {
-    const customOptions: { key: string; label: string; fee: number }[] = [];
-
+  const dynamicShippingOptions = useMemo((): (
+    | ZoneShippingOption
+    | {
+        key: string;
+        label: string;
+        fee: number;
+        shippingArea: "inside" | "outside" | "sub_city";
+      }
+  )[] => {
+    // ── Priority 1: CUSTOM shipping products override everything ──
+    const customOptions: ZoneShippingOption[] = [];
     cartItems.forEach((item) => {
       const prod = (item.product || {}) as Product;
       const sType = String(prod.shipping_type || "DEFAULT").toUpperCase();
@@ -828,11 +849,21 @@ const MainCheckoutSection: React.FC = () => {
               const exists = customOptions.find(
                 (opt) => opt.label.toLowerCase() === zoneName.toLowerCase(),
               );
+              // Derive shippingArea from zone name heuristic
+              const area: "inside" | "outside" | "sub_city" = zoneName
+                .toLowerCase()
+                .includes("sub")
+                ? "sub_city"
+                : zoneName.toLowerCase().includes("outside")
+                  ? "outside"
+                  : "inside";
               if (!exists) {
                 customOptions.push({
                   key: zoneName.toLowerCase().replace(/\s+/g, "_"),
                   label: zoneName,
                   fee: chargeNum,
+                  shippingArea: area,
+                  zoneName,
                 });
               } else {
                 exists.fee = Math.max(exists.fee, chargeNum);
@@ -842,12 +873,30 @@ const MainCheckoutSection: React.FC = () => {
         }
       }
     });
+    if (customOptions.length > 0) return customOptions;
 
-    if (customOptions.length > 0) {
-      return customOptions;
+    // ── Priority 2: Dynamic zones from API (unlimited) ──
+    // Run each zone option through calculateCartShippingDetails so that:
+    //   • FREE products → contribute ৳0 (their shipping_type is FREE)
+    //   • CUSTOM products → use their own config fee
+    //   • DEFAULT products → use this zone's specific fee as the baseline
+    const rawZoneOpts = buildZoneShippingOptions(
+      shippingSettings?.courier_config,
+    );
+    if (rawZoneOpts.length > 0) {
+      return rawZoneOpts.map((opt) => ({
+        ...opt,
+        fee: calculateCartShippingDetails(
+          cartItems as any,
+          opt.shippingArea,
+          shippingSettings,
+          opt.fee, // pass zone-specific fee as the default (e.g. Chittagong Inside = 80)
+        ).totalShippingFee,
+      }));
     }
 
-    const options = [
+    // ── Priority 3: Fallback to legacy flat config or defaults ──
+    const fallback: ZoneShippingOption[] = [
       {
         key: "inside",
         label: t.checkout.insideDhakaLabel || "Inside Dhaka",
@@ -856,6 +905,8 @@ const MainCheckoutSection: React.FC = () => {
           "inside",
           shippingSettings,
         ).totalShippingFee,
+        shippingArea: "inside",
+        zoneName: "Dhaka",
       },
       {
         key: "outside",
@@ -865,11 +916,12 @@ const MainCheckoutSection: React.FC = () => {
           "outside",
           shippingSettings,
         ).totalShippingFee,
+        shippingArea: "outside",
+        zoneName: "Dhaka",
       },
     ];
-
     if (isSubCityAvailable) {
-      options.push({
+      fallback.push({
         key: "sub_city",
         label: t.checkout.subCityLabel || "Sub City",
         fee: calculateCartShippingDetails(
@@ -877,10 +929,11 @@ const MainCheckoutSection: React.FC = () => {
           "sub_city",
           shippingSettings,
         ).totalShippingFee,
+        shippingArea: "sub_city",
+        zoneName: "Dhaka",
       });
     }
-
-    return options;
+    return fallback;
   }, [cartItems, shippingSettings, isSubCityAvailable, t]);
 
   useEffect(() => {
@@ -1053,16 +1106,14 @@ const MainCheckoutSection: React.FC = () => {
     const selectedOpt = dynamicShippingOptions.find(
       (opt) => opt.key === formData.shippingArea,
     );
-    const resolvedShippingArea =
-      formData.shippingArea === "inside" ||
+    // `shippingArea` on each option is the exact enum the backend expects
+    const resolvedShippingArea: "inside" | "outside" | "sub_city" =
+      (selectedOpt as ZoneShippingOption)?.shippingArea ??
+      (formData.shippingArea === "inside" ||
       formData.shippingArea === "outside" ||
       formData.shippingArea === "sub_city"
-        ? formData.shippingArea
-        : selectedOpt &&
-            selectedOpt.label.toLowerCase().includes("dhaka") &&
-            !selectedOpt.label.toLowerCase().includes("outside")
-          ? "inside"
-          : "outside";
+        ? (formData.shippingArea as "inside" | "outside" | "sub_city")
+        : "outside");
 
     const payload: OrderPayload = {
       customerName: formData.name,
@@ -1156,6 +1207,22 @@ const MainCheckoutSection: React.FC = () => {
     }
   }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
 
+  const { data: paymentSettings } = useQuery({
+    queryKey: ["payment-settings"],
+    queryFn: fetchPaymentSettings,
+  });
+
+  const availablePaymentMethods = useMemo(() => {
+    const methods: { key: string; label: string }[] = [];
+    if (paymentSettings?.data?.cod_enabled !== false) {
+      methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
+    }
+    if (paymentSettings?.data?.online_payment_enabled) {
+      methods.push({ key: "Online", label: t.checkout.onlinePayment });
+    }
+    return methods;
+  }, [paymentSettings, t]);
+
   if (isLoading)
     return (
       <div className="p-20 text-center font-poppins text-lg font-medium">
@@ -1244,8 +1311,11 @@ const MainCheckoutSection: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full bg-[#F7F7F7] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
                 >
-                  <option value="COD">{t.checkout.cashOnDelivery}</option>
-                  <option value="Online">{t.checkout.onlinePayment}</option>
+                  {availablePaymentMethods.map((m) => (
+                    <option key={m.key} value={m.key}>
+                      {m.label}
+                    </option>
+                  ))}
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <FaCaretDown />

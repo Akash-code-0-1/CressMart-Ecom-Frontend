@@ -275,7 +275,7 @@ export const getCategoryTree = async (): Promise<Category[]> => {
 };
 
 export const getFeaturedCategory = async (): Promise<Category[]> => {
-  const res = await apiFetch("/categories/tree?page=1&limit=10");
+  const res = await apiFetch("/categories/tree?limit=8");
   if (!res.ok) throw new Error("Failed to fetch categories");
   const result = await res.json();
   const data = result?.data?.data || result?.data || result || [];
