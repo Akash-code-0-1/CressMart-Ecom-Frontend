@@ -127,6 +127,7 @@ const SignInPage = () => {
           </div>
 
           <div className="flex flex-col gap-2">
+            {/* <div className="flex justify-between items-center">
             <div className="flex justify-between items-center">
               <label className="text-sm font-semibold text-[#727272]">
                 {t.fields.password}
@@ -138,6 +139,13 @@ const SignInPage = () => {
                 {t.signIn.forgotPassword}
               </a>
             </div>
+            <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white relative transition-all">
+                href="#"
+                className="text-xs text-[#FF7050] font-medium hover:underline"
+              >
+                {t.signIn.forgotPassword}
+              </a>
+            </div> */}
             <div className="flex border border-[#D2D2D2] rounded-[10px] overflow-hidden focus-within:border-[#FF7050] bg-white relative transition-all">
               <div className="bg-[#F9F9F9] px-4 flex items-center justify-center border-r border-[#D2D2D2] w-[55px]">
                 <FaLock className="text-[#FF7050]" size={16} />

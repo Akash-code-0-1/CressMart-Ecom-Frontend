@@ -40,7 +40,7 @@ export default function AddTagMain() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const iconInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
+  // const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const tagId = searchParams.get("id");
   const isEditMode = !!tagId;
@@ -510,7 +510,7 @@ export default function AddTagMain() {
             {/* 🚀 MULTI MEDIA MEDIA UPLOAD COMPARTMENTS */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
               <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
-                Media Campaign Files
+                Media Tag Files
               </h3>
 
               {/* Image Icon Upload */}
@@ -527,7 +527,7 @@ export default function AddTagMain() {
                             ? imageUrl
                             : `${baseStorageUrl}${imageUrl}`
                         }
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         width={100}
                         height={100}
                         alt="tag image"
@@ -569,7 +569,7 @@ export default function AddTagMain() {
               </div>
 
               {/* Horizontal Promotional Banner Asset Upload */}
-              <div>
+              {/* <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">
                   Tag Campaign Horizontal Banner
                 </label>
@@ -618,7 +618,7 @@ export default function AddTagMain() {
                     </div>
                   )}
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </form>

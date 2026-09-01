@@ -589,7 +589,7 @@ export default function SettingsPage() {
               id: "shop",
               label: "Manage Shop",
               icon: ShopSettingsIcon,
-              path: "/admin/dashboard/settings/shop",
+              path: "/admin/dashboard/settings/manage-shop",
             },
             {
               id: "profile",

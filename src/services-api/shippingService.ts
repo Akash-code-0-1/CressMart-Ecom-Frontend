@@ -1,9 +1,21 @@
 import { apiFetch } from "@/utils/api";
 import { CartItem } from "@/@types/order.type";
 
-export interface CourierConfig {
+// New zones-based format from backend
+export interface ShippingZone {
+  id?: number;
+  zone: string;
   inside: number;
   outside: number;
+  subcity?: number;
+}
+
+export interface CourierConfig {
+  // New format: zones array
+  zones?: ShippingZone[];
+  // Old flat format (kept for backward compat)
+  inside?: number;
+  outside?: number;
   sub_city?: number;
 }
 
@@ -31,6 +43,94 @@ export type CartItemWithShipping = CartItem & {
   shipping_config?: ShippingConfigEntry[] | string;
   product?: ProductShippingFields;
 };
+
+/**
+ * Resolves the default shipping fee for a given area from courier_config.
+ * Supports both the new zones-array format and the old flat format.
+ */
+export const resolveZoneFee = (
+  courierConfig: CourierConfig | undefined | null,
+  shippingArea: string,
+): number => {
+  if (!courierConfig) {
+    return shippingArea === "inside"
+      ? 60
+      : shippingArea === "sub_city"
+        ? 100
+        : 120;
+  }
+
+  // New format: zones array — use the first zone entry
+  if (courierConfig.zones && courierConfig.zones.length > 0) {
+    const zone = courierConfig.zones[0];
+    if (shippingArea === "inside") return Number(zone.inside) || 60;
+    if (shippingArea === "sub_city") return Number(zone.subcity) || 100;
+    return Number(zone.outside) || 120;
+  }
+
+  // Old flat format fallback
+  if (shippingArea === "inside") return Number(courierConfig.inside) || 60;
+  if (shippingArea === "sub_city") return Number(courierConfig.sub_city) || 100;
+  return Number(courierConfig.outside) || 120;
+};
+
+/**
+ * A single selectable option in the checkout shipping dropdown.
+ * `shippingArea` ("inside" | "outside" | "sub_city") is what the backend expects on order creation.
+ */
+export interface ZoneShippingOption {
+  key: string; // e.g. "1_inside", "2_subcity"
+  label: string; // e.g. "Dhaka Inside", "Chittagong Sub City"
+  fee: number;
+  shippingArea: "inside" | "outside" | "sub_city";
+  zoneName: string;
+}
+
+/**
+ * Flattens all zones from courier_config into an array of selectable checkout options.
+ * Each zone produces up to 3 options: inside, outside, subcity (only if subcity > 0).
+ */
+export const buildZoneShippingOptions = (
+  courierConfig: CourierConfig | undefined | null,
+): ZoneShippingOption[] => {
+  if (!courierConfig?.zones || courierConfig.zones.length === 0) return [];
+
+  const options: ZoneShippingOption[] = [];
+  courierConfig.zones.forEach((zone) => {
+    const id = zone.id ?? Math.random();
+    const name = zone.zone || "Zone";
+
+    if (Number(zone.inside) > 0) {
+      options.push({
+        key: `${id}_inside`,
+        label: `${name} Inside`,
+        fee: Number(zone.inside),
+        shippingArea: "inside",
+        zoneName: name,
+      });
+    }
+    if (Number(zone.outside) > 0) {
+      options.push({
+        key: `${id}_outside`,
+        label: `${name} Outside`,
+        fee: Number(zone.outside),
+        shippingArea: "outside",
+        zoneName: name,
+      });
+    }
+    if (Number(zone.subcity) > 0) {
+      options.push({
+        key: `${id}_subcity`,
+        label: `${name} Sub City`,
+        fee: Number(zone.subcity),
+        shippingArea: "sub_city",
+        zoneName: name,
+      });
+    }
+  });
+  return options;
+};
+
 // api global settings fetch
 export const fetchShippingSettings =
   async (): Promise<ShippingSettingsData | null> => {
@@ -56,23 +156,24 @@ export interface ItemShippingBreakdown {
   itemShippingFee: number;
 }
 // calculate cart shipping details
+// `defaultFeeOverride` lets callers pass a specific zone's fee as the baseline
+// (e.g. Chittagong Inside = 80৳) instead of reading from the first zone.
 export const calculateCartShippingDetails = (
   cartItems: CartItemWithShipping[],
   shippingArea: string, // "inside" | "outside" | "sub_city"
   shippingSettings?: ShippingSettingsData | null,
+  defaultFeeOverride?: number,
 ): { totalShippingFee: number; itemShippingFees: ItemShippingBreakdown[] } => {
   if (!cartItems || cartItems.length === 0) {
     return { totalShippingFee: 0, itemShippingFees: [] };
   }
 
-  // gobla settings defult value
+  // Resolve default fee: use override if provided (specific zone), else read from settings
   const courierConfig = shippingSettings?.courier_config;
   const zoneDefaultFee =
-    shippingArea === "inside"
-      ? Number(courierConfig?.inside) || 120
-      : shippingArea === "sub_city"
-        ? Number(courierConfig?.sub_city) || 100
-        : Number(courierConfig?.outside) || 150;
+    defaultFeeOverride !== undefined
+      ? defaultFeeOverride
+      : resolveZoneFee(courierConfig, shippingArea);
 
   // zone match for database
   const isInside = shippingArea === "inside";
@@ -149,4 +250,117 @@ export const calculateCartShippingDetails = (
     totalShippingFee,
     itemShippingFees,
   };
+};
+
+export interface AddZonePayload {
+  zone: string;
+  inside: number;
+  outside: number;
+  subcity?: number;
+}
+
+/**
+ * Adds a new shipping zone to courier_config.zones.
+ * Since the backend PATCH replaces the whole courier_config,
+ * we first fetch current settings, append the new zone, then PATCH the full object back.
+ */
+export const addShippingZone = async (
+  newZone: AddZonePayload,
+  defaultShippingFee?: string | number,
+): Promise<ShippingSettingsData | null> => {
+  try {
+    // 1. Current settings
+    const current = await fetchShippingSettings();
+
+    const existingZones: ShippingZone[] = current?.courier_config?.zones || [];
+
+    // 2. Duplicate zone name
+    const alreadyExists = existingZones.some(
+      (z) => z.zone.trim().toLowerCase() === newZone.zone.trim().toLowerCase(),
+    );
+    if (alreadyExists) {
+      throw new Error(`Zone "${newZone.zone}" already exists`);
+    }
+
+    const nextId =
+      existingZones.length > 0
+        ? Math.max(...existingZones.map((z) => z.id || 0)) + 1
+        : 1;
+
+    const updatedZones: ShippingZone[] = [
+      ...existingZones,
+      {
+        id: nextId,
+        zone: newZone.zone,
+        inside: newZone.inside,
+        outside: newZone.outside,
+        subcity: newZone.subcity ?? 0,
+      },
+    ];
+
+    // 4. payload send
+    const payload = {
+      default_shipping_fee:
+        defaultShippingFee ?? current?.default_shipping_fee ?? 0,
+      courier_config: {
+        zones: updatedZones,
+      },
+    };
+
+    // 5. PATCH call
+    const res = await apiFetch("/shipping-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      console.error("Failed to add shipping zone:", res.status);
+      return null;
+    }
+
+    const json = (await res.json()) as ShippingSettingsResponse;
+    return json.data || null;
+  } catch (error) {
+    console.error("Error adding shipping zone:", error);
+    return null;
+  }
+};
+
+// react-query key used everywhere shipping settings are read/written,
+// so cache invalidation always hits the same entry
+export const SHIPPING_SETTINGS_QUERY_KEY = ["shipping-settings"] as const;
+
+export interface UpdateShippingSettingsPayload {
+  default_shipping_fee?: string | number;
+  courier_config: CourierConfig;
+}
+
+/**
+ * General-purpose PATCH — the backend replaces courier_config wholesale,
+ * so callers should always send the *full* zones array, not a partial diff.
+ * This is what the dynamic UI uses for add / edit / delete of zones.
+ */
+export const updateShippingSettings = async (
+  payload: UpdateShippingSettingsPayload,
+): Promise<ShippingSettingsData> => {
+  const res = await apiFetch("/shipping-settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    let message = "Failed to update shipping settings";
+    try {
+      const errJson = await res.json();
+      message = errJson?.message || message;
+    } catch {
+      // ignore parse errors, fall back to default message
+    }
+    throw new Error(message);
+  }
+
+  const json = (await res.json()) as ShippingSettingsResponse;
+  return json.data;
 };

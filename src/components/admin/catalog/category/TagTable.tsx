@@ -845,7 +845,7 @@ export default function TagTable() {
             unoptimized
             src={srcUrl}
             alt="tag image"
-            className="rounded-[8px] object-cover h-10 w-10 bg-gray-50 border border-gray-100"
+            className="rounded-[8px] object-contain h-10 w-10 bg-gray-50 border border-gray-100"
           />
         );
       },

@@ -6,12 +6,14 @@ import {
   FaCheckCircle,
   FaExclamationCircle,
   FaCamera,
+  FaLock,
 } from "react-icons/fa";
 import {
   useProfileData,
   useUpdateProfileMutation,
   useUpdateCustomerAvatarMutation,
   useAddAddressMutation,
+  useChangePasswordMutation, // 🚀 new
 } from "@/hooks/useProfile";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
@@ -28,8 +30,9 @@ const ProfileDetailsForm = () => {
   const { data: profile, isLoading, isError, error } = useProfileData();
 
   const updateProfile = useUpdateProfileMutation();
-  const uploadAvatar = useUpdateCustomerAvatarMutation(); // 🚀 FIXED: Initialized the avatar mutation handler
+  const uploadAvatar = useUpdateCustomerAvatarMutation();
   const addAddress = useAddAddressMutation();
+  const changePassword = useChangePasswordMutation(); // 🚀 new
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,6 +43,12 @@ const ProfileDetailsForm = () => {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // 🚀 Change password state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { language } = useLanguage();
@@ -191,6 +200,59 @@ const ProfileDetailsForm = () => {
     }
   };
 
+  // 🚀 New: change password handler
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return setStatus({
+        type: "error",
+        text: t.profileDetails.validation.fillAllPasswordFields,
+      });
+    }
+    if (newPassword.length < 6) {
+      return setStatus({
+        type: "error",
+        text: t.profileDetails.validation.newPasswordLength,
+      });
+    }
+    if (newPassword !== confirmPassword) {
+      return setStatus({
+        type: "error",
+        text: t.profileDetails.validation.passwordsDoNotMatch,
+      });
+    }
+    if (currentPassword === newPassword) {
+      return setStatus({
+        type: "error",
+        text: t.profileDetails.validation.samePasswordError,
+      });
+    }
+
+    setStatus(null);
+    changePassword.mutate(
+      { currentPassword, newPassword },
+      {
+        onSuccess: () => {
+          setStatus({
+            type: "success",
+            text: t.profileDetails.success.passwordChanged,
+          });
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setShowPasswordForm(false);
+        },
+        onError: (err: unknown) => {
+          if (err instanceof Error) {
+            setStatus({
+              type: "error",
+              text: err.message || t.profileDetails.error.changePasswordFailed,
+            });
+          }
+        },
+      },
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center text-gray-500 font-poppins gap-3">
@@ -206,7 +268,10 @@ const ProfileDetailsForm = () => {
     []
   ).filter((addr: AddressItem) => addr.label === "CUSTOM");
 
-  const isPendingState = updateProfile.isPending || uploadAvatar.isPending;
+  const isPendingState =
+    updateProfile.isPending ||
+    uploadAvatar.isPending ||
+    changePassword.isPending;
 
   return (
     <div className="bg-white rounded-[12px] border border-[#D2D2D2] overflow-hidden font-poppins">
@@ -237,7 +302,7 @@ const ProfileDetailsForm = () => {
           </div>
         )}
 
-        {/* 🚀 FIXED: Dynamic Interactive Profile Picture Widget Section */}
+        {/* Profile Picture Section */}
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#FAFAFA] p-4 rounded-[10px] border border-dashed border-gray-200">
           <div className="relative group w-16 h-16 shrink-0">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF6A00] to-[#FF9F1C] flex items-center justify-center text-white text-xl font-bold overflow-hidden border-2 border-white shadow-xs relative">
@@ -337,18 +402,6 @@ const ProfileDetailsForm = () => {
             onChange={(e) => setPrimaryAddress(e.target.value)}
             placeholder={t.profileDetails.addressPlaceholder}
           />
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={handleSaveChanges}
-              disabled={isPendingState}
-              className="bg-[#32CD32] hover:bg-[#2cb92c] transition-colors text-white px-6 py-3 rounded-[12px] text-base font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-            >
-              {updateProfile.isPending && (
-                <FaSpinner className="animate-spin" size={16} />
-              )}
-              {t.profileDetails.saveChanges}
-            </button>
-          </div>
         </div>
 
         {customAddresses.map((addr: AddressItem, index: number) => (
@@ -398,6 +451,93 @@ const ProfileDetailsForm = () => {
               {t.profileDetails.addNew}
             </button>
           </div>
+        </div>
+
+        {/* 🚀 New: Change Password Section */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-base font-semibold text-[#727272] flex items-center gap-2">
+              <FaLock size={14} />
+              {t.profileDetails.changePasswordTitle}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPasswordForm((prev) => !prev)}
+              className="text-sm font-semibold text-[#FF7050] hover:underline cursor-pointer"
+            >
+              {showPasswordForm
+                ? t.profileDetails.cancelBtn
+                : t.profileDetails.changeBtn}
+            </button>
+          </div>
+
+          {showPasswordForm && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#FAFAFA] p-4 rounded-[10px] border border-dashed border-gray-200">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[#727272]">
+                  {t.profileDetails.currentPassword}
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                  className="w-full bg-white rounded-[10px] p-4 text-sm text-gray-700 outline-none border border-transparent focus:border-gray-200"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[#727272]">
+                  {t.profileDetails.newPassword}
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full bg-white rounded-[10px] p-4 text-sm text-gray-700 outline-none border border-transparent focus:border-gray-200"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-[#727272]">
+                  {t.profileDetails.confirmNewPassword}
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full bg-white rounded-[10px] p-4 text-sm text-gray-700 outline-none border border-transparent focus:border-gray-200"
+                />
+              </div>
+
+              <div className="md:col-span-3 flex justify-end">
+                <button
+                  onClick={handleChangePassword}
+                  disabled={changePassword.isPending}
+                  className="bg-[#32CD32] hover:bg-[#2cb92c] transition-colors text-white px-6 py-3 rounded-[12px] text-base font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {changePassword.isPending && (
+                    <FaSpinner className="animate-spin" size={16} />
+                  )}
+                  {t.profileDetails.updatePassword}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={handleSaveChanges}
+            disabled={isPendingState}
+            className="bg-[#32CD32] hover:bg-[#2cb92c] transition-colors text-white px-6 py-3 rounded-[12px] text-base font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          >
+            {updateProfile.isPending && (
+              <FaSpinner className="animate-spin" size={16} />
+            )}
+            {t.profileDetails.saveChanges}
+          </button>
         </div>
       </div>
     </div>

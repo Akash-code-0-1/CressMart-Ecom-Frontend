@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Image from "next/image";
@@ -20,6 +21,19 @@ import { useAuthStore } from "@/store/useAuthStore";
 interface ProductCardProps {
   product: Product;
   isShowWishlist?: boolean;
+}
+
+function extractImageUrl(val: unknown): string {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object") {
+    const inner = (val as Record<string, unknown>).url;
+    if (typeof inner === "string") return inner;
+    if (inner && typeof inner === "object") {
+      const deepUrl = (inner as Record<string, unknown>).url;
+      if (typeof deepUrl === "string") return deepUrl;
+    }
+  }
+  return "";
 }
 
 const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
@@ -145,20 +159,16 @@ const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
 
-  const rawFirst = product.images?.[0];
-  const imagePath =
-    typeof rawFirst === "string" ? rawFirst : rawFirst?.url || "";
-  const cleanImg = imagePath.trim();
-  const productImage = cleanImg || "/images/placeholder.svg";
-
-  const usableImage =
-    productImage.startsWith("http") || productImage.startsWith("/images/")
-      ? productImage
-      : `${backendBaseUrl}/${productImage.replace(/^\/+/, "")}`;
+  const rowimage: any = extractImageUrl(product?.images[0]).trim();
+  const usableImage = rowimage.startsWith("http")
+    ? rowimage
+    : rowimage
+      ? `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`
+      : "/images/placeholder.svg";
 
   const imageAlt =
-    typeof rawFirst === "object" && rawFirst?.alt_text
-      ? rawFirst.alt_text
+    typeof rowimage === "object" && rowimage?.alt_text
+      ? rowimage?.alt_text
       : product.name;
 
   return (

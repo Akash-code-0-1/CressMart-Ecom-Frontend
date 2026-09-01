@@ -17,15 +17,37 @@ import OTPVerificationContent from "./OTPVerificationContent";
 export default function ShopSettingsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // State to track if we are viewing the grid or a specific tab
-  const [activeInternalTab, setActiveInternalTab] = useState<string | null>(null);
+  const [activeInternalTab, setActiveInternalTab] = useState<string | null>(
+    null,
+  );
 
   const mainTabs = [
-    { id: "web", label: "Website Information", icon: ContentIcon, path: "/admin/dashboard/settings/information" },
-    { id: "chat", label: "Chat Settings", icon: ChatInterfaceIcon, path: "/admin/dashboard/settings/chat" },
-    { id: "shop", label: "Manage Shop", icon: ShopSettingsIcon, path: "/admin/dashboard/settings/manage-shop" },
-    { id: "profile", label: "Profile Details", icon: User, path: "/admin/dashboard/settings/profile" },
+    {
+      id: "web",
+      label: "Website Information",
+      icon: ContentIcon,
+      path: "/admin/dashboard/settings/information",
+    },
+    {
+      id: "chat",
+      label: "Chat Settings",
+      icon: ChatInterfaceIcon,
+      path: "/admin/dashboard/settings/chat",
+    },
+    {
+      id: "shop",
+      label: "Manage Shop",
+      icon: ShopSettingsIcon,
+      path: "/admin/dashboard/settings/manage-shop",
+    },
+    {
+      id: "profile",
+      label: "Profile Details",
+      icon: User,
+      path: "/admin/dashboard/settings/profile",
+    },
   ];
 
   const subTabs = [
@@ -34,7 +56,7 @@ export default function ShopSettingsPage() {
     { id: "integrations", label: "Integrations" },
     { id: "domain", label: "Shop Domain" },
     { id: "sms", label: "SMS Support" },
-    { id: "otp", label: "OTP Verification" },
+    // { id: "otp", label: "OTP Verification" },
   ];
 
   return (
@@ -44,13 +66,22 @@ export default function ShopSettingsPage() {
         <h1 className="text-2xl font-bold text-[#003032] mb-6">Settings</h1>
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
           {mainTabs.map((tab) => (
-            <TabItem key={tab.id} label={tab.label} icon={tab.icon} isActive={pathname === tab.path} onClick={() => { setActiveInternalTab(null); router.push(tab.path); }} />
+            <TabItem
+              key={tab.id}
+              label={tab.label}
+              icon={tab.icon}
+              isActive={pathname === tab.path}
+              onClick={() => {
+                setActiveInternalTab(null);
+                router.push(tab.path);
+              }}
+            />
           ))}
         </div>
       </div>
 
       {/* 2. Content Area */}
-      <div className="p-8">
+      <div className="mt-4">
         {!activeInternalTab ? (
           /* Initial State: Show Grid */
           <ShopManagementGrid onSelect={(id) => setActiveInternalTab(id)} />
@@ -58,8 +89,11 @@ export default function ShopSettingsPage() {
           /* Detailed State: Show Sub-Tabs + Content */
           <div className="animate-in slide-in-from-right-4 duration-300">
             {/* Back Button */}
-            <button onClick={() => setActiveInternalTab(null)} className="flex items-center gap-1 text-gray-500 hover:text-black mb-6 text-sm font-bold transition-all">
-               <ChevronLeft size={20}/> Back
+            <button
+              onClick={() => setActiveInternalTab(null)}
+              className="flex items-center gap-1 text-gray-500 hover:text-black mb-6 text-base cursor-pointer font-medium font-poppins transition-all"
+            >
+              <ChevronLeft size={20} /> Back
             </button>
 
             {/* Figma-style Sub-Tabs */}
@@ -68,9 +102,9 @@ export default function ShopSettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveInternalTab(tab.id)}
-                  className={`px-6 py-3 rounded-lg text-[16px] font-normal border transition-all whitespace-nowrap ${
+                  className={`px-6 py-3 rounded-lg text-[16px] cursor-pointer font-poppins font-normal border transition-all whitespace-nowrap ${
                     activeInternalTab === tab.id
-                      ? "bg-white border-[#1E90FF] font-semibold text-black shadow-sm"
+                      ? "bg-white border-[#1E90FF] text-black"
                       : "bg-white border-gray-100 text-black hover:border-gray-200"
                   }`}
                 >
@@ -81,28 +115,33 @@ export default function ShopSettingsPage() {
 
             {/* Sub-Tab Content Rendering */}
             <div className="mt-4">
-               {activeInternalTab === "delivery" && <DeliveryChargeContent />}
-               
-               {/* Render Payment Gateway here */}
-               {activeInternalTab === "payment" && <PaymentGatewayContent />}
+              {activeInternalTab === "delivery" && <DeliveryChargeContent />}
 
-               {activeInternalTab === "integrations" && <MarketingIntegrationsContent />}
+              {/* Render Payment Gateway here */}
+              {activeInternalTab === "payment" && <PaymentGatewayContent />}
 
+              {activeInternalTab === "integrations" && (
+                <MarketingIntegrationsContent />
+              )}
 
-               {activeInternalTab === "domain" && <ShopDomainContent />}
-               
-               {activeInternalTab === "sms" && <SMSSupportContent />}
-               {activeInternalTab === "otp" && <OTPVerificationContent />}
+              {activeInternalTab === "domain" && <ShopDomainContent />}
 
+              {activeInternalTab === "sms" && <SMSSupportContent />}
+              {activeInternalTab === "otp" && <OTPVerificationContent />}
 
-               {/* Fallback for other tabs */}
-               {activeInternalTab !== "delivery" && activeInternalTab !== "payment" && activeInternalTab !== "integrations" && activeInternalTab !== "domain" && activeInternalTab !== "sms" && activeInternalTab !== "otp" &&(
-                 <div className="bg-white p-20 rounded-2xl border text-center text-gray-300 italic">
-                    {subTabs.find(t => t.id === activeInternalTab)?.label} Settings Coming Soon
-                 </div>
-               )}
+              {/* Fallback for other tabs */}
+              {activeInternalTab !== "delivery" &&
+                activeInternalTab !== "payment" &&
+                activeInternalTab !== "integrations" &&
+                activeInternalTab !== "domain" &&
+                activeInternalTab !== "sms" &&
+                activeInternalTab !== "otp" && (
+                  <div className="bg-white p-20 rounded-2xl border text-center text-gray-300 italic">
+                    {subTabs.find((t) => t.id === activeInternalTab)?.label}{" "}
+                    Settings Coming Soon
+                  </div>
+                )}
             </div>
-
           </div>
         )}
       </div>

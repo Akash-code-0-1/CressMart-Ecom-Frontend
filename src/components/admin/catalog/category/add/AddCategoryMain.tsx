@@ -448,7 +448,7 @@ export default function AddCategoryMain() {
             {/* Icon Image */}
             <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
               <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
-                Category Icon Media
+                Category Icon
               </h3>
               <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
                 {imageUrl ? (
@@ -459,7 +459,7 @@ export default function AddCategoryMain() {
                           ? imageUrl
                           : `${baseStorageUrl}${imageUrl}`
                       }
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       alt="category image"
                       width={100}
                       height={100}
@@ -481,6 +481,11 @@ export default function AddCategoryMain() {
                     <IamgeIcon size="54" color="#A2A2A2" />
                     <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
                       Click to select icon photo
+                    </p>
+                    <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
+                      Best quality is{" "}
+                      <span className="font-semibold">128x84px</span> (2MB max)
+                      and format must be PNG or JPG.
                     </p>
                   </div>
                 )}
@@ -504,7 +509,7 @@ export default function AddCategoryMain() {
             {isMainCategory && (
               <div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4">
                 <h3 className="text-black font-semibold text-lg border-b pb-2 border-gray-200">
-                  Category Banner Media
+                  Category Banner
                 </h3>
                 <div className="border-2 border-dashed border-gray-200 bg-[#F9F9F9] rounded-[8px] p-6 text-center relative flex flex-col items-center justify-center min-h-[180px]">
                   {bannerUrl ? (
@@ -515,11 +520,11 @@ export default function AddCategoryMain() {
                             ? bannerUrl
                             : `${baseStorageUrl}${bannerUrl}`
                         }
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                         alt="banner image"
                         width={400}
                         height={128}
-                        unoptimized
+                        // unoptimized
                       />
                       <button
                         type="button"
@@ -537,6 +542,11 @@ export default function AddCategoryMain() {
                       <IamgeIcon size="54" color="#A2A2A2" />
                       <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
                         Click to select banner photo
+                      </p>
+                      <p className="text-xs text-[#A2A2A2] mt-2 font-medium">
+                        Best quality is{" "}
+                        <span className="font-semibold">1720x200px</span> (2MB
+                        max) and format must be PNG or JPG.
                       </p>
                     </div>
                   )}

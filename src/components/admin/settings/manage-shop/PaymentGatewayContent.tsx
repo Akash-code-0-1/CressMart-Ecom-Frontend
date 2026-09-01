@@ -35,7 +35,7 @@ const PaymentGatewayContent = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-20 font-lato text-gray-800">
+    <div className="space-y-6 pb-20 font-lato text-gray-800 bg-white p-4.5 rounded-lg">
       <div>
         <h3 className="text-[20px] font-medium font-lato mb-1">
           Payment Gateway
@@ -46,7 +46,7 @@ const PaymentGatewayContent = () => {
       </div>
 
       {/* 1. Cash On Delivery */}
-      <section className="bg-white p-5 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
+      {/* <section className="bg-white p-5 rounded-lg border border-gray-200 flex justify-between items-center ">
         <div>
           <h4 className="text-[18px] font-bold text-black">Cash On Delivery</h4>
           <p className="text-xs text-gray-400">
@@ -61,10 +61,10 @@ const PaymentGatewayContent = () => {
             className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${codActive ? "right-1" : "left-1"}`}
           />
         </button>
-      </section>
+      </section> */}
 
       {/* 2. AamarPay */}
-      <section className="bg-white p-5 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
+      <section className="bg-white p-5 rounded-lg border border-gray-200 flex justify-between items-center ">
         <div className="items-center gap-4">
           <div className="w-24 h-14 flex items-center justify-center">
             <img
@@ -88,7 +88,7 @@ const PaymentGatewayContent = () => {
       </section>
 
       {/* 3. bKash Merchant */}
-      <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+      <section className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-5 flex justify-between items-center">
           <div className="items-center gap-4">
             <div className="w-30 h-14 flex items-center justify-center border border-gray-100 rounded-lg">
@@ -146,7 +146,7 @@ const PaymentGatewayContent = () => {
       </section>
 
       {/* 4. Self MFS */}
-      <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+      {/* <section className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h4 className="text-[16px] font-semibold text-black">Self MFS</h4>
@@ -166,7 +166,6 @@ const PaymentGatewayContent = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 space-y-6">
-            {/* MFS Logos Selector */}
             <div className="flex flex-wrap gap-3">
               {mfsProviders.map((mfs) => (
                 <button
@@ -194,7 +193,6 @@ const PaymentGatewayContent = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center bg-[#F8F9FA] rounded-xl px-4 py-3 border border-transparent">
-                {/* 💡 Added whitespace-nowrap and shrink-0 */}
                 <span className="text-black text-sm font-medium mr-2 whitespace-nowrap shrink-0">
                   Phone Number
                 </span>
@@ -219,7 +217,6 @@ const PaymentGatewayContent = () => {
               </div>
             </div>
 
-            {/* Mock Editor UI */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#003032]">
                 Payment Instruction
@@ -250,8 +247,6 @@ const PaymentGatewayContent = () => {
               </div>
             </div>
           </div>
-
-          {/* QR Code Section */}
           <div className="w-full lg:w-72">
             <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 flex flex-col items-center text-center space-y-4">
               <h5 className="text-sm font-bold text-[#003032]">Add QR Code</h5>
@@ -275,11 +270,11 @@ const PaymentGatewayContent = () => {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* 5. Advance Payment & Message Note */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+        <section className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h4 className="text-[16px] font-semibold text-black">
@@ -343,22 +338,20 @@ const PaymentGatewayContent = () => {
           </div>
         </section>
 
-        <section className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+        <section className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
           <h4 className="text-[16px] font-semibold text-black">
             Payment process message note
           </h4>
+
           <textarea
-            className="w-full h-full min-h-[180px] bg-[#F8F9FA] rounded-2xl p-4 text-sm outline-none border border-transparent focus:border-gray-200 resize-none"
+            className="w-full min-h-[140px] bg-[#F8F9FA] rounded-lg p-4 text-sm outline-none border border-transparent focus:border-gray-200 resize-none"
             placeholder="Add a custom message for your customers about the payment process..."
           />
         </section>
       </div>
 
       <div className="flex justify-end pt-4">
-        <PrimaryButton
-          label="Update delivery Charges"
-          className="px-10 py-4 shadow-lg shadow-blue-200"
-        />
+        <PrimaryButton label="Update delivery Charges" className="px-6 py-3" />
       </div>
     </div>
   );
