@@ -1,6 +1,6 @@
 
 import { apiFetch } from "@/utils/api";
-import { getAdminTokenAction } from "@/app/actions/auth";
+import { getAdminTokenAction, getSessionTokenAction } from "@/app/actions/auth";
 
 export interface OrderItemInput {
   productId: string;
@@ -76,13 +76,18 @@ export interface OrderQuery {
 // 🚀 1. Create order (Added Auth Token)
 export const createOrderService = async (orderData: CreateOrderRequest) => {
   try {
-    const token = await getAdminTokenAction();
+    const token =
+      (await getSessionTokenAction()) || (await getAdminTokenAction());
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await apiFetch("/orders", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token || ""}`,
-      },
+      headers,
       body: JSON.stringify(orderData),
     });
 
