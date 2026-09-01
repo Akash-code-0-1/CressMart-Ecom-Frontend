@@ -238,17 +238,54 @@ export const searchProductsService = async (query: string) => {
 };
 
 // 🚀 7. Fetch Order Tab Counts (Used for Initial Load)
+// export const fetchOrderCounts = async (tabs: string[]) => {
+//   const promises = tabs.map(async (tab) => {
+//     const status = tab === "All order" ? "" : tab.toUpperCase();
+//     const res = await getAllOrdersService({
+//       page: 1,
+//       limit: 1,
+//       status,
+//       refresh: true,
+//     });
+//     return { tab, count: res.data?.meta?.total || 0 };
+//   });
+//   return Promise.all(promises);
+
+
+// };
+
 export const fetchOrderCounts = async (tabs: string[]) => {
-  const promises = tabs.map(async (tab) => {
-    const status = tab === "All order" ? "" : tab.toUpperCase();
-    const res = await getAllOrdersService({
-      page: 1,
-      limit: 1,
-      status,
-      refresh: true,
-    });
-    return { tab, count: res.data?.meta?.total || 0 };
-  });
-  return Promise.all(promises);
+  // 1. Fetch counts for all specific statuses first
+  const specificTabs = tabs.filter(t => t !== "All order");
+  
+  const results = await Promise.all(
+    specificTabs.map(async (tab) => {
+      let status = tab === "Incomplete" ? "INCOMPLETE" : tab.toUpperCase();
+      
+      try {
+        const res = await getAllOrdersService({
+          page: 1,
+          limit: 1,
+          status,
+          refresh: true,
+        });
+        return { 
+          tab, 
+          count: res.data?.meta?.total ?? res.meta?.total ?? 0 
+        };
+      } catch (error) {
+        return { tab, count: 0 };
+      }
+    })
+  );
+
+  // 2. Calculate "All order" count as the sum of all other visible tabs
+  const totalVisibleCount = results.reduce((sum, item) => sum + item.count, 0);
+
+  // 3. Return the merged array including the calculated "All order"
+  return [
+    { tab: "All order", count: totalVisibleCount },
+    ...results
+  ];
 };
 

@@ -316,28 +316,54 @@ export default function OrderTable() {
     : null;
 
   // --- FETCH DATA ---
-  const { data: serverData, isLoading } = useQuery({
-    queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
-    queryFn: async () => {
-      if (isIncompleteTab) {
-        // Hits: /incomplete-orders -> Returns { meta, data }
-        return await getAllIncompleteOrdersService({ page, limit: 10 });
-      }
+  // const { data: serverData, isLoading } = useQuery({
+  //   queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
+  //   queryFn: async () => {
+  //     if (isIncompleteTab) {
+  //       // Hits: /incomplete-orders -> Returns { meta, data }
+  //       return await getAllIncompleteOrdersService({ page, limit: 10 });
+  //     }
 
-      // Hits: /orders -> Returns { data: { meta, data } }
-      const status =
-        tabs[activeTab] === "All order" ? "" : tabs[activeTab].toUpperCase();
-      return await getAllOrdersService({
-        page,
-        limit: 10,
-        status,
-        search: searchQuery,
-        refresh: true,
-      });
-    },
-    // This keeps the UI stable while switching tabs
-    placeholderData: (previousData) => previousData,
-  });
+  //     // Hits: /orders -> Returns { data: { meta, data } }
+  //     const status =
+  //       tabs[activeTab] === "All order" ? "" : tabs[activeTab].toUpperCase();
+  //     return await getAllOrdersService({
+  //       page,
+  //       limit: 10,
+  //       status,
+  //       search: searchQuery,
+  //       refresh: true,
+  //     });
+  //   },
+  //   // This keeps the UI stable while switching tabs
+  //   placeholderData: (previousData) => previousData,
+  // });
+
+  const { data: serverData, isLoading } = useQuery({
+  queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
+  queryFn: async () => {
+    // 🔥 Simplified: All tabs now use the same service
+    const currentTabText = tabs[activeTab];
+    let status = "";
+
+    if (currentTabText === "All order") {
+      status = ""; // Backend returns all including Incomplete
+    } else {
+      status = currentTabText.toUpperCase();
+    }
+
+    return await getAllOrdersService({
+      page,
+      limit: 10,
+      status: status,
+      search: searchQuery,
+      refresh: true,
+    });
+  },
+  placeholderData: (previousData) => previousData,
+});
+
+
 
   // 🚀 THE FIX: Universal Data Extractor
   // This logic looks for the array [...] no matter where the API hides it.
@@ -370,46 +396,66 @@ export default function OrderTable() {
   }, [serverData]);
 
   // --- FIXED FETCH TAB COUNTS ---
-  const { data: tabCountsData } = useQuery({
-    queryKey: ["order-tab-counts"],
-    queryFn: async () => {
-      // 1. Fetch standard counts from the regular Order Service
-      const standardTabs = tabs.filter((t) => t !== "Incomplete");
-      const standardCounts = await fetchOrderCounts(standardTabs);
+  // const { data: tabCountsData } = useQuery({
+  //   queryKey: ["order-tab-counts"],
+  //   queryFn: async () => {
+  //     // 1. Fetch standard counts from the regular Order Service
+  //     const standardTabs = tabs.filter((t) => t !== "Incomplete");
+  //     const standardCounts = await fetchOrderCounts(standardTabs);
 
-      // 2. Fetch Incomplete count from the Incomplete Order Service
-      // We set limit to 1 because we only care about the meta.total field
-      let incompleteCount = 0;
-      try {
-        const leadRes = await getAllIncompleteOrdersService({
-          page: 1,
-          limit: 1,
-        });
-        // Based on your backend, total is inside meta
-        incompleteCount =
-          leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
-      } catch (e) {
-        console.error("Failed to fetch incomplete counts", e);
-      }
+  //     // 2. Fetch Incomplete count from the Incomplete Order Service
+  //     // We set limit to 1 because we only care about the meta.total field
+  //     let incompleteCount = 0;
+  //     try {
+  //       const leadRes = await getAllIncompleteOrdersService({
+  //         page: 1,
+  //         limit: 1,
+  //       });
+  //       // Based on your backend, total is inside meta
+  //       incompleteCount =
+  //         leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
+  //     } catch (e) {
+  //       console.error("Failed to fetch incomplete counts", e);
+  //     }
 
-      // 3. Return the merged array
-      return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
-    },
-    refetchOnWindowFocus: true,
-  });
+  //     // 3. Return the merged array
+  //     return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
+  //   },
+  //   refetchOnWindowFocus: true,
+  // });
+
+  // Update the counts fetcher to be simpler
+const { data: tabCountsData } = useQuery({
+  queryKey: ["order-tab-counts"],
+  queryFn: () => fetchOrderCounts(tabs), // Uses the updated service above
+  refetchOnWindowFocus: true,
+});
 
   // This converts the array into a Map so the UI can find the counts easily
+  // const counts = useMemo(() => {
+  //   return (
+  //     tabCountsData?.reduce(
+  //       (acc: any, curr: any) => ({
+  //         ...acc,
+  //         [curr.tab]: curr.count,
+  //       }),
+  //       {},
+  //     ) || {}
+  //   );
+  // }, [tabCountsData]);
+
+
   const counts = useMemo(() => {
-    return (
-      tabCountsData?.reduce(
-        (acc: any, curr: any) => ({
-          ...acc,
-          [curr.tab]: curr.count,
-        }),
-        {},
-      ) || {}
-    );
-  }, [tabCountsData]);
+  return (
+    tabCountsData?.reduce(
+      (acc: any, curr: any) => ({
+        ...acc,
+        [curr.tab]: curr.count,
+      }),
+      {},
+    ) || {}
+  );
+}, [tabCountsData]);
 
   // --- MUTATIONS ---
   const statusMutation = useMutation({
@@ -689,7 +735,7 @@ useEffect(() => {
               width={38}
               height={38}
               unoptimized
-              className="rounded border bg-white p-0.5"
+              className="rounded bg-white p-0.5"
             />
             <span className="truncate max-w-[130px] text-[12px] font-bold text-gray-700">
               {productInfo.name || first?.product_name || "Untitled"}
@@ -794,23 +840,49 @@ useEffect(() => {
         );
       },
     },
+    // {
+    //   header: "Status",
+    //   key: "status",
+    //   render: (item: any) => {
+    //     const config = getStatusConfig(
+    //       isIncompleteTab ? "PENDING" : item.status,
+    //     );
+    //     return (
+    //       <div
+    //         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}
+    //       >
+    //         <config.icon size={12} className={config.iconColor} />
+    //         <span>{isIncompleteTab ? "Abandoned" : config.label}</span>
+    //       </div>
+    //     );
+    //   },
+    // },
+
     {
-      header: "Status",
-      key: "status",
-      render: (item: any) => {
-        const config = getStatusConfig(
-          isIncompleteTab ? "PENDING" : item.status,
-        );
-        return (
-          <div
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}
-          >
-            <config.icon size={12} className={config.iconColor} />
-            <span>{isIncompleteTab ? "Abandoned" : config.label}</span>
-          </div>
-        );
-      },
-    },
+  header: "Status",
+  key: "status",
+  render: (item: any) => {
+    // Check if the individual item is incomplete, regardless of which tab you are in
+    const isActuallyIncomplete = item.status === "INCOMPLETE";
+    
+    if (isActuallyIncomplete) {
+      return (
+        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-gray-50 text-gray-400 border-gray-200">
+          <Clock size={12} className="text-gray-400" />
+          <span>Incomplete</span>
+        </div>
+      );
+    }
+
+    const config = getStatusConfig(item.status);
+    return (
+      <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}>
+        <config.icon size={12} className={config.iconColor} />
+        <span>{config.label}</span>
+      </div>
+    );
+  },
+},
     {
       header: "Track ID",
       key: "tracking_code",
