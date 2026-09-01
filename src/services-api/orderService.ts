@@ -1,6 +1,5 @@
-
 import { apiFetch } from "@/utils/api";
-import { getAdminTokenAction, getSessionTokenAction } from "@/app/actions/auth";
+import { getAdminTokenAction } from "@/app/actions/auth";
 
 export interface OrderItemInput {
   productId: string;
@@ -52,7 +51,6 @@ export interface UpdateOrderRequest {
   courier_city_id?: number;
   courier_zone_id?: number;
   courier_area_id?: number;
-  order_comment?: string;
 }
 
 export interface UpdateInvoicePayload {
@@ -77,18 +75,13 @@ export interface OrderQuery {
 // 🚀 1. Create order (Added Auth Token)
 export const createOrderService = async (orderData: CreateOrderRequest) => {
   try {
-    const token =
-      (await getSessionTokenAction()) || (await getAdminTokenAction());
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
+    const token = await getAdminTokenAction();
     const response = await apiFetch("/orders", {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token || ""}`,
+      },
       body: JSON.stringify(orderData),
     });
 
@@ -243,55 +236,35 @@ export const searchProductsService = async (query: string) => {
   return res.json();
 };
 
-// 🚀 7. Fetch Order Tab Counts (Used for Initial Load)
-// export const fetchOrderCounts = async (tabs: string[]) => {
-//   const promises = tabs.map(async (tab) => {
-//     const status = tab === "All order" ? "" : tab.toUpperCase();
-//     const res = await getAllOrdersService({
-//       page: 1,
-//       limit: 1,
-//       status,
-//       refresh: true,
-//     });
-//     return { tab, count: res.data?.meta?.total || 0 };
-//   });
-//   return Promise.all(promises);
-
-
-// };
-
-export const fetchOrderCounts = async (tabs: string[]) => {
-  // 1. Fetch counts for all specific statuses first
-  const specificTabs = tabs.filter(t => t !== "All order");
-  
-  const results = await Promise.all(
-    specificTabs.map(async (tab) => {
-      let status = tab === "Incomplete" ? "INCOMPLETE" : tab.toUpperCase();
-      
-      try {
-        const res = await getAllOrdersService({
-          page: 1,
-          limit: 1,
-          status,
-          refresh: true,
-        });
-        return { 
-          tab, 
-          count: res.data?.meta?.total ?? res.meta?.total ?? 0 
-        };
-      } catch (error) {
-        return { tab, count: 0 };
-      }
-    })
-  );
-
-  // 2. Calculate "All order" count as the sum of all other visible tabs
-  const totalVisibleCount = results.reduce((sum, item) => sum + item.count, 0);
-
-  // 3. Return the merged array including the calculated "All order"
-  return [
-    { tab: "All order", count: totalVisibleCount },
-    ...results
-  ];
+// Tab label → backend status enum mapping (shared with OrderTable)
+export const TAB_STATUS_MAP: Record<string, string> = {
+  "All order": "",
+  Pending: "PENDING",
+  Confirmed: "CONFIRMED",
+  "On Hold": "ON_HOLD",
+  Shipped: "SHIPPED",
+  "Sent To Courier": "SENT_TO_COURIER",
+  Incomplete: "",
+  Delivered: "DELIVERED",
+  "Partial Delivered": "PARTIAL_DELIVERED",
+  Canceled: "CANCELED",
+  Returned: "RETURNED",
+  Refunded: "REFUNDED",
+  "Return Received": "RETURN_RECEIVED",
 };
 
+// 🚀 7. Fetch Order Tab Counts (Used for Initial Load)
+export const fetchOrderCounts = async (tabs: string[]) => {
+  const promises = tabs.map(async (tab) => {
+    const status =
+      TAB_STATUS_MAP[tab] ?? (tab === "All order" ? "" : tab.toUpperCase());
+    const res = await getAllOrdersService({
+      page: 1,
+      limit: 1,
+      status,
+      refresh: true,
+    });
+    return { tab, count: res.data?.meta?.total || 0 };
+  });
+  return Promise.all(promises);
+};
