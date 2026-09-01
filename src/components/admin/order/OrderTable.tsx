@@ -55,6 +55,7 @@ import {
   getAllIncompleteOrdersService,
 } from "@/services-api/incompleteOrderService";
 import { apiFetch } from "@/utils/api";
+import React from "react";
 
 type UpdateOrderStatusPayload = {
   status: string;
@@ -207,6 +208,21 @@ type Order = {
   };
 };
 
+export const BulkInvoicePrint = React.forwardRef(
+  ({ orders, baseStorageUrl }: any, ref: any) => {
+    return (
+      <div ref={ref} className="p-0">
+        {orders.map((order: any, index: number) => (
+          <div key={order.id} style={{ pageBreakAfter: "always" }}>
+            <InvoicePrint order={order} baseStorageUrl={baseStorageUrl} />
+          </div>
+        ))}
+      </div>
+    );
+  },
+);
+BulkInvoicePrint.displayName = "BulkInvoicePrint";
+
 export default function OrderTable() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -340,30 +356,28 @@ export default function OrderTable() {
   // });
 
   const { data: serverData, isLoading } = useQuery({
-  queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
-  queryFn: async () => {
-    // 🔥 Simplified: All tabs now use the same service
-    const currentTabText = tabs[activeTab];
-    let status = "";
+    queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
+    queryFn: async () => {
+      // 🔥 Simplified: All tabs now use the same service
+      const currentTabText = tabs[activeTab];
+      let status = "";
 
-    if (currentTabText === "All order") {
-      status = ""; // Backend returns all including Incomplete
-    } else {
-      status = currentTabText.toUpperCase();
-    }
+      if (currentTabText === "All order") {
+        status = ""; // Backend returns all including Incomplete
+      } else {
+        status = currentTabText.toUpperCase();
+      }
 
-    return await getAllOrdersService({
-      page,
-      limit: 10,
-      status: status,
-      search: searchQuery,
-      refresh: true,
-    });
-  },
-  placeholderData: (previousData) => previousData,
-});
-
-
+      return await getAllOrdersService({
+        page,
+        limit: 10,
+        status: status,
+        search: searchQuery,
+        refresh: true,
+      });
+    },
+    placeholderData: (previousData) => previousData,
+  });
 
   // 🚀 THE FIX: Universal Data Extractor
   // This logic looks for the array [...] no matter where the API hides it.
@@ -425,11 +439,11 @@ export default function OrderTable() {
   // });
 
   // Update the counts fetcher to be simpler
-const { data: tabCountsData } = useQuery({
-  queryKey: ["order-tab-counts"],
-  queryFn: () => fetchOrderCounts(tabs), // Uses the updated service above
-  refetchOnWindowFocus: true,
-});
+  const { data: tabCountsData } = useQuery({
+    queryKey: ["order-tab-counts"],
+    queryFn: () => fetchOrderCounts(tabs), // Uses the updated service above
+    refetchOnWindowFocus: true,
+  });
 
   // This converts the array into a Map so the UI can find the counts easily
   // const counts = useMemo(() => {
@@ -444,18 +458,17 @@ const { data: tabCountsData } = useQuery({
   //   );
   // }, [tabCountsData]);
 
-
   const counts = useMemo(() => {
-  return (
-    tabCountsData?.reduce(
-      (acc: any, curr: any) => ({
-        ...acc,
-        [curr.tab]: curr.count,
-      }),
-      {},
-    ) || {}
-  );
-}, [tabCountsData]);
+    return (
+      tabCountsData?.reduce(
+        (acc: any, curr: any) => ({
+          ...acc,
+          [curr.tab]: curr.count,
+        }),
+        {},
+      ) || {}
+    );
+  }, [tabCountsData]);
 
   // --- MUTATIONS ---
   const statusMutation = useMutation({
@@ -490,21 +503,21 @@ const { data: tabCountsData } = useQuery({
 
   const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
-const handlePrint = useReactToPrint({
-  contentRef: invoiceRef, // Note: newer versions use contentRef instead of content
-  documentTitle: `Invoice_${selectedOrderForPrint?.order_number || "Order"}`,
-  onAfterPrint: () => setSelectedOrderForPrint(null),
-});
+  const handlePrint = useReactToPrint({
+    contentRef: invoiceRef, // Note: newer versions use contentRef instead of content
+    documentTitle: `Invoice_${selectedOrderForPrint?.order_number || "Order"}`,
+    onAfterPrint: () => setSelectedOrderForPrint(null),
+  });
 
-useEffect(() => {
-  // Only trigger if we have an order AND the ref is actually attached to a DOM element
-  if (selectedOrderForPrint && invoiceRef.current) {
-    const timer = setTimeout(() => {
-      handlePrint();
-    }, 250); // Increased delay slightly to ensure DOM is ready
-    return () => clearTimeout(timer);
-  }
-}, [selectedOrderForPrint, handlePrint]);
+  useEffect(() => {
+    // Only trigger if we have an order AND the ref is actually attached to a DOM element
+    if (selectedOrderForPrint && invoiceRef.current) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 250); // Increased delay slightly to ensure DOM is ready
+      return () => clearTimeout(timer);
+    }
+  }, [selectedOrderForPrint, handlePrint]);
 
   const getTrackingUrl = (code: string, provider: string) => {
     if (!code) return null;
@@ -522,18 +535,40 @@ useEffect(() => {
   const isLead = (item: any) => !!item.cart_items && !item.order_items;
 
   useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-      setActiveMenuId(null);
-      setShowStatusMenu(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenuId(null);
+        setShowStatusMenu(false);
+      }
+    };
+
+    if (activeMenuId) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [activeMenuId]);
+
+  // 1. Add Selection State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // 2. Add Toggle Logic
+  const toggleSelectAll = () => {
+    if (selectedIds.length === orderList.length) setSelectedIds([]);
+    else setSelectedIds(orderList.map((o: any) => o.id));
   };
 
-  if (activeMenuId) {
-    document.addEventListener("mousedown", handleClickOutside);
-  }
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [activeMenuId]);
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
+
+  // 3. Setup Bulk Printing
+  const bulkInvoiceRef = useRef<HTMLDivElement>(null);
+  const handleBulkPrint = useReactToPrint({
+    contentRef: bulkInvoiceRef,
+    documentTitle: "Bulk_Invoices",
+  });
 
   // --- COLUMNS ---
   // const columns = [
@@ -688,7 +723,27 @@ useEffect(() => {
   //   },
   // ];
 
-  const columns = [
+  const columns: any[] = [
+    {
+      header: (
+        <input
+          type="checkbox"
+          onChange={toggleSelectAll}
+          checked={
+            selectedIds.length === orderList.length && orderList.length > 0
+          }
+        />
+      ),
+      key: "checkbox",
+      render: (item: any) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.includes(item.id)}
+          onChange={() => toggleSelectRow(item.id)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
     {
       header: "No.",
       key: "index",
@@ -777,17 +832,14 @@ useEffect(() => {
         </div>
       ),
     },
-{
+    {
       header: "Price",
       key: "amount",
       render: (item: any) => {
         // 1. Check total_amount_due (Standard for regular orders)
         // 2. Check total_amount (Standard for incomplete leads)
         // 3. Check total_bill (Standard for some calculated views)
-        const displayPrice = Number(
-          item.total_amount_due || 
-          0
-        );
+        const displayPrice = Number(item.total_amount_due || 0);
 
         return (
           <span className="font-bold text-[13px] text-gray-900 font-poppins">
@@ -796,16 +848,16 @@ useEffect(() => {
         );
       },
     },
-{
+    {
       header: "Supplier",
       key: "supplier",
       render: (item: any) => {
         const items = isIncompleteTab
           ? item.cart_items || []
           : item.order_items || [];
-        
+
         const firstItem = items[0];
-        
+
         // 1. Identify the Supplier name
         let supplierName = "Own Product"; // Default
 
@@ -820,21 +872,30 @@ useEffect(() => {
           // In your backend, external items usually have external_product_id
           if (firstItem?.external_product_id || firstItem?.isExternal) {
             supplierName = firstItem?.supplier_name || "Mohashagor";
-          } else if (item.source && !["direct", "admin_panel", "system"].includes(item.source.toLowerCase())) {
+          } else if (
+            item.source &&
+            !["direct", "admin_panel", "system"].includes(
+              item.source.toLowerCase(),
+            )
+          ) {
             // If the source itself is the supplier name
             supplierName = item.source;
           }
         }
 
         // 2. Define colors based on supplier type
-        const isOwn = supplierName.toLowerCase() === "own product" || supplierName.toLowerCase() === "system";
-        
+        const isOwn =
+          supplierName.toLowerCase() === "own product" ||
+          supplierName.toLowerCase() === "system";
+
         return (
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
-            isOwn 
-              ? "bg-blue-50 text-blue-600 border border-blue-100" 
-              : "bg-orange-50 text-orange-600 border border-orange-100"
-          }`}>
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
+              isOwn
+                ? "bg-blue-50 text-blue-600 border border-blue-100"
+                : "bg-orange-50 text-orange-600 border border-orange-100"
+            }`}
+          >
             {supplierName}
           </span>
         );
@@ -859,30 +920,32 @@ useEffect(() => {
     // },
 
     {
-  header: "Status",
-  key: "status",
-  render: (item: any) => {
-    // Check if the individual item is incomplete, regardless of which tab you are in
-    const isActuallyIncomplete = item.status === "INCOMPLETE";
-    
-    if (isActuallyIncomplete) {
-      return (
-        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-gray-50 text-gray-400 border-gray-200">
-          <Clock size={12} className="text-gray-400" />
-          <span>Incomplete</span>
-        </div>
-      );
-    }
+      header: "Status",
+      key: "status",
+      render: (item: any) => {
+        // Check if the individual item is incomplete, regardless of which tab you are in
+        const isActuallyIncomplete = item.status === "INCOMPLETE";
 
-    const config = getStatusConfig(item.status);
-    return (
-      <div className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}>
-        <config.icon size={12} className={config.iconColor} />
-        <span>{config.label}</span>
-      </div>
-    );
-  },
-},
+        if (isActuallyIncomplete) {
+          return (
+            <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-gray-50 text-gray-400 border-gray-200">
+              <Clock size={12} className="text-gray-400" />
+              <span>Incomplete</span>
+            </div>
+          );
+        }
+
+        const config = getStatusConfig(item.status);
+        return (
+          <div
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${config.className}`}
+          >
+            <config.icon size={12} className={config.iconColor} />
+            <span>{config.label}</span>
+          </div>
+        );
+      },
+    },
     {
       header: "Track ID",
       key: "tracking_code",
@@ -966,17 +1029,35 @@ useEffect(() => {
 
         <DataTable data={orderList} columns={columns} rowKey="id" />
 
-        <div className="py-5">
+        {/* <div className="py-5">
           <Pagination2
             currentPage={page}
             totalPages={meta.totalPages}
             onPageChange={setPage}
           />
+        </div> */}
+
+        <div className="py-5">
+          <Pagination2
+            currentPage={page}
+            totalPages={meta.totalPages}
+            onPageChange={setPage}
+            selectedCount={selectedIds.length}
+            onPrintMultiple={handleBulkPrint}
+          />
+        </div>
+
+        {/* Hidden Bulk Print Component */}
+        <div style={{ display: "none" }}>
+          <BulkInvoicePrint
+            ref={bulkInvoiceRef}
+            orders={orderList.filter((o: any) => selectedIds.includes(o.id))}
+            baseStorageUrl={baseStorageUrl}
+          />
         </div>
       </div>
 
-      {/* --- MODIFIED ACTION MENU --- */}
-{/* --- PROFESSIONAL ACTION MENU --- */}
+      {/* --- PROFESSIONAL ACTION MENU --- */}
       {activeMenuId && (
         <div
           ref={menuRef}
@@ -987,10 +1068,15 @@ useEffect(() => {
           {!isIncompleteTab && (
             <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
               <button
-                onClick={() => router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)}
+                onClick={() =>
+                  router.push(`/admin/dashboard/order/add?id=${activeMenuId}`)
+                }
                 className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
               >
-                <Edit size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+                <Edit
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
                 <span className="font-medium">Edit Order</span>
               </button>
             </div>
@@ -1007,7 +1093,10 @@ useEffect(() => {
                 }}
                 className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
               >
-                <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+                <Printer
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
                 <span className="font-medium">Print Invoice</span>
               </button>
             )}
@@ -1019,7 +1108,10 @@ useEffect(() => {
               }}
               className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <FileText size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+              <FileText
+                size={16}
+                className="text-gray-400 group-hover:text-[#1DA1F2]"
+              />
               <span className="font-medium">View Details</span>
             </button>
           </div>
@@ -1027,21 +1119,31 @@ useEffect(() => {
           {/* Group 3: Status Management (With Hover-Out logic) */}
           {!isIncompleteTab && (
             <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
-              <div 
+              <div
                 className="relative"
                 onMouseLeave={() => setShowStatusMenu(false)} // Close when mouse leaves the entire area
               >
                 <button
                   onMouseEnter={() => setShowStatusMenu(true)}
                   className={`w-full flex items-center justify-between px-3 py-2 text-[14px] rounded-lg transition-colors cursor-pointer ${
-                    showStatusMenu ? 'bg-blue-50 text-[#1DA1F2]' : 'text-gray-600 hover:bg-gray-50'
+                    showStatusMenu
+                      ? "bg-blue-50 text-[#1DA1F2]"
+                      : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <RefreshCw size={16} className={showStatusMenu ? 'text-[#1DA1F2]' : 'text-gray-400'} />
+                    <RefreshCw
+                      size={16}
+                      className={
+                        showStatusMenu ? "text-[#1DA1F2]" : "text-gray-400"
+                      }
+                    />
                     <span className="font-medium">Update Status</span>
                   </div>
-                  <ChevronLeft size={14} className={`transition-transform ${showStatusMenu ? 'rotate-180 text-[#1DA1F2]' : 'opacity-50'}`} />
+                  <ChevronLeft
+                    size={14}
+                    className={`transition-transform ${showStatusMenu ? "rotate-180 text-[#1DA1F2]" : "opacity-50"}`}
+                  />
                 </button>
 
                 {showStatusMenu && (
@@ -1060,10 +1162,17 @@ useEffect(() => {
                         key={s}
                         onClick={() => {
                           if (s === "SHIPPED") {
-                            setShippedModal({ open: true, id: activeMenuId, targetStatus: s });
+                            setShippedModal({
+                              open: true,
+                              id: activeMenuId,
+                              targetStatus: s,
+                            });
                             setActiveMenuId(null);
                           } else {
-                            statusMutation.mutate({ id: activeMenuId!, payload: { status: s } });
+                            statusMutation.mutate({
+                              id: activeMenuId!,
+                              payload: { status: s },
+                            });
                             setActiveMenuId(null);
                           }
                           setShowStatusMenu(false);
@@ -1093,14 +1202,18 @@ useEffect(() => {
               className="w-full text-left px-3 py-2 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-bold cursor-pointer"
             >
               <Trash2 size={16} />
-              <span>{deleteLeadMutation.isPending ? "Deleting..." : `Delete ${isIncompleteTab ? "Lead" : "Order"}`}</span>
+              <span>
+                {deleteLeadMutation.isPending
+                  ? "Deleting..."
+                  : `Delete ${isIncompleteTab ? "Lead" : "Order"}`}
+              </span>
             </button>
           </div>
         </div>
       )}
 
       {/* Hidden component for printing */}
-     <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+      <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
         <InvoicePrint
           ref={invoiceRef}
           order={selectedOrderForPrint}

@@ -7,13 +7,17 @@ interface PaginationProps {
     totalPages: number;
     onPageChange: (page: number) => void;
     siblingCount?: number;
+        onPrintMultiple?: () => void; // 🔥 New Prop
+    selectedCount?: number;       // 🔥 New Prop
 }
 
 const Pagination2 = ({
     currentPage,
     totalPages,
     onPageChange,
-    siblingCount = 1
+    siblingCount = 1,
+    onPrintMultiple,
+    selectedCount = 0
 }: PaginationProps) => {
 
     const getPageNumbers = () => {
@@ -55,9 +59,15 @@ const Pagination2 = ({
 
     return (
         <div className='grid grid-cols-1 md:grid-cols-3 items-center justify-items-center md:justify-items-stretch gap-4 md:gap-0 px-5'>
-            <button className="bg-[#F9F9F9] cursor-pointer px-3 py-2 flex items-center gap-2 rounded-[4px] w-fit md:justify-self-start whitespace-nowrap">
+            <button 
+                onClick={onPrintMultiple}
+                disabled={selectedCount === 0}
+                className={`cursor-pointer px-3 py-2 flex items-center gap-2 rounded-[4px] w-fit whitespace-nowrap transition-all ${
+                    selectedCount > 0 ? 'bg-[#1DA1F2] text-white' : 'bg-gray-100 text-gray-400'
+                }`}
+            >
                 <PrinentIcon />
-                Print Multiple Order
+                Print {selectedCount > 0 ? `(${selectedCount})` : ""} Orders
             </button>
 
             <div className="flex flex-row items-center justify-center gap-2 sm:gap-3 w-auto md:w-full md:col-start-2">
