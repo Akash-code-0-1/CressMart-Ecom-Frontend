@@ -52,6 +52,7 @@ export interface UpdateOrderRequest {
   courier_city_id?: number;
   courier_zone_id?: number;
   courier_area_id?: number;
+  order_comment?: string;
 }
 
 export interface UpdateInvoicePayload {
