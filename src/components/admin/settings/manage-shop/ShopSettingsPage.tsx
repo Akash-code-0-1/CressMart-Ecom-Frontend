@@ -13,6 +13,7 @@ import MarketingIntegrationsContent from "./MarketingIntegrationsContent";
 import ShopDomainContent from "./ShopDomainContent";
 import SMSSupportContent from "./SMSSupportContent";
 import OTPVerificationContent from "./OTPVerificationContent";
+import CupponContent from "./CupponContent";
 
 export default function ShopSettingsPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function ShopSettingsPage() {
     { id: "integrations", label: "Integrations" },
     { id: "domain", label: "Shop Domain" },
     { id: "sms", label: "SMS Support" },
+    { id: "coupon", label: "Coupon Code" },
     // { id: "otp", label: "OTP Verification" },
   ];
 
@@ -127,7 +129,8 @@ export default function ShopSettingsPage() {
               {activeInternalTab === "domain" && <ShopDomainContent />}
 
               {activeInternalTab === "sms" && <SMSSupportContent />}
-              {activeInternalTab === "otp" && <OTPVerificationContent />}
+              {/* {activeInternalTab === "otp" && <OTPVerificationContent />} */}
+              {activeInternalTab === "coupon" && <CupponContent />}
 
               {/* Fallback for other tabs */}
               {activeInternalTab !== "delivery" &&
@@ -135,10 +138,11 @@ export default function ShopSettingsPage() {
                 activeInternalTab !== "integrations" &&
                 activeInternalTab !== "domain" &&
                 activeInternalTab !== "sms" &&
-                activeInternalTab !== "otp" && (
+                activeInternalTab !== "otp" &&
+                activeInternalTab !== "coupon" && (
                   <div className="bg-white p-20 rounded-2xl border text-center text-gray-300 italic">
                     {subTabs.find((t) => t.id === activeInternalTab)?.label}{" "}
-                    Settings Coming Soon
+                    hellow world
                   </div>
                 )}
             </div>
