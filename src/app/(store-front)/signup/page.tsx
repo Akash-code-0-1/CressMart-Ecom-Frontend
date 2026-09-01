@@ -214,6 +214,7 @@ const SignUpPage = () => {
           >
             {loading ? t.signUp.loading : t.signUp.button}
           </button>
+          {/* singup account  */}
 
           <div className="text-center mt-2 text-sm text-gray-500">
             {t.signUp.haveAccount}{" "}

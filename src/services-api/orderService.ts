@@ -72,15 +72,13 @@ export interface OrderQuery {
   refresh?: boolean;
 }
 
-// 🚀 1. Create order (Added Auth Token)
+// 🚀 1. Create order (Uses apiFetch which attaches customer auth token)
 export const createOrderService = async (orderData: CreateOrderRequest) => {
   try {
-    const token = await getAdminTokenAction();
     const response = await apiFetch("/orders", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token || ""}`,
       },
       body: JSON.stringify(orderData),
     });
