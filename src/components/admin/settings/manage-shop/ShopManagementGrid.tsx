@@ -102,6 +102,7 @@ import {
   Link2,
   MessageSquareMore,
   CircleDollarSign,
+  Ticket,
 } from "lucide-react";
 
 const shopFeatures = [
@@ -140,10 +141,10 @@ const shopFeatures = [
     description: "Enable SMS notifications to keep your customers informed.",
   },
   {
-    id: "reward",
-    title: "Reward Point",
-    icon: CircleDollarSign,
-    description: "Configure customer loyalty and reward point settings.",
+    id: "coupon",
+    title: "Coupon Code",
+    description: "Create and manage coupon codes for your shop.",
+    icon: Ticket,
   },
 ];
 
