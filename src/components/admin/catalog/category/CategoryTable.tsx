@@ -609,12 +609,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import {
-  MoreVertical,
-  Trash2,
-  Edit3,
-  Loader2,
-} from "lucide-react";
+import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
 import {
   fetchAllCategories,
   deleteCategory,
@@ -648,7 +643,11 @@ export default function CategoryTable() {
 
   // --- 🚀 Professional Menu States ---
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -829,10 +828,20 @@ export default function CategoryTable() {
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
+
+            // --- 🚀 DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 110; // Approx height for Edit + Delete menu
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
+
             setMenuPos({
-              top: rect.bottom + window.scrollY + 8,
+              // If fixed positioning, we use rect.top/bottom without window.scrollY
+              top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
               left: rect.left - 160,
+              opensUpward: shouldOpenUp,
             });
+            // ------------------------------------
+
             setActiveMenuId(activeMenuId === category.id ? null : category.id);
             setShowStatusMenu(false);
           }}
@@ -888,7 +897,11 @@ export default function CategoryTable() {
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+          className={`fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward
+              ? "origin-bottom -translate-y-full"
+              : "origin-top"
+          }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* Group 1: Core Actions */}

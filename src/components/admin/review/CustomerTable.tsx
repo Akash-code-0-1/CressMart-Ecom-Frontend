@@ -128,6 +128,27 @@ export default function CustomerTable() {
   //   }
   // };
 
+
+  const menuRef = React.useRef<HTMLDivElement>(null); // Add this ref
+const [menuPos, setMenuPos] = useState({ top: 0, left: 0, opensUpward: false });
+
+// 🚀 CLICK OUTSIDE LOGIC
+React.useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setActiveMenuId(null);
+    }
+  };
+
+  if (activeMenuId) {
+    document.addEventListener("mousedown", handleClickOutside);
+  }
+  
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [activeMenuId]);
+
   const columns: TableColumn<CustomerItem>[] = [
     // {
     //   header: "",
@@ -231,52 +252,74 @@ export default function CustomerTable() {
         </span>
       ),
     },
-    {
-      header: "Action",
-      key: "action",
-      render: (item) => (
-        <div className="relative">
-          <button
-            onClick={() =>
-              setActiveMenuId(activeMenuId === item.id ? null : item.id)
-            }
-            className="cursor-pointer text-black p-1 transition-colors"
-          >
-            <MoreVertical size={20} />
-          </button>
-          {activeMenuId === item.id && (
-            <div className="absolute cursor-pointer right-0 mt-1 w-40 bg-white border border-gray-200 rounded-[8px] shadow-lg py-1 z-50 text-xs text-black">
-              {item.status !== "active" && (
-                <button
-                  onClick={() =>
-                    updateStatusMutation.mutate({
-                      id: item.id,
-                      status: "active",
-                    })
-                  }
-                  className="w-full cursor-pointer text-left px-3 py-2 text-emerald-600 hover:bg-gray-50 flex items-center gap-1.5"
-                >
-                  <UserCheck size={14} /> Activate Profile
-                </button>
-              )}
-              {item.status !== "blocked" && (
-                <button
-                  onClick={() =>
-                    updateStatusMutation.mutate({
-                      id: item.id,
-                      status: "blocked",
-                    })
-                  }
-                  className="w-full cursor-pointer text-left px-3 py-2 text-rose-600 hover:bg-gray-50 flex items-center gap-1.5"
-                >
-                  <Ban size={14} /> Block User
-                </button>
-              )}
-            </div>
+{
+  header: "Action",
+  key: "action",
+  render: (item) => (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const rect = e.currentTarget.getBoundingClientRect();
+          
+          // --- DYNAMIC POSITIONING LOGIC ---
+          const menuHeight = 100; // Small height for Activate + Block menu
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const shouldOpenUp = spaceBelow < menuHeight;
+
+          setMenuPos({
+            top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
+            left: rect.left - 140, // Offset to align with button
+            opensUpward: shouldOpenUp,
+          });
+          // ---------------------------------
+
+          setActiveMenuId(activeMenuId === item.id ? null : item.id);
+        }}
+        className="cursor-pointer text-black p-1 transition-colors hover:bg-gray-100 rounded-full"
+      >
+        <MoreVertical size={20} />
+      </button>
+
+      {activeMenuId === item.id && (
+        <div
+          ref={menuRef} // 🔥 ATTACH REF HERE
+          className={`fixed bg-white border border-gray-200 rounded-[8px] shadow-xl py-1 z-[9999] w-40 text-xs text-black animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward ? "origin-bottom -translate-y-full" : "origin-top"
+          }`}
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
+          {item.status !== "active" && (
+            <button
+              onClick={() =>
+                updateStatusMutation.mutate({
+                  id: item.id,
+                  status: "active",
+                })
+              }
+              className="w-full cursor-pointer text-left px-3 py-2 text-emerald-600 hover:bg-gray-50 flex items-center gap-1.5"
+            >
+              <UserCheck size={14} /> Activate Profile
+            </button>
+          )}
+          {item.status !== "blocked" && (
+            <button
+              onClick={() =>
+                updateStatusMutation.mutate({
+                  id: item.id,
+                  status: "blocked",
+                })
+              }
+              className="w-full cursor-pointer text-left px-3 py-2 text-rose-600 hover:bg-gray-50 flex items-center gap-1.5"
+            >
+              <Ban size={14} /> Block User
+            </button>
           )}
         </div>
-      ),
-    },
+      )}
+    </div>
+  ),
+},
   ];
 
   return (
