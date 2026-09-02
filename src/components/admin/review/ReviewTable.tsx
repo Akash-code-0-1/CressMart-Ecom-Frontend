@@ -76,31 +76,54 @@ export default function ReviewTable() {
   const cSearch = searchParams.get("c_search") || "";
   const rSort = searchParams.get("r_sort") || "desc";
 
+  // const { data: serverPayload } = useQuery({
+  //   // 🚀 2. ADD rSort TO THE QUERY KEY
+  //   queryKey: [
+  //     "admin-reviews-list",
+  //     rPage,
+  //     statusFilter,
+  //     cSearch,
+  //     rSort,
+  //     forceBypass,
+  //   ],
+  //   queryFn: async () => {
+  //     // 🚀 3. PASS THE SORT TO THE API SERVICE
+  //     const res = await reviewApi.getAll(
+  //       rPage,
+  //       5,
+  //       statusFilter,
+  //       cSearch,
+  //       rSort, // Added this
+  //       forceBypass,
+  //     );
+  //     if (forceBypass) setForceBypass(false);
+  //     return res;
+  //   },
+  //   refetchOnWindowFocus: true,
+  //   refetchOnMount: "always",
+  //   staleTime: 0,
+  // });
+
   const { data: serverPayload } = useQuery({
-    // 🚀 2. ADD rSort TO THE QUERY KEY
     queryKey: [
       "admin-reviews-list",
       rPage,
       statusFilter,
-      cSearch,
       rSort,
-      forceBypass,
+      forceBypass, // 🚀 Add to key
     ],
     queryFn: async () => {
-      // 🚀 3. PASS THE SORT TO THE API SERVICE
       const res = await reviewApi.getAll(
         rPage,
         5,
         statusFilter,
-        cSearch,
-        rSort, // Added this
-        forceBypass,
+        "", // search
+        rSort,
+        forceBypass, // 🚀 Pass the bypass flag
       );
-      if (forceBypass) setForceBypass(false);
+      if (forceBypass) setForceBypass(false); // Reset after fetch
       return res;
     },
-    refetchOnWindowFocus: true,
-    refetchOnMount: "always",
     staleTime: 0,
   });
 
@@ -108,53 +131,108 @@ export default function ReviewTable() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       reviewApi.updateStatus(id, status),
     onSuccess: () => {
-      toast.success("Review status updated successfully");
-      setForceBypass(true);
+      toast.success("Review status updated");
+      setForceBypass(true); // 🚀 FORCE REFRESH FROM DB
       queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+
+      // 🚀 Invalidate all queries starting with "admin-reviews-list"
+      queryClient.invalidateQueries({
+        queryKey: ["admin-reviews-list"],
+      });
+
       queryClient.invalidateQueries({
         queryKey: ["admin-customer-review-stats"],
       });
+
       setActiveMenuId(null);
       setActiveSubMenu(false);
     },
+    onError: () => {
+      toast.error("Failed to update status");
+    },
   });
 
+  // const updateStatusMutation = useMutation({
+  //   mutationFn: ({ id, status }: { id: string; status: string }) =>
+  //     reviewApi.updateStatus(id, status),
+  //   onSuccess: () => {
+  //     toast.success("Review status updated successfully");
+  //     setForceBypass(true);
+  //     queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["admin-customer-review-stats"],
+  //     });
+  //     setActiveMenuId(null);
+  //     setActiveSubMenu(false);
+  //   },
+  // });
+
+  // const updateReviewMutation = useMutation({
+  //   mutationFn: async ({
+  //     id,
+  //     rating,
+  //     comment,
+  //     images,
+  //     createdAt,
+  //   }: {
+  //     id: string;
+  //     rating: number;
+  //     comment: string;
+  //     images: string[];
+  //     createdAt: string;
+  //   }) => {
+  //     return await reviewApi.updateDetails(
+  //       id,
+  //       rating,
+  //       comment,
+  //       images,
+  //       createdAt,
+  //     );
+  //   },
+  //   onSuccess: () => {
+  //     toast.success("Review updated successfully");
+  //     setForceBypass(true);
+  //     queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+  //     setIsEditModalOpen(false);
+  //   },
+  // });
+
+  // const deleteMutation = useMutation({
+  //   mutationFn: (id: string) => reviewApi.delete(id),
+  //   onSuccess: () => {
+  //     toast.success("Review deleted successfully");
+  //     setForceBypass(true);
+  //     queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+  //     queryClient.invalidateQueries({
+  //       queryKey: ["admin-customer-review-stats"],
+  //     });
+  //     setActiveMenuId(null);
+  //   },
+  // });
+
+  // Clean up updateReviewMutation
   const updateReviewMutation = useMutation({
-    mutationFn: async ({
-      id,
-      rating,
-      comment,
-      images,
-      createdAt,
-    }: {
-      id: string;
-      rating: number;
-      comment: string;
-      images: string[];
-      createdAt: string;
-    }) => {
-      return await reviewApi.updateDetails(
-        id,
-        rating,
-        comment,
-        images,
-        createdAt,
-      );
-    },
+    mutationFn: (vars: any) =>
+      reviewApi.updateDetails(
+        vars.id,
+        vars.rating,
+        vars.comment,
+        vars.images,
+        vars.createdAt,
+      ),
     onSuccess: () => {
       toast.success("Review updated successfully");
-      setForceBypass(true);
-      queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] }); // Just invalidate
       setIsEditModalOpen(false);
     },
   });
 
+  // Clean up deleteMutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => reviewApi.delete(id),
     onSuccess: () => {
       toast.success("Review deleted successfully");
-      setForceBypass(true);
-      queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-reviews-list"] }); // Just invalidate
       queryClient.invalidateQueries({
         queryKey: ["admin-customer-review-stats"],
       });
