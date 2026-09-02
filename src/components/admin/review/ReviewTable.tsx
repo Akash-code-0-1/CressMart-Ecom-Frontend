@@ -76,41 +76,38 @@ export default function ReviewTable() {
   const cSearch = searchParams.get("c_search") || "";
   const rSort = searchParams.get("r_sort") || "desc";
 
+
   // const { data: serverPayload } = useQuery({
-  //   // 🚀 2. ADD rSort TO THE QUERY KEY
   //   queryKey: [
   //     "admin-reviews-list",
   //     rPage,
   //     statusFilter,
-  //     cSearch,
   //     rSort,
-  //     forceBypass,
+  //     forceBypass, // 🚀 Add to key
   //   ],
   //   queryFn: async () => {
-  //     // 🚀 3. PASS THE SORT TO THE API SERVICE
   //     const res = await reviewApi.getAll(
   //       rPage,
   //       5,
   //       statusFilter,
-  //       cSearch,
-  //       rSort, // Added this
-  //       forceBypass,
+  //       "", // search
+  //       rSort,
+  //       forceBypass, // 🚀 Pass the bypass flag
   //     );
-  //     if (forceBypass) setForceBypass(false);
+  //     if (forceBypass) setForceBypass(false); // Reset after fetch
   //     return res;
   //   },
-  //   refetchOnWindowFocus: true,
-  //   refetchOnMount: "always",
   //   staleTime: 0,
   // });
 
-  const { data: serverPayload } = useQuery({
+
+    const { data: serverPayload } = useQuery({
     queryKey: [
       "admin-reviews-list",
       rPage,
       statusFilter,
       rSort,
-      forceBypass, // 🚀 Add to key
+      // 🚀 REMOVED forceBypass from here
     ],
     queryFn: async () => {
       const res = await reviewApi.getAll(
@@ -119,7 +116,7 @@ export default function ReviewTable() {
         statusFilter,
         "", // search
         rSort,
-        forceBypass, // 🚀 Pass the bypass flag
+        forceBypass, // 🚀 Passed only to the function
       );
       if (forceBypass) setForceBypass(false); // Reset after fetch
       return res;
