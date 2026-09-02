@@ -178,17 +178,47 @@ export const getReviewsByProduct = async (
 };
 
 // create review
+// export const createReview = async (
+//   data: CreateReviewInput,
+// ): Promise<ReviewResponse> => {
+//   const token = await getAdminTokenAction();
+
+//   const res = await apiFetch(`/reviews`, {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${token || ""}`,
+//     },
+//     body: JSON.stringify(data),
+//   });
+
+//   if (!res.ok) {
+//     const errorData = await res.json();
+//     throw new Error(errorData.message || "Failed to create review");
+//   }
+
+//   return res.json();
+// };
+
+
+// create review
 export const createReview = async (
   data: CreateReviewInput,
 ): Promise<ReviewResponse> => {
   const token = await getAdminTokenAction();
 
+  // 🚀 FIX: Build headers dynamically. If no token (guest), don't send an empty Authorization header.
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await apiFetch(`/reviews`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token || ""}`,
-    },
+    headers: headers,
     body: JSON.stringify(data),
   });
 

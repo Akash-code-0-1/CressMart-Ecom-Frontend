@@ -469,7 +469,7 @@ const Navbar = () => {
       >
         <div className="p-6 h-full flex flex-col font-poppins">
           <div className="flex justify-between items-center mb-8">
-            <Image src="/images/logo.png" alt="logo" width={140} height={40} />
+            <Image src={usableImageUrl} alt="Creass" width={140} height={40} />
             <button
               onClick={() => setIsDrawerOpen(false)}
               className="text-2xl cursor-pointer"
