@@ -135,6 +135,7 @@ export interface Customer {
 }
 
 export interface OrderItem {
+  external_image: any;
   id: string;
   productId?: string;
   variantId?: string;
