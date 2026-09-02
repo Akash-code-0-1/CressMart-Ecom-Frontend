@@ -227,6 +227,7 @@ export const BulkInvoicePrint = React.forwardRef(
 BulkInvoicePrint.displayName = "BulkInvoicePrint";
 
 export default function OrderTable() {
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(0);
@@ -512,15 +513,15 @@ export default function OrderTable() {
     onAfterPrint: () => setSelectedOrderForPrint(null),
   });
 
-  useEffect(() => {
-    // Only trigger if we have an order AND the ref is actually attached to a DOM element
-    if (selectedOrderForPrint && invoiceRef.current) {
-      const timer = setTimeout(() => {
-        handlePrint();
-      }, 250); // Increased delay slightly to ensure DOM is ready
-      return () => clearTimeout(timer);
-    }
-  }, [selectedOrderForPrint, handlePrint]);
+  // useEffect(() => {
+  //   // Only trigger if we have an order AND the ref is actually attached to a DOM element
+  //   if (selectedOrderForPrint && invoiceRef.current) {
+  //     const timer = setTimeout(() => {
+  //       handlePrint();
+  //     }, 250); // Increased delay slightly to ensure DOM is ready
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [selectedOrderForPrint, handlePrint]);
 
   const getTrackingUrl = (code: string, provider: string) => {
     if (!code) return null;
@@ -1055,7 +1056,7 @@ const userStatusMutation = useMutation({
 
           {/* Group 2: View & Output */}
           <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
-            {!isIncompleteTab && (
+            {/* {!isIncompleteTab && (
               <button
                 onClick={() => {
                   const o = orderList.find((x: any) => x.id === activeMenuId);
@@ -1070,7 +1071,25 @@ const userStatusMutation = useMutation({
                 />
                 <span className="font-medium">Print Invoice</span>
               </button>
-            )}
+            )} */}
+
+
+            {!isIncompleteTab && (
+<button
+  onClick={() => {
+    const o = orderList.find((x: any) => x.id === activeMenuId);
+    if (o) {
+      setSelectedOrderForPrint(o);
+      setIsPrintModalOpen(true); // Only opens the modal
+    }
+    setActiveMenuId(null);
+  }}
+  className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
+>
+  <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+  <span className="font-medium">Print Invoice</span>
+</button>
+)}
 
             <button
               onClick={() => {
@@ -1629,6 +1648,67 @@ const userStatusMutation = useMutation({
     </div>
   </div>
 )}
+
+
+{/* --- SOLID COMPACT INVOICE PREVIEW MODAL --- */}
+{isPrintModalOpen && selectedOrderForPrint && (
+  <div className="fixed inset-0 bg-zinc-900/80 flex items-center justify-center z-[99999] backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="bg-white rounded-xl w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+      
+      {/* Tight Solid Header */}
+      <div className="px-6 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1DA1F2]">
+            <Printer size={16} />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-gray-900 leading-tight">Invoice Review</h3>
+            <p className="text-[11px] text-gray-400 font-medium">Verify details before printing.</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setIsPrintModalOpen(false);
+              setSelectedOrderForPrint(null);
+            }}
+            className="px-4 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => handlePrint()}
+            className="bg-[#1DA1F2] text-white px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md active:scale-95"
+          >
+            Confirm & Print
+          </button>
+        </div>
+      </div>
+
+      {/* Invoice Workspace (Slightly smaller padding) */}
+      <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
+        <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
+          <InvoicePrint
+            ref={invoiceRef}
+            order={selectedOrderForPrint}
+            baseStorageUrl={baseStorageUrl}
+          />
+        </div>
+      </div>
+
+      {/* Simple Indicator Footer */}
+      <div className="px-6 py-2 bg-white border-t border-gray-50 flex items-center justify-center gap-2">
+        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+           ✎ Editable Area: Click the invoice number to change
+        </span>
+      </div>
+    </div>
+  </div>
+)}
+
+
+
     </div>
   );
 }
