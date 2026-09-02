@@ -230,17 +230,43 @@ export const createReview = async (
   return res.json();
 };
 
+// // upload review images
+// export const uploadReviewImages = async (
+//   formData: FormData,
+// ): Promise<{ success: boolean; data: { data: string[] } }> => {
+//   const token = await getAdminTokenAction();
+
+//   const res = await apiFetch(`/reviews/upload-images`, {
+//     method: "POST",
+//     headers: {
+//       Authorization: `Bearer ${token || ""}`,
+//     },
+//     body: formData,
+//   });
+
+//   if (!res.ok) {
+//     throw new Error("Failed to upload images");
+//   }
+
+//   return res.json();
+// };
+
+
 // upload review images
 export const uploadReviewImages = async (
   formData: FormData,
 ): Promise<{ success: boolean; data: { data: string[] } }> => {
   const token = await getAdminTokenAction();
 
+  // 🚀 FIX: Build headers dynamically. Prevent "Bearer null" or "Bearer undefined"
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await apiFetch(`/reviews/upload-images`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token || ""}`,
-    },
+    headers: headers, // Use the dynamic headers object
     body: formData,
   });
 
