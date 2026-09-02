@@ -358,7 +358,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { MoreVertical, Trash2, Edit3, Loader2 } from "lucide-react";
@@ -539,6 +539,33 @@ export default function ProductTable() {
     }
   };
 
+  // Inside ProductTable component
+  const menuRef = useRef<HTMLDivElement>(null); // Add this ref
+
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
+
+  // 🚀 CLICK OUTSIDE LOGIC
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // If the menu is open and the user clicks something that is NOT inside the menu
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+
+    if (activeMenuId) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeMenuId]);
+
   const productColumns: ExtendedTableColumn<TableData>[] = [
     {
       header: "",
@@ -685,15 +712,39 @@ export default function ProductTable() {
       render: (product) => (
         <div className="relative inline-block text-left">
           <button
-            onClick={() =>
-              setActiveMenuId(activeMenuId === product.id ? null : product.id)
-            }
-            className="text-black p-1 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+
+              // --- DYNAMIC POSITIONING LOGIC ---
+              const menuHeight = 120;
+              const spaceBelow = window.innerHeight - rect.bottom;
+              const shouldOpenUp = spaceBelow < menuHeight;
+
+              setMenuPos({
+                top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
+                left: rect.left - 100,
+                opensUpward: shouldOpenUp,
+              });
+              // ---------------------------------
+
+              setActiveMenuId(activeMenuId === product.id ? null : product.id);
+            }}
+            className="text-black p-1 cursor-pointer hover:bg-gray-100 rounded-full transition-colors"
           >
             <MoreVertical size={20} />
           </button>
+
           {activeMenuId === product.id && (
-            <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-50 text-left">
+            <div
+              ref={menuRef} // 🔥 ATTACH REF HERE
+              className={`fixed bg-white rounded-md shadow-xl py-1 z-[9999] w-32 text-left border border-gray-100 animate-in fade-in zoom-in duration-150 ${
+                menuPos.opensUpward
+                  ? "origin-bottom -translate-y-full"
+                  : "origin-top"
+              }`}
+              style={{ top: menuPos.top, left: menuPos.left }}
+            >
               <button
                 type="button"
                 onClick={() =>

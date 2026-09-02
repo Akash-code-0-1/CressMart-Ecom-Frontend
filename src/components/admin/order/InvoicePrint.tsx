@@ -444,7 +444,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
             {/* 2. Middle Column: Mathematically centered, but content is left-aligned */}
             <div className="flex justify-center items-start">
-              <div className="text-left ml-32">
+              <div className="text-left ml-26">
                 <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-1">
                   Invoice Number
                 </p>

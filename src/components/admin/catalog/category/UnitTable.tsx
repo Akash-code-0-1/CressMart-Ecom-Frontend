@@ -35,18 +35,18 @@
 //   });
 
 //     const menuRef = useRef<HTMLDivElement | null>(null);
-  
+
 //     useEffect(() => {
 //       const handleClickOutside = (event: MouseEvent) => {
 //         if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-//           setActiveMenuId(null); 
+//           setActiveMenuId(null);
 //         }
 //       };
-  
+
 //       if (activeMenuId) {
 //         document.addEventListener("mousedown", handleClickOutside);
 //       }
-  
+
 //       return () => {
 //         document.removeEventListener("mousedown", handleClickOutside);
 //       };
@@ -91,7 +91,7 @@
 //       header: "Action",
 //       key: "action",
 //       render: (item: UnitRow) => (
-//         <div className="relative flex justify-end" 
+//         <div className="relative flex justify-end"
 //         ref={activeMenuId === item.id ? menuRef : null}>
 //           <button
 //             onClick={() =>
@@ -160,22 +160,17 @@
 //   );
 // }
 
-
-
-
-
-
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-  MoreVertical, 
-  Trash2, 
-  Edit3, 
-  Loader2, 
-  ChevronLeft, 
-  RefreshCw 
+import {
+  MoreVertical,
+  Trash2,
+  Edit3,
+  Loader2,
+  ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
 import { fetchAllUnits, deleteUnit } from "@/services-api/unitService";
 import DataTable from "../../common/DataTable";
@@ -195,7 +190,11 @@ export default function UnitTable() {
 
   // --- 🚀 Professional Menu States ---
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -274,11 +273,20 @@ export default function UnitTable() {
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
-            // Positioning logic: below button, offset to the left
+
+            // --- 🚀 DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 110; // Approx height for Edit + Delete menu
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
+
             setMenuPos({
-              top: rect.bottom + window.scrollY + 8,
+              // Using fixed coordinates relative to viewport (no window.scrollY needed)
+              top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
               left: rect.left - 160,
+              opensUpward: shouldOpenUp,
             });
+            // ------------------------------------
+
             setActiveMenuId(activeMenuId === item.id ? null : item.id);
             setShowStatusMenu(false);
           }}
@@ -309,7 +317,11 @@ export default function UnitTable() {
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 text-left"
+          className={`fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 text-left ${
+            menuPos.opensUpward
+              ? "origin-bottom -translate-y-full"
+              : "origin-top"
+          }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* Group 1: Edit */}
@@ -321,11 +333,13 @@ export default function UnitTable() {
               }}
               className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <Edit3 size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+              <Edit3
+                size={16}
+                className="text-gray-400 group-hover:text-[#1DA1F2]"
+              />
               <span className="font-medium">Edit Unit</span>
             </button>
           </div>
-
 
           {/* Group 3: Delete */}
           <div className="px-2">

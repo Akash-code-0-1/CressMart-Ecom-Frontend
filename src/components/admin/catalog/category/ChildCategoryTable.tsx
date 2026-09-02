@@ -76,18 +76,18 @@
 //   };
 
 //   const menuRef = useRef<HTMLDivElement | null>(null);
-  
+
 //     useEffect(() => {
 //       const handleClickOutside = (event: MouseEvent) => {
 //         if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
 //           setActiveMenuId(null); // Close the menu
 //         }
 //       };
-  
+
 //       if (activeMenuId) {
 //         document.addEventListener("mousedown", handleClickOutside);
 //       }
-  
+
 //       return () => {
 //         document.removeEventListener("mousedown", handleClickOutside);
 //       };
@@ -182,18 +182,18 @@
 //       render: (item) => (
 //         <div className="relative"
 //         ref={activeMenuId === item.id ? menuRef : null}>
-//           <button 
-//             onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)} 
+//           <button
+//             onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
 //             className="text-black p-1 cursor-pointer"
 //           >
 //             <MoreVertical size={20} />
 //           </button>
-          
+
 //           {activeMenuId === item.id && (
 //             <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg py-1 z-50">
 //               <button
 //                 type="button"
-                
+
 //                 onClick={() => {
 //                    setActiveMenuId(null);
 //                   router.push(`/admin/dashboard/child-category/add?id=${item.id}`)}}
@@ -246,9 +246,6 @@
 //     </div>
 //   );
 // }
-
-
-
 
 // "use client";
 
@@ -584,23 +581,23 @@
 //   );
 // }
 
-
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { 
-  MoreVertical, 
-  Trash2, 
-  Edit3, 
-  Loader2, 
-  ChevronLeft, 
-  RefreshCw 
+import {
+  MoreVertical,
+  Trash2,
+  Edit3,
+  Loader2,
+  ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
-import { deleteCategory, bulkDeleteCategories } from "@/services-api/categoryService";
+import {
+  deleteCategory,
+  bulkDeleteCategories,
+} from "@/services-api/categoryService";
 import { fetchAllChildCategories } from "@/services-api/childcategoryService";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
@@ -627,10 +624,14 @@ export default function ChildCategoryTable() {
   const status = searchParams.get("status") || "";
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  
+
   // --- 🚀 Professional Menu States ---
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -642,7 +643,8 @@ export default function ChildCategoryTable() {
         setShowStatusMenu(false);
       }
     };
-    if (activeMenuId) document.addEventListener("mousedown", handleClickOutside);
+    if (activeMenuId)
+      document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuId]);
 
@@ -667,22 +669,30 @@ export default function ChildCategoryTable() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteCategory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["catalog-childcategories-list"] });
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-childcategories-list"],
+      });
       toast.success("Child category deleted successfully.");
       setActiveMenuId(null);
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || err.message),
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || err.message),
   });
 
   // Bulk Delete Mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: (ids: string[]) => bulkDeleteCategories(ids),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["catalog-childcategories-list"] });
-      toast.success(`${selectedIds.length} child categories deleted successfully.`);
+      queryClient.invalidateQueries({
+        queryKey: ["catalog-childcategories-list"],
+      });
+      toast.success(
+        `${selectedIds.length} child categories deleted successfully.`,
+      );
       setSelectedIds([]);
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || err.message),
+    onError: (err: any) =>
+      toast.error(err?.response?.data?.message || err.message),
   });
 
   const handlePageChange = (targetPage: number) => {
@@ -693,7 +703,7 @@ export default function ChildCategoryTable() {
 
   const handleSelectRow = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
     );
   };
 
@@ -707,7 +717,11 @@ export default function ChildCategoryTable() {
 
   const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected items?`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete ${selectedIds.length} selected items?`,
+      )
+    ) {
       bulkDeleteMutation.mutate(selectedIds);
     }
   };
@@ -721,7 +735,10 @@ export default function ChildCategoryTable() {
         <input
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={selectedIds.length === childCategoryList.length && childCategoryList.length > 0}
+          checked={
+            selectedIds.length === childCategoryList.length &&
+            childCategoryList.length > 0
+          }
           onChange={handleSelectAll}
         />
       ),
@@ -783,9 +800,14 @@ export default function ChildCategoryTable() {
       header: "Status",
       key: "status",
       render: (item) => {
-        const isPublished = item.status === "PUBLISHED" || item.status === "active" || item.status === "Publish";
+        const isPublished =
+          item.status === "PUBLISHED" ||
+          item.status === "active" ||
+          item.status === "Publish";
         return (
-          <div className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}>
+          <div
+            className={`px-3 py-1 rounded-full text-[12px] font-medium w-fit ${isPublished ? "bg-[#C1FFBC] text-[#085E00]" : "bg-gray-100 text-gray-500"}`}
+          >
             {isPublished ? "Publish" : "Draft"}
           </div>
         );
@@ -799,10 +821,20 @@ export default function ChildCategoryTable() {
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
+
+            // --- 🚀 DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 110; // Approx height for Edit + Delete menu
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
+
             setMenuPos({
-              top: rect.bottom + window.scrollY + 8,
+              // Using fixed coordinates (relative to screen, not page)
+              top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
               left: rect.left - 160,
+              opensUpward: shouldOpenUp,
             });
+            // ------------------------------------
+
             setActiveMenuId(activeMenuId === item.id ? null : item.id);
             setShowStatusMenu(false);
           }}
@@ -818,7 +850,9 @@ export default function ChildCategoryTable() {
     return (
       <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
         <Loader2 className="animate-spin text-[#1DA1F2]" size={24} />
-        <span className="text-xs">Synchronizing child categories dataset...</span>
+        <span className="text-xs">
+          Synchronizing child categories dataset...
+        </span>
       </div>
     );
   }
@@ -836,35 +870,52 @@ export default function ChildCategoryTable() {
             disabled={bulkDeleteMutation.isPending}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-4 py-2 rounded-md transition-all cursor-pointer disabled:opacity-50"
           >
-            {bulkDeleteMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+            {bulkDeleteMutation.isPending ? (
+              <Loader2 className="animate-spin" size={14} />
+            ) : (
+              <Trash2 size={14} />
+            )}
             Bulk Delete
           </button>
         </div>
       )}
 
-      <DataTable data={childCategoryList} columns={columns} rowKey="id" gradiant={true} />
+      <DataTable
+        data={childCategoryList}
+        columns={columns}
+        rowKey="id"
+        gradiant={true}
+      />
 
       {/* --- PROFESSIONAL ACTION MENU --- */}
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+          className={`fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward
+              ? "origin-bottom -translate-y-full"
+              : "origin-top"
+          }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* Group 1: Edit */}
-          <div className="px-2 pb-1.5 border-b border-gray-50 mb-1.5">
+          <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
             <button
               onClick={() => {
-                router.push(`/admin/dashboard/child-category/add?id=${activeMenuId}`);
+                router.push(
+                  `/admin/dashboard/child-category/add?id=${activeMenuId}`,
+                );
                 setActiveMenuId(null);
               }}
               className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <Edit3 size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+              <Edit3
+                size={16}
+                className="text-gray-400 group-hover:text-[#1DA1F2]"
+              />
               <span className="font-medium">Edit Child</span>
             </button>
           </div>
-
 
           {/* Group 3: Delete */}
           <div className="px-2">

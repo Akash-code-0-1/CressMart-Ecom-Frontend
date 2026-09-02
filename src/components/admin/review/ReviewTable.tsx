@@ -365,6 +365,27 @@ export default function ReviewTable() {
     }
   };
 
+  const menuRef = useRef<HTMLDivElement>(null); // Add this ref
+const [menuPos, setMenuPos] = useState({ top: 0, left: 0, opensUpward: false });
+
+// 🚀 CLICK OUTSIDE LOGIC
+React.useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      setActiveMenuId(null);
+      setActiveSubMenu(false);
+    }
+  };
+
+  if (activeMenuId) {
+    document.addEventListener("mousedown", handleClickOutside);
+  }
+  
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [activeMenuId]);
+
   const columns: TableColumn<ReviewItem>[] = [
     {
       header: "SI",
@@ -434,78 +455,104 @@ export default function ReviewTable() {
         </div>
       ),
     },
-    {
-      header: "Action",
-      key: "action",
-      render: (item) => (
-        <div className="relative">
+{
+  header: "Action",
+  key: "action",
+  render: (item) => (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const rect = e.currentTarget.getBoundingClientRect();
+          
+          // --- DYNAMIC POSITIONING LOGIC ---
+          const menuHeight = 180; // Estimated height of Edit + Status + Delete menu
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const shouldOpenUp = spaceBelow < menuHeight;
+
+          setMenuPos({
+            top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
+            left: rect.left - 165, // Aligns menu with the button
+            opensUpward: shouldOpenUp,
+          });
+          // ---------------------------------
+
+          setActiveMenuId(activeMenuId === item.id ? null : item.id);
+          setActiveSubMenu(false);
+        }}
+        className="text-black p-1 transition-colors hover:bg-gray-100 rounded-full cursor-pointer"
+      >
+        <MoreVertical size={20} />
+      </button>
+
+      {activeMenuId === item.id && (
+        <div
+          ref={menuRef} // 🔥 ATTACH REF HERE
+          className={`fixed bg-white border border-gray-100 rounded-[12px] shadow-xl py-2 z-[9999] w-48 text-sm font-medium text-[#1E293B] animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward ? "origin-bottom -translate-y-full" : "origin-top"
+          }`}
+          style={{ top: menuPos.top, left: menuPos.left }}
+        >
           <button
-            onClick={() =>
-              setActiveMenuId(activeMenuId === item.id ? null : item.id)
-            }
-            className="text-black p-1 transition-colors hover:bg-gray-100 rounded-full cursor-pointer"
+            onClick={() => openEditModal(item)}
+            className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-50 cursor-pointer"
           >
-            <MoreVertical size={20} />
+            <Edit3 size={16} className="text-gray-400" /> <span>Edit</span>
           </button>
-          {activeMenuId === item.id && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-[12px] shadow-xl py-2 z-50 text-sm font-medium text-[#1E293B]">
-              <button
-                onClick={() => openEditModal(item)}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-50 cursor-pointer"
-              >
-                <Edit3 size={16} className="text-gray-400" /> <span>Edit</span>
-              </button>
-              <div
-                className="relative w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50"
-                onMouseEnter={() => setActiveSubMenu(true)}
-                onMouseLeave={() => setActiveSubMenu(false)}
-              >
-                <div className="flex items-center gap-3">
-                  <ShieldAlert size={16} className="text-gray-400" />{" "}
-                  <span>Status</span>
-                </div>
-                <ChevronRight size={14} className="text-gray-400" />
-                {activeSubMenu && (
-                  <div className="absolute top-0 right-full mr-1 w-36 bg-white border border-gray-100 rounded-[10px] shadow-xl py-1 z-50">
-                    <button
-                      onClick={() =>
-                        updateStatusMutation.mutate({
-                          id: item.id,
-                          status: "APPROVED",
-                        })
-                      }
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 hover:text-emerald-600 cursor-pointer"
-                    >
-                      Publish
-                    </button>
-                    <button
-                      onClick={() =>
-                        updateStatusMutation.mutate({
-                          id: item.id,
-                          status: "PENDING",
-                        })
-                      }
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 hover:text-amber-600 cursor-pointer"
-                    >
-                      Draft
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => {
-                  if (confirm("Delete this review?"))
-                    deleteMutation.mutate(item.id);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-rose-50 text-rose-600 flex items-center gap-3 cursor-pointer"
-              >
-                <Trash2 size={16} /> <span>Delete</span>
-              </button>
+          
+          <div
+            className="relative w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-50"
+            onMouseEnter={() => setActiveSubMenu(true)}
+            onMouseLeave={() => setActiveSubMenu(false)}
+          >
+            <div className="flex items-center gap-3">
+              <ShieldAlert size={16} className="text-gray-400" />{" "}
+              <span>Status</span>
             </div>
-          )}
+            <ChevronRight size={14} className="text-gray-400" />
+            
+            {activeSubMenu && (
+              <div className={`absolute right-full mr-1 w-36 bg-white border border-gray-100 rounded-[10px] shadow-xl py-1 z-50 ${menuPos.opensUpward ? "bottom-0" : "top-0"}`}>
+                <button
+                  onClick={() =>
+                    updateStatusMutation.mutate({
+                      id: item.id,
+                      status: "APPROVED",
+                    })
+                  }
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 hover:text-emerald-600 cursor-pointer"
+                >
+                  Publish
+                </button>
+                <button
+                  onClick={() =>
+                    updateStatusMutation.mutate({
+                      id: item.id,
+                      status: "PENDING",
+                    })
+                  }
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 hover:text-amber-600 cursor-pointer"
+                >
+                  Draft
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              if (confirm("Delete this review?"))
+                deleteMutation.mutate(item.id);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-rose-50 text-rose-600 flex items-center gap-3 cursor-pointer"
+          >
+            <Trash2 size={16} /> <span>Delete</span>
+          </button>
         </div>
-      ),
-    },
+      )}
+    </div>
+  ),
+},
   ];
 
   return (

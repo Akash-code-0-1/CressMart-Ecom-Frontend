@@ -574,36 +574,34 @@ export default function OrderTable() {
     documentTitle: "Bulk_Invoices",
   });
 
-
   // 1. Add new state for Comment Modal
-const [commentModal, setCommentModal] = useState<{
-  open: boolean;
-  id: string | null;
-  text: string;
-}>({ open: false, id: null, text: "" });
+  const [commentModal, setCommentModal] = useState<{
+    open: boolean;
+    id: string | null;
+    text: string;
+  }>({ open: false, id: null, text: "" });
 
-// 2. Define the save handler
-const handleSaveComment = () => {
-  if (commentModal.id) {
-    statusMutation.mutate({
-      id: commentModal.id,
-      payload: { order_comment: commentModal.text },
-    });
-    setCommentModal({ open: false, id: null, text: "" });
-  }
-};
+  // 2. Define the save handler
+  const handleSaveComment = () => {
+    if (commentModal.id) {
+      statusMutation.mutate({
+        id: commentModal.id,
+        payload: { order_comment: commentModal.text },
+      });
+      setCommentModal({ open: false, id: null, text: "" });
+    }
+  };
 
-const userStatusMutation = useMutation({
-  mutationFn: ({ userId, status }: { userId: string; status: string }) =>
-    customerApi.updateStatus(userId, status),
-  onSuccess: () => {
-    // This tells React Query to delete the old data and ask the server for new data
-    queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-    toast.success("User status updated");
-    setActiveMenuId(null);
-  },
-});
-
+  const userStatusMutation = useMutation({
+    mutationFn: ({ userId, status }: { userId: string; status: string }) =>
+      customerApi.updateStatus(userId, status),
+    onSuccess: () => {
+      // This tells React Query to delete the old data and ask the server for new data
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast.success("User status updated");
+      setActiveMenuId(null);
+    },
+  });
 
   const columns: any[] = [
     {
@@ -648,86 +646,90 @@ const userStatusMutation = useMutation({
     //   ),
     // },
 
-{
-  header: isIncompleteTab ? "Lead ID" : "Order Id",
-  key: "id",
-  render: (item: any) => (
-    <div className="flex items-center gap-2">
-      <span
-        onClick={() => openDetails(item)}
-        className="font-bold text-[13px] cursor-pointer text-gray-800 hover:text-[#1DA1F2]"
-      >
-        {isIncompleteTab ? `LEAD-${item.id.slice(0, 8)}` : item.order_number}
-      </span>
-      
-      {/* Show an icon if a comment exists */}
-      {item.order_comment && (
-        <div title={item.order_comment} className="cursor-help">
-          <Info size={14} className="text-amber-500" />
-        </div>
-      )}
-    </div>
-  ),
-},
-{
-  header: "Product",
-  key: "product",
-  render: (item: any) => {
-    // 🚀 FIX: Look for order_items first. If empty, try cart_items.
-    // This ensures it works even if the backend structure varies.
-    const items = (item.order_items && item.order_items.length > 0) 
-      ? item.order_items 
-      : (item.cart_items || []);
-
-    const first = items[0];
-    
-    // If no items at all, show placeholder
-    if (!first) return <span className="text-gray-400 text-[12px]">No Items</span>;
-
-    const productInfo = first?.product || {};
-
-    // Comprehensive image fallback
-    const img =
-      productInfo.images?.[0] ||
-      productInfo.featuredImage ||
-      first?.product_image || // standard
-      first?.image ||         // fallback
-      first?.external_image || // lead/incomplete
-      first?.externalImage ||  // lead/incomplete
-      first?.variant?.images?.[0];
-
-    // Comprehensive name fallback
-    const name =
-      productInfo.name ||
-      first?.product_name ||
-      first?.externalName ||
-      first?.external_name ||
-      "Untitled Product";
-
-    return (
-      <div className="flex items-center gap-2">
-        <Image
-          src={getImgUrl(img)}
-          alt="p"
-          width={38}
-          height={38}
-          unoptimized
-          className="rounded bg-white p-0.5 border border-gray-100"
-        />
-        <div className="flex flex-col overflow-hidden">
-          <span className="truncate max-w-[130px] text-[12px] font-bold text-gray-700">
-            {name}
+    {
+      header: isIncompleteTab ? "Lead ID" : "Order Id",
+      key: "id",
+      render: (item: any) => (
+        <div className="flex items-center gap-2">
+          <span
+            onClick={() => openDetails(item)}
+            className="font-bold text-[13px] cursor-pointer text-gray-800 hover:text-[#1DA1F2]"
+          >
+            {isIncompleteTab
+              ? `LEAD-${item.id.slice(0, 8)}`
+              : item.order_number}
           </span>
-          {items.length > 1 && (
-            <span className="text-[10px] text-[#1DA1F2] font-bold">
-              +{items.length - 1} more items
-            </span>
+
+          {/* Show an icon if a comment exists */}
+          {item.order_comment && (
+            <div title={item.order_comment} className="cursor-help">
+              <Info size={14} className="text-amber-500" />
+            </div>
           )}
         </div>
-      </div>
-    );
-  },
-},
+      ),
+    },
+    {
+      header: "Product",
+      key: "product",
+      render: (item: any) => {
+        // 🚀 FIX: Look for order_items first. If empty, try cart_items.
+        // This ensures it works even if the backend structure varies.
+        const items =
+          item.order_items && item.order_items.length > 0
+            ? item.order_items
+            : item.cart_items || [];
+
+        const first = items[0];
+
+        // If no items at all, show placeholder
+        if (!first)
+          return <span className="text-gray-400 text-[12px]">No Items</span>;
+
+        const productInfo = first?.product || {};
+
+        // Comprehensive image fallback
+        const img =
+          productInfo.images?.[0] ||
+          productInfo.featuredImage ||
+          first?.product_image || // standard
+          first?.image || // fallback
+          first?.external_image || // lead/incomplete
+          first?.externalImage || // lead/incomplete
+          first?.variant?.images?.[0];
+
+        // Comprehensive name fallback
+        const name =
+          productInfo.name ||
+          first?.product_name ||
+          first?.externalName ||
+          first?.external_name ||
+          "Untitled Product";
+
+        return (
+          <div className="flex items-center gap-2">
+            <Image
+              src={getImgUrl(img)}
+              alt="p"
+              width={38}
+              height={38}
+              unoptimized
+              className="rounded bg-white p-0.5 border border-gray-100"
+            />
+            <div className="flex flex-col overflow-hidden">
+              <span className="truncate max-w-[130px] text-[12px] font-bold text-gray-700">
+                {name}
+              </span>
+              {items.length > 1 && (
+                <span className="text-[10px] text-[#1DA1F2] font-bold">
+                  +{items.length - 1} more items
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
     // {
     //   header: "Customer Info",
     //   key: "customer",
@@ -741,29 +743,31 @@ const userStatusMutation = useMutation({
     //   ),
     // },
 
-{
-  header: "Customer Info",
-  key: "customer",
-  render: (item: any) => {
-    const isBlocked = item.user?.status === "blocked";
-    return (
-      <div className="text-[12px]">
-        <div className="flex items-center gap-1.5">
-          <p className={`font-bold leading-tight ${isBlocked ? "text-rose-600" : "text-gray-900"}`}>
-            {item.customer_name || "Guest"}
-          </p>
-          {/* 🔥 This is the visual indication */}
-          {isBlocked && (
-            <span className="bg-rose-100 text-rose-600 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
-              Blocked
-            </span>
-          )}
-        </div>
-        <p className="text-gray-500">{item.customer_phone || "N/A"}</p>
-      </div>
-    );
-  },
-},
+    {
+      header: "Customer Info",
+      key: "customer",
+      render: (item: any) => {
+        const isBlocked = item.user?.status === "blocked";
+        return (
+          <div className="text-[12px]">
+            <div className="flex items-center gap-1.5">
+              <p
+                className={`font-bold leading-tight ${isBlocked ? "text-rose-600" : "text-gray-900"}`}
+              >
+                {item.customer_name || "Guest"}
+              </p>
+              {/* 🔥 This is the visual indication */}
+              {isBlocked && (
+                <span className="bg-rose-100 text-rose-600 text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">
+                  Blocked
+                </span>
+              )}
+            </div>
+            <p className="text-gray-500">{item.customer_phone || "N/A"}</p>
+          </div>
+        );
+      },
+    },
     {
       header: "Date",
       key: "created_at",
@@ -923,17 +927,25 @@ const userStatusMutation = useMutation({
       key: "action",
       render: (order: any) => (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const rect = e.currentTarget.getBoundingClientRect();
-            setMenuPos({
-              top: rect.bottom + 8,
-              left: rect.left - 165,
-              opensUpward: false,
-            });
-            setActiveMenuId(activeMenuId === order.id ? null : order.id);
-            setShowStatusMenu(false);
-          }}
+      onClick={(e) => {
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        
+        // --- DYNAMIC POSITIONING LOGIC ---
+        const menuHeight = 420; // Approximate height of your full menu
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const shouldOpenUp = spaceBelow < menuHeight;
+
+        setMenuPos({
+          top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
+          left: rect.left - 165,
+          opensUpward: shouldOpenUp,
+        });
+        // ---------------------------------
+
+        setActiveMenuId(activeMenuId === order.id ? null : order.id);
+        setShowStatusMenu(false);
+      }}
           className="p-1 hover:bg-gray-100 rounded-full"
         >
           <MoreVertical size={20} className="text-gray-400" />
@@ -1013,8 +1025,10 @@ const userStatusMutation = useMutation({
       {/* --- PROFESSIONAL ACTION MENU --- */}
       {activeMenuId && (
         <div
-          ref={menuRef}
-          className="fixed bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+ref={menuRef}
+          className={`fixed bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward ? "origin-bottom -translate-y-full" : "origin-top"
+          }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* Group 1: Core Actions */}
@@ -1035,24 +1049,24 @@ const userStatusMutation = useMutation({
             </div>
           )}
 
-<button
-  onClick={() => {
-    const o = orderList.find((x: any) => x.id === activeMenuId);
-    setCommentModal({
-      open: true,
-      id: activeMenuId,
-      text: o?.order_comment || "",
-    });
-    setActiveMenuId(null);
-  }}
-  className="w-full ml-2 text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
->
-  <MessageSquareText 
-    size={18} 
-    className="text-gray-400 group-hover:text-[#1DA1F2] transition-colors" 
-  />
-  <span className="font-medium">Comment</span>
-</button>
+          <button
+            onClick={() => {
+              const o = orderList.find((x: any) => x.id === activeMenuId);
+              setCommentModal({
+                open: true,
+                id: activeMenuId,
+                text: o?.order_comment || "",
+              });
+              setActiveMenuId(null);
+            }}
+            className="w-full ml-2 text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
+          >
+            <MessageSquareText
+              size={18}
+              className="text-gray-400 group-hover:text-[#1DA1F2] transition-colors"
+            />
+            <span className="font-medium">Comment</span>
+          </button>
 
           {/* Group 2: View & Output */}
           <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
@@ -1073,23 +1087,25 @@ const userStatusMutation = useMutation({
               </button>
             )} */}
 
-
             {!isIncompleteTab && (
-<button
-  onClick={() => {
-    const o = orderList.find((x: any) => x.id === activeMenuId);
-    if (o) {
-      setSelectedOrderForPrint(o);
-      setIsPrintModalOpen(true); // Only opens the modal
-    }
-    setActiveMenuId(null);
-  }}
-  className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
->
-  <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
-  <span className="font-medium">Print Invoice</span>
-</button>
-)}
+              <button
+                onClick={() => {
+                  const o = orderList.find((x: any) => x.id === activeMenuId);
+                  if (o) {
+                    setSelectedOrderForPrint(o);
+                    setIsPrintModalOpen(true); // Only opens the modal
+                  }
+                  setActiveMenuId(null);
+                }}
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
+              >
+                <Printer
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
+                <span className="font-medium">Print Invoice</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -1178,46 +1194,53 @@ const userStatusMutation = useMutation({
             </div>
           )}
 
+          {(() => {
+            // Ensure we find the order from the current 'orderList' which is updated after mutation
+            const currentOrder = orderList.find(
+              (o: any) => o.id === activeMenuId,
+            );
+            const userId = currentOrder?.user_id;
 
+            // Use the status directly from the fresh user object returned by backend
+            const userStatus = currentOrder?.user?.status;
 
-{(() => {
-  // Ensure we find the order from the current 'orderList' which is updated after mutation
-  const currentOrder = orderList.find((o: any) => o.id === activeMenuId);
-  const userId = currentOrder?.user_id;
-  
-  // Use the status directly from the fresh user object returned by backend
-  const userStatus = currentOrder?.user?.status; 
+            if (!userId) return null;
 
-  if (!userId) return null;
-
-  return (
-    <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
-      {userStatus === "blocked" ? (
-        <button
-          key="activate-btn"
-          onClick={() => userStatusMutation.mutate({ userId, status: "active" })}
-          className="w-full text-left px-3 py-2 text-[14px] text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-3 transition-colors font-medium cursor-pointer"
-        >
-          <UserCheck size={16} className="text-emerald-500" />
-          <span>Activate Profile</span>
-        </button>
-      ) : (
-        <button
-          key="block-btn"
-          onClick={() => {
-            if (window.confirm("Block this user from future orders?")) {
-              userStatusMutation.mutate({ userId, status: "blocked" });
-            }
-          }}
-          className="w-full text-left px-3 py-2 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-medium cursor-pointer"
-        >
-          <UserX size={16} className="text-rose-400" />
-          <span>Block User</span>
-        </button>
-      )}
-    </div>
-  );
-})()}
+            return (
+              <div className="px-2 pb-1.5 border-b border-gray-100 mb-1.5">
+                {userStatus === "blocked" ? (
+                  <button
+                    key="activate-btn"
+                    onClick={() =>
+                      userStatusMutation.mutate({ userId, status: "active" })
+                    }
+                    className="w-full text-left px-3 py-2 text-[14px] text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-3 transition-colors font-medium cursor-pointer"
+                  >
+                    <UserCheck size={16} className="text-emerald-500" />
+                    <span>Activate Profile</span>
+                  </button>
+                ) : (
+                  <button
+                    key="block-btn"
+                    onClick={() => {
+                      if (
+                        window.confirm("Block this user from future orders?")
+                      ) {
+                        userStatusMutation.mutate({
+                          userId,
+                          status: "blocked",
+                        });
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 text-[14px] text-rose-500 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-colors font-medium cursor-pointer"
+                  >
+                    <UserX size={16} className="text-rose-400" />
+                    <span>Block User</span>
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Group 4: Delete */}
           <div className="px-2">
@@ -1612,103 +1635,115 @@ const userStatusMutation = useMutation({
         </div>
       )}
 
-
       {commentModal.open && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10005] p-4 backdrop-blur-sm animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden text-left border border-gray-100">
-      <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50">
-        <h3 className="text-base font-bold text-gray-900">Internal Comment</h3>
-        <button onClick={() => setCommentModal({ open: false, id: null, text: "" })}>
-          <X size={18} className="text-gray-400" />
-        </button>
-      </div>
-      <div className="p-6 space-y-4">
-        <textarea
-          className="w-full h-32 p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none transition-all"
-          placeholder="Write a note about this order..."
-          value={commentModal.text}
-          onChange={(e) => setCommentModal({ ...commentModal, text: e.target.value })}
-        />
-        <div className="flex gap-3">
-          <button
-            onClick={() => setCommentModal({ open: false, id: null, text: "" })}
-            className="flex-1 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveComment}
-            disabled={statusMutation.isPending}
-            className="flex-1 py-2.5 text-sm font-bold text-white bg-[#1DA1F2] rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
-          >
-            {statusMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : "Save Note"}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
-
-{/* --- SOLID COMPACT INVOICE PREVIEW MODAL --- */}
-{isPrintModalOpen && selectedOrderForPrint && (
-  <div className="fixed inset-0 bg-zinc-900/80 flex items-center justify-center z-[99999] backdrop-blur-sm p-4 animate-in fade-in duration-200">
-    <div className="bg-white rounded-xl w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-gray-200">
-      
-      {/* Tight Solid Header */}
-      <div className="px-6 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1DA1F2]">
-            <Printer size={16} />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-gray-900 leading-tight">Invoice Review</h3>
-            <p className="text-[11px] text-gray-400 font-medium">Verify details before printing.</p>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[10005] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden text-left border border-gray-100">
+            <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50">
+              <h3 className="text-base font-bold text-gray-900">
+                Internal Comment
+              </h3>
+              <button
+                onClick={() =>
+                  setCommentModal({ open: false, id: null, text: "" })
+                }
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <textarea
+                className="w-full h-32 p-3 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none transition-all"
+                placeholder="Write a note about this order..."
+                value={commentModal.text}
+                onChange={(e) =>
+                  setCommentModal({ ...commentModal, text: e.target.value })
+                }
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={() =>
+                    setCommentModal({ open: false, id: null, text: "" })
+                  }
+                  className="flex-1 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveComment}
+                  disabled={statusMutation.isPending}
+                  className="flex-1 py-2.5 text-sm font-bold text-white bg-[#1DA1F2] rounded-xl hover:bg-blue-600 transition-colors shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
+                >
+                  {statusMutation.isPending ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Save Note"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setIsPrintModalOpen(false);
-              setSelectedOrderForPrint(null);
-            }}
-            className="px-4 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => handlePrint()}
-            className="bg-[#1DA1F2] text-white px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md active:scale-95"
-          >
-            Confirm & Print
-          </button>
+      )}
+
+      {/* --- SOLID COMPACT INVOICE PREVIEW MODAL --- */}
+      {isPrintModalOpen && selectedOrderForPrint && (
+        <div className="fixed inset-0 bg-zinc-900/80 flex items-center justify-center z-[99999] backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+            {/* Tight Solid Header */}
+            <div className="px-6 py-3 border-b border-gray-100 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1DA1F2]">
+                  <Printer size={16} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 leading-tight">
+                    Invoice Review
+                  </h3>
+                  <p className="text-[11px] text-gray-400 font-medium">
+                    Verify details before printing.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setIsPrintModalOpen(false);
+                    setSelectedOrderForPrint(null);
+                  }}
+                  className="px-4 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handlePrint()}
+                  className="bg-[#1DA1F2] text-white px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md active:scale-95"
+                >
+                  Confirm & Print
+                </button>
+              </div>
+            </div>
+
+            {/* Invoice Workspace (Slightly smaller padding) */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
+              <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
+                <InvoicePrint
+                  ref={invoiceRef}
+                  order={selectedOrderForPrint}
+                  baseStorageUrl={baseStorageUrl}
+                />
+              </div>
+            </div>
+
+            {/* Simple Indicator Footer */}
+            <div className="px-6 py-2 bg-white border-t border-gray-50 flex items-center justify-center gap-2">
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+                ✎ Editable Area: Click the invoice number to change
+              </span>
+            </div>
+          </div>
         </div>
-      </div>
-
-      {/* Invoice Workspace (Slightly smaller padding) */}
-      <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
-        <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
-          <InvoicePrint
-            ref={invoiceRef}
-            order={selectedOrderForPrint}
-            baseStorageUrl={baseStorageUrl}
-          />
-        </div>
-      </div>
-
-      {/* Simple Indicator Footer */}
-      <div className="px-6 py-2 bg-white border-t border-gray-50 flex items-center justify-center gap-2">
-        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-           ✎ Editable Area: Click the invoice number to change
-        </span>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
+      )}
     </div>
   );
 }

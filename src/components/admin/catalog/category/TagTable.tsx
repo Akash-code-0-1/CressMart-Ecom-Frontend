@@ -96,18 +96,18 @@
 //   };
 
 //     const menuRef = useRef<HTMLDivElement | null>(null);
-  
+
 //     useEffect(() => {
 //       const handleClickOutside = (event: MouseEvent) => {
 //         if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-//           setActiveMenuId(null); 
+//           setActiveMenuId(null);
 //         }
 //       };
-  
+
 //       if (activeMenuId) {
 //         document.addEventListener("mousedown", handleClickOutside);
 //       }
-  
+
 //       return () => {
 //         document.removeEventListener("mousedown", handleClickOutside);
 //       };
@@ -295,7 +295,6 @@
 //     </div>
 //   );
 // }
-
 
 // "use client";
 
@@ -642,22 +641,24 @@
 //   );
 // }
 
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { 
-  MoreVertical, 
-  Trash2, 
-  Edit3, 
-  Loader2, 
-  ChevronLeft, 
-  RefreshCw 
+import {
+  MoreVertical,
+  Trash2,
+  Edit3,
+  Loader2,
+  ChevronLeft,
+  RefreshCw,
 } from "lucide-react";
-import { fetchAllTags, deleteTag, bulkDeleteTags } from "@/services-api/tagService";
+import {
+  fetchAllTags,
+  deleteTag,
+  bulkDeleteTags,
+} from "@/services-api/tagService";
 import DataTable from "../../common/DataTable";
 import Pagination from "../../common/Pagination";
 import toast from "react-hot-toast";
@@ -697,10 +698,14 @@ export default function TagTable() {
   const status = searchParams.get("status") || "";
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  
+
   // --- 🚀 Professional Menu States ---
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -770,7 +775,7 @@ export default function TagTable() {
 
   const handleSelectRow = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id],
     );
   };
 
@@ -786,7 +791,7 @@ export default function TagTable() {
     if (selectedIds.length === 0) return;
     if (
       confirm(
-        `Are you sure you want to permanently delete ${selectedIds.length} selected tag(s)?`
+        `Are you sure you want to permanently delete ${selectedIds.length} selected tag(s)?`,
       )
     ) {
       bulkDeleteMutation.mutate(selectedIds);
@@ -802,9 +807,7 @@ export default function TagTable() {
         <input
           type="checkbox"
           className="w-5 h-5 rounded border-[#023337]/30 accent-[#1DA1F2] cursor-pointer"
-          checked={
-            selectedIds.length === tagList.length && tagList.length > 0
-          }
+          checked={selectedIds.length === tagList.length && tagList.length > 0}
           onChange={handleSelectAll}
         />
       ),
@@ -913,10 +916,20 @@ export default function TagTable() {
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
+
+            // --- 🚀 DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 110; // Approx height for Edit + Delete menu
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
+
             setMenuPos({
-              top: rect.bottom + window.scrollY + 8,
+              // Using fixed coordinates relative to viewport
+              top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
               left: rect.left - 160,
+              opensUpward: shouldOpenUp,
             });
+            // ------------------------------------
+
             setActiveMenuId(activeMenuId === item.id ? null : item.id);
             setShowStatusMenu(false);
           }}
@@ -932,7 +945,9 @@ export default function TagTable() {
     return (
       <div className="h-64 w-full bg-white flex flex-col items-center justify-center text-gray-400 gap-2 font-poppins">
         <Loader2 className="animate-spin text-[#1DA1F2]" size={24} />
-        <span className="text-xs">Synchronizing active catalog tags entries...</span>
+        <span className="text-xs">
+          Synchronizing active catalog tags entries...
+        </span>
       </div>
     );
   }
@@ -966,7 +981,11 @@ export default function TagTable() {
       {activeMenuId && (
         <div
           ref={menuRef}
-          className="fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150"
+          className={`fixed bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 ${
+            menuPos.opensUpward
+              ? "origin-bottom -translate-y-full"
+              : "origin-top"
+          }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
           {/* Group 1: Edit */}
@@ -978,11 +997,13 @@ export default function TagTable() {
               }}
               className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-blue-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
             >
-              <Edit3 size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+              <Edit3
+                size={16}
+                className="text-gray-400 group-hover:text-[#1DA1F2]"
+              />
               <span className="font-medium">Edit Tag</span>
             </button>
           </div>
-
 
           {/* Group 3: Delete */}
           <div className="px-2">
@@ -1000,7 +1021,6 @@ export default function TagTable() {
           </div>
         </div>
       )}
-
       {tagList.length > 0 && (
         <div className="py-5 md:mx-10 mx-2">
           <Pagination
