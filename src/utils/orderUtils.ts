@@ -61,6 +61,7 @@ export const extractOrderData = (
           unit_price: Number(it.unit_price || 0),
           image,
           variantInfo,
+          external_image: externalImage || directImage || "",
           shippingFee: Number(it.item_shipping_fee || 0),
         };
       })
