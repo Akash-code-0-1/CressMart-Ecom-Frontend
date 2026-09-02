@@ -3,13 +3,38 @@ import { getAdminTokenAction } from "@/app/actions/auth";
 
 export const reviewApi = {
   // 🚀 FIXED: Added optional search parameter tracking to catch customer details within the comments view
-  async getAll(
-    page: number,
-    limit: number,
-    status: string,
-    search: string,
-    sort: string = "desc", // 🚀 Added this parameter
-    bypassCache = false,
+  // async getAll(
+  //   page: number,
+  //   limit: number,
+  //   status: string,
+  //   search: string,
+  //   sort: string = "desc", // 🚀 Added this parameter
+  //   bypassCache = false,
+  // ) {
+  //   const token = await getAdminTokenAction();
+  //   const query = new URLSearchParams({
+  //     page: String(page),
+  //     limit: String(limit),
+  //     status: status || "",
+  //     search: search || "",
+  //     sortOrder: sort.toUpperCase(), // 🚀 Standard backend parameter for ASC/DESC
+  //     bypassCache: String(bypassCache),
+  //   });
+
+  //   const res = await apiFetch(`/reviews/admin/all?${query.toString()}`, {
+  //     method: "GET",
+  //     headers: { Authorization: `Bearer ${token || ""}` },
+  //   });
+  //   return res.json();
+  // },
+
+async getAll(
+    page: number, 
+    limit: number, 
+    status: string, 
+    search: string, 
+    sort: string = "desc",
+    bypassCache: boolean = false // 🚀 RE-ADD THIS
   ) {
     const token = await getAdminTokenAction();
     const query = new URLSearchParams({
@@ -17,16 +42,19 @@ export const reviewApi = {
       limit: String(limit),
       status: status || "",
       search: search || "",
-      sortOrder: sort.toUpperCase(), // 🚀 Standard backend parameter for ASC/DESC
-      bypassCache: String(bypassCache),
+      sortOrder: sort.toUpperCase(),
+      bypassCache: String(bypassCache), // 🚀 SEND TO BACKEND
     });
 
     const res = await apiFetch(`/reviews/admin/all?${query.toString()}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token || ""}` },
+      cache: 'no-store',
     });
     return res.json();
   },
+
+
   async updateStatus(id: string, status: string) {
     const token = await getAdminTokenAction();
     const res = await apiFetch(`/reviews/admin/${id}/status`, {
