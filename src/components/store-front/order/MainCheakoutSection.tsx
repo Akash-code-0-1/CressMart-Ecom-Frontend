@@ -1202,7 +1202,7 @@ const MainCheckoutSection: React.FC = () => {
       if (res?.id || res?.data?.id) {
         sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
       }
-    }, 1500), // Increased to 2s to reduce server load
+    }, 2000), // Increased to 2s to reduce server load
     [],
   );
 
