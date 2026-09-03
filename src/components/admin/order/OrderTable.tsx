@@ -414,40 +414,40 @@ export default function OrderTable() {
   }, [serverData]);
 
   // --- FIXED FETCH TAB COUNTS ---
-  // const { data: tabCountsData } = useQuery({
-  //   queryKey: ["order-tab-counts"],
-  //   queryFn: async () => {
-  //     // 1. Fetch standard counts from the regular Order Service
-  //     const standardTabs = tabs.filter((t) => t !== "Incomplete");
-  //     const standardCounts = await fetchOrderCounts(standardTabs);
-
-  //     // 2. Fetch Incomplete count from the Incomplete Order Service
-  //     // We set limit to 1 because we only care about the meta.total field
-  //     let incompleteCount = 0;
-  //     try {
-  //       const leadRes = await getAllIncompleteOrdersService({
-  //         page: 1,
-  //         limit: 1,
-  //       });
-  //       // Based on your backend, total is inside meta
-  //       incompleteCount =
-  //         leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
-  //     } catch (e) {
-  //       console.error("Failed to fetch incomplete counts", e);
-  //     }
-
-  //     // 3. Return the merged array
-  //     return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
-  //   },
-  //   refetchOnWindowFocus: true,
-  // });
-
-  // Update the counts fetcher to be simpler
   const { data: tabCountsData } = useQuery({
     queryKey: ["order-tab-counts"],
-    queryFn: () => fetchOrderCounts(tabs), // Uses the updated service above
+    queryFn: async () => {
+      // 1. Fetch standard counts from the regular Order Service
+      const standardTabs = tabs.filter((t) => t !== "Incomplete");
+      const standardCounts = await fetchOrderCounts(standardTabs);
+
+      // 2. Fetch Incomplete count from the Incomplete Order Service
+      // We set limit to 1 because we only care about the meta.total field
+      let incompleteCount = 0;
+      try {
+        const leadRes = await getAllIncompleteOrdersService({
+          page: 1,
+          limit: 1,
+        });
+        // Based on your backend, total is inside meta
+        incompleteCount =
+          leadRes?.meta?.total || leadRes?.data?.meta?.total || 0;
+      } catch (e) {
+        console.error("Failed to fetch incomplete counts", e);
+      }
+
+      // 3. Return the merged array
+      return [...standardCounts, { tab: "Incomplete", count: incompleteCount }];
+    },
     refetchOnWindowFocus: true,
   });
+
+  // // Update the counts fetcher to be simpler
+  // const { data: tabCountsData } = useQuery({
+  //   queryKey: ["order-tab-counts"],
+  //   queryFn: () => fetchOrderCounts(tabs), // Uses the updated service above
+  //   refetchOnWindowFocus: true,
+  // });
 
   // This converts the array into a Map so the UI can find the counts easily
   // const counts = useMemo(() => {
@@ -927,25 +927,25 @@ export default function OrderTable() {
       key: "action",
       render: (order: any) => (
         <button
-      onClick={(e) => {
-        e.stopPropagation();
-        const rect = e.currentTarget.getBoundingClientRect();
-        
-        // --- DYNAMIC POSITIONING LOGIC ---
-        const menuHeight = 420; // Approximate height of your full menu
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const shouldOpenUp = spaceBelow < menuHeight;
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
 
-        setMenuPos({
-          top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
-          left: rect.left - 165,
-          opensUpward: shouldOpenUp,
-        });
-        // ---------------------------------
+            // --- DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 420; // Approximate height of your full menu
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
 
-        setActiveMenuId(activeMenuId === order.id ? null : order.id);
-        setShowStatusMenu(false);
-      }}
+            setMenuPos({
+              top: shouldOpenUp ? rect.top - 8 : rect.bottom + 8,
+              left: rect.left - 165,
+              opensUpward: shouldOpenUp,
+            });
+            // ---------------------------------
+
+            setActiveMenuId(activeMenuId === order.id ? null : order.id);
+            setShowStatusMenu(false);
+          }}
           className="p-1 hover:bg-gray-100 rounded-full"
         >
           <MoreVertical size={20} className="text-gray-400" />
@@ -1025,9 +1025,11 @@ export default function OrderTable() {
       {/* --- PROFESSIONAL ACTION MENU --- */}
       {activeMenuId && (
         <div
-ref={menuRef}
+          ref={menuRef}
           className={`fixed bg-white border border-gray-200 rounded-xl shadow-xl py-2 z-[9999] w-[210px] animate-in fade-in zoom-in duration-150 ${
-            menuPos.opensUpward ? "origin-bottom -translate-y-full" : "origin-top"
+            menuPos.opensUpward
+              ? "origin-bottom -translate-y-full"
+              : "origin-top"
           }`}
           style={{ top: menuPos.top, left: menuPos.left }}
         >
@@ -1152,8 +1154,51 @@ ref={menuRef}
                   />
                 </button>
 
-                {showStatusMenu && (
+                {/* {showStatusMenu && (
                   <div className="absolute right-full top-[-8px] mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200">
+                    {[
+                      "PENDING",
+                      "CONFIRMED",
+                      "ON_HOLD",
+                      "SHIPPED",
+                      "DELIVERED",
+                      "CANCELED",
+                      "RETURNED",
+                      "REFUNDED",
+                    ].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          if (s === "SHIPPED") {
+                            setShippedModal({
+                              open: true,
+                              id: activeMenuId,
+                              targetStatus: s,
+                            });
+                            setActiveMenuId(null);
+                          } else {
+                            statusMutation.mutate({
+                              id: activeMenuId!,
+                              payload: { status: s },
+                            });
+                            setActiveMenuId(null);
+                          }
+                          setShowStatusMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
+                      >
+                        {s.replace(/_/g, " ")}
+                      </button>
+                    ))}
+                  </div>
+                )} */}
+
+                {showStatusMenu && (
+                  <div
+                    className={`absolute right-full mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200 ${
+                      menuPos.opensUpward ? "bottom-[-8px]" : "top-[-8px]"
+                    }`}
+                  >
                     {[
                       "PENDING",
                       "CONFIRMED",
