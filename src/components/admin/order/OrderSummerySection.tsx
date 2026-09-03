@@ -9,10 +9,11 @@ import { fetchOrderCounts } from "@/services-api/orderService";
 import { dashboardApi } from "@/services-api/dashboardService";
 import { useMemo } from "react";
 
-// Matches your original naming and colors exactly
+// 🚀 UPDATED: Added "Shipped" to the config
 const SUMMARY_CONFIG = [
   { name: "Pending", color: "#26007F" },
   { name: "Confirmed", color: "#7AD100" },
+  { name: "Shipped", color: "#6366F1" }, // Added Shipped status
   { name: "Incomplete", color: "#6A717F" },
   { name: "Delivered", color: "#1884FF" },
   { name: "Canceled", color: "#FAB300" },
@@ -21,10 +22,9 @@ const SUMMARY_CONFIG = [
 ];
 
 export default function OrderSummerySection() {
-  // 1. Fetch real counts INCLUDING "All order" to get the absolute total
+  // 1. Fetch real counts INCLUDING "All order" and the new "Shipped" tab
   const { data: tabCounts, isLoading: isCountsLoading } = useQuery({
     queryKey: ["order-summary-counts-dashboard"],
-    // 🚀 ADDED 'All order' to the fetch list
     queryFn: () =>
       fetchOrderCounts(["All order", ...SUMMARY_CONFIG.map((t) => t.name)]),
     refetchOnWindowFocus: true,
@@ -47,8 +47,6 @@ export default function OrderSummerySection() {
       return acc;
     }, {});
 
-    // 🚀 FIX: Get the total directly from the "All order" count returned by API
-    // This ensures the center number matches the table tab exactly (32)
     const total = countMap["All order"] || 0;
 
     const mapped = SUMMARY_CONFIG.map((tab) => {
@@ -56,7 +54,6 @@ export default function OrderSummerySection() {
       return {
         name: tab.name,
         value: count,
-        // Percentage is now relative to the absolute total
         percentage: total > 0 ? Math.round((count / total) * 100) : 0,
         color: tab.color,
       };
@@ -99,7 +96,7 @@ export default function OrderSummerySection() {
                 totalOrders={totalOrders}
               />
 
-              {/* Legend */}
+              {/* Legend - Automatically includes Shipped because of the map */}
               <div className="flex flex-col gap-2 flex-1 ml-4">
                 {orderSummaryData.map((item) => (
                   <div
@@ -141,10 +138,8 @@ export default function OrderSummerySection() {
           </div>
 
           {/* 3. Stats Cards (Right) */}
-
-          {/* 3. Stats Cards (Right) - Repurposed to use available Tab Counts */}
           <div className="flex flex-col gap-4 w-full">
-            {/* Card 1: Total Orders (Replaces GMV) */}
+            {/* Card 1: Total Orders */}
             <div className="bg-white rounded-[8px] p-3 h-full">
               <div className="flex justify-between items-start mb-1">
                 <span className="text-[#23272E] font-bold text-lg">
@@ -164,7 +159,7 @@ export default function OrderSummerySection() {
               </div>
             </div>
 
-            {/* Card 2: Abandoned Leads (Replaces AVG Order) */}
+            {/* Card 2: Abandoned Leads */}
             <div className="bg-white rounded-[8px] p-3 h-full">
               <div className="flex justify-between items-start mb-1">
                 <span className="text-[#1A1A1A] font-bold text-md">
@@ -187,7 +182,7 @@ export default function OrderSummerySection() {
               </div>
             </div>
 
-            {/* Card 3: Return Statistics (Repurposed) */}
+            {/* Card 3: Return Statistics */}
             <div className="bg-white rounded-[8px] p-3 h-full">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-black font-bold text-[18px]">

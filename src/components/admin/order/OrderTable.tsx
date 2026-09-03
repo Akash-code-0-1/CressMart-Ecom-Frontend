@@ -239,6 +239,7 @@ export default function OrderTable() {
     "Pending",
     "Confirmed",
     "Incomplete",
+    "Shipped",
     "Delivered",
     "Canceled",
     "Returned",
