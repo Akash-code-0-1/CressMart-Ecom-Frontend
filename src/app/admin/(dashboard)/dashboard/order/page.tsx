@@ -12,7 +12,7 @@ export default function Page() {
             <div className="mt-2">
               <OrderHeader />
             </div>
-            {/* <OrderSummerySection /> */}
+            <OrderSummerySection />
             <OrderTable />
           </div>
         </main>
