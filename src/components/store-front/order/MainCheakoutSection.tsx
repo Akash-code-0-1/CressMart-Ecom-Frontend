@@ -26,6 +26,8 @@
 // import {
 //   fetchShippingSettings,
 //   calculateCartShippingDetails,
+//   buildZoneShippingOptions,
+//   ZoneShippingOption,
 // } from "@/services-api/shippingService";
 // import { fetchSingleProduct } from "@/services-api/productService";
 // import { CartItem, OrderPayload } from "@/@types/order.type";
@@ -36,6 +38,11 @@
 // import { MOHASAGOR_PREFIX } from "@/constants/checkout";
 // import debounce from "lodash/debounce";
 // import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
+// import { v4 as uuidv4 } from "uuid";
+// import {
+//   fetchPaymentSettings,
+//   PAYMENT_SETTINGS_QUERY_KEY,
+// } from "@/services-api/paymentSettingsService";
 
 // const MainCheckoutSection: React.FC = () => {
 //   const queryClient = useQueryClient();
@@ -56,7 +63,8 @@
 //     if (typeof window === "undefined") return null;
 //     let id = localStorage.getItem("guestId");
 //     if (!id) {
-//       id = crypto.randomUUID();
+//       // id = crypto.randomUUID();
+//       id = uuidv4();
 //       localStorage.setItem("guestId", id);
 //     }
 //     return id;
@@ -67,9 +75,14 @@
 //     phone: "",
 //     address: "",
 //     note: "",
-//     shippingArea: "outside" as "inside" | "outside" | "sub_city",
+//     shippingArea: "outside" as string,
 //     paymentMethod: "COD",
 //   });
+
+//   // Helper to ensure shipping key is valid or fallback to outside
+//   const normalizeShippingKey = (key: string): string => {
+//     return key || "outside";
+//   };
 
 //   const [couponInput, setCouponInput] = useState("");
 //   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -106,28 +119,43 @@
 //       const pData = productQueries[index]?.data;
 //       const existingProduct = (item.product || {}) as Product;
 
+//       const rawShippingConfig =
+//         existingProduct.shipping_config ?? pData?.shipping_config;
+
+//       // ✅ derive the image from `images` array instead of a nonexistent `featuredImage`
+//       const productImage =
+//         existingProduct.images?.[0]?.url || pData?.images?.[0]?.url || "";
+
 //       return {
 //         ...item,
 //         product: {
 //           id: item.productId,
 //           name: item.name || existingProduct.name || pData?.name || "Product",
-//           featuredImage: item.image || existingProduct.featuredImage || "",
+//           featuredImage: item.image || productImage || "",
 //           price: Number(
-//             item.price || existingProduct.price || pData?.sell_price || 0,
+//             item.price || existingProduct.sell_price || pData?.sell_price || 0,
 //           ),
 //           shipping_type:
 //             existingProduct.shipping_type || pData?.shipping_type || "DEFAULT",
-//           shipping_config:
-//             existingProduct.shipping_config || pData?.shipping_config || null,
+//           shipping_config: rawShippingConfig ?? undefined,
 //         },
 //       };
 //     });
 //   }, [rawCartItems, productQueries]);
 
 //   const courierConfig = shippingSettings?.courier_config;
-//   // golobal setttings have only enable
+
+//   // Check sub_city availability from new zones-array format OR old flat format
 //   const isSubCityAvailable = useMemo(() => {
-//     if (!courierConfig?.sub_city) return false;
+//     const hasSubCity =
+//       // new format: zones[0].subcity
+//       (courierConfig?.zones &&
+//         courierConfig.zones.length > 0 &&
+//         Number(courierConfig.zones[0].subcity) > 0) ||
+//       // old flat format fallback
+//       (courierConfig?.sub_city && Number(courierConfig.sub_city) > 0);
+
+//     if (!hasSubCity) return false;
 //     return cartItems.every((item) => {
 //       const prod = (item.product || {}) as unknown as Product;
 //       if (String(prod.shipping_type).toUpperCase() === "CUSTOM") {
@@ -153,11 +181,17 @@
 //     }
 //   }, [isSubCityAvailable, formData.shippingArea]);
 
-//   // Dynamic shipping options computation (location & charge)
-//   const dynamicShippingOptions = useMemo(() => {
-//     // Check if any product in cart has CUSTOM shipping_type with custom shipping_config
-//     const customOptions: { key: string; label: string; fee: number }[] = [];
-
+//   const dynamicShippingOptions = useMemo((): (
+//     | ZoneShippingOption
+//     | {
+//         key: string;
+//         label: string;
+//         fee: number;
+//         shippingArea: "inside" | "outside" | "sub_city";
+//       }
+//   )[] => {
+//     // ── Priority 1: CUSTOM shipping products override everything ──
+//     const customOptions: ZoneShippingOption[] = [];
 //     cartItems.forEach((item) => {
 //       const prod = (item.product || {}) as Product;
 //       const sType = String(prod.shipping_type || "DEFAULT").toUpperCase();
@@ -178,11 +212,21 @@
 //               const exists = customOptions.find(
 //                 (opt) => opt.label.toLowerCase() === zoneName.toLowerCase(),
 //               );
+//               // Derive shippingArea from zone name heuristic
+//               const area: "inside" | "outside" | "sub_city" = zoneName
+//                 .toLowerCase()
+//                 .includes("sub")
+//                 ? "sub_city"
+//                 : zoneName.toLowerCase().includes("outside")
+//                   ? "outside"
+//                   : "inside";
 //               if (!exists) {
 //                 customOptions.push({
 //                   key: zoneName.toLowerCase().replace(/\s+/g, "_"),
 //                   label: zoneName,
 //                   fee: chargeNum,
+//                   shippingArea: area,
+//                   zoneName,
 //                 });
 //               } else {
 //                 exists.fee = Math.max(exists.fee, chargeNum);
@@ -192,46 +236,69 @@
 //         }
 //       }
 //     });
+//     if (customOptions.length > 0) return customOptions;
 
-//     if (customOptions.length > 0) {
-//       return customOptions;
+//     // ── Priority 2: Dynamic zones from API (unlimited) ──
+//     // Run each zone option through calculateCartShippingDetails so that:
+//     //   • FREE products → contribute ৳0 (their shipping_type is FREE)
+//     //   • CUSTOM products → use their own config fee
+//     //   • DEFAULT products → use this zone's specific fee as the baseline
+//     const rawZoneOpts = buildZoneShippingOptions(
+//       shippingSettings?.courier_config,
+//     );
+//     if (rawZoneOpts.length > 0) {
+//       return rawZoneOpts.map((opt) => ({
+//         ...opt,
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           opt.shippingArea,
+//           shippingSettings,
+//           opt.fee, // pass zone-specific fee as the default (e.g. Chittagong Inside = 80)
+//         ).totalShippingFee,
+//       }));
 //     }
 
-//     // Default Fallback Options
-//     const options = [
+//     // ── Priority 3: Fallback to legacy flat config or defaults ──
+//     const fallback: ZoneShippingOption[] = [
 //       {
 //         key: "inside",
 //         label: t.checkout.insideDhakaLabel || "Inside Dhaka",
-//         fee: calculateCartShippingDetails(cartItems, "inside", shippingSettings)
-//           .totalShippingFee,
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           "inside",
+//           shippingSettings,
+//         ).totalShippingFee,
+//         shippingArea: "inside",
+//         zoneName: "Dhaka",
 //       },
 //       {
 //         key: "outside",
 //         label: t.checkout.outsideDhakaLabel || "Outside Dhaka",
 //         fee: calculateCartShippingDetails(
-//           cartItems,
+//           cartItems as any,
 //           "outside",
 //           shippingSettings,
 //         ).totalShippingFee,
+//         shippingArea: "outside",
+//         zoneName: "Dhaka",
 //       },
 //     ];
-
 //     if (isSubCityAvailable) {
-//       options.push({
+//       fallback.push({
 //         key: "sub_city",
 //         label: t.checkout.subCityLabel || "Sub City",
 //         fee: calculateCartShippingDetails(
-//           cartItems,
+//           cartItems as any,
 //           "sub_city",
 //           shippingSettings,
 //         ).totalShippingFee,
+//         shippingArea: "sub_city",
+//         zoneName: "Dhaka",
 //       });
 //     }
-
-//     return options;
+//     return fallback;
 //   }, [cartItems, shippingSettings, isSubCityAvailable, t]);
 
-//   // Set default shippingArea when options load if current is invalid
 //   useEffect(() => {
 //     if (dynamicShippingOptions.length > 0) {
 //       const exists = dynamicShippingOptions.some(
@@ -244,7 +311,7 @@
 //         }));
 //       }
 //     }
-//   }, [dynamicShippingOptions]);
+//   }, [dynamicShippingOptions, formData.shippingArea]);
 
 //   const calculatedShippingFee = useMemo(() => {
 //     const selectedOpt = dynamicShippingOptions.find(
@@ -290,31 +357,29 @@
 //     onSuccess: async (data) => {
 //       toast.success("Order placed successfully!");
 
+//       // 🔥 NEW: Clear the incomplete order session marker
+//       sessionStorage.removeItem("active_lead_id");
+
 //       const orderUUID = data?.data?.id || data?.id || "";
 //       const hasMohasagor = cartItems.some((i) =>
 //         i.productId?.startsWith(MOHASAGOR_PREFIX),
 //       );
 
-//       // clean the cart
 //       try {
 //         await clearCart(user ? null : guestId);
 //       } catch (err) {
 //         console.error("Cart API cleanup failed:", err);
 //       }
 
-//       // re-fresh react query cache
 //       queryClient.invalidateQueries({
 //         queryKey: ["cart", user?.id || null, guestId],
 //       });
 
-//       // extra clearing
 //       sessionStorage.removeItem("order_source");
 //       sessionStorage.removeItem("mohasagor_order");
 
-//       // custom event for real-time count update
 //       window.dispatchEvent(new Event("cart_updated"));
 
-//       // redirect
 //       const redirectUrl = orderUUID
 //         ? `/thank_you?orderId=${orderUUID}${hasMohasagor ? "&type=mohasagor" : ""}`
 //         : "/thank_you";
@@ -325,12 +390,21 @@
 //       toast.error(error.message || "Something went wrong.");
 //     },
 //   });
+
 //   const handleInputChange = (
 //     e: React.ChangeEvent<
 //       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 //     >,
 //   ) => {
 //     const { name, value } = e.target;
+//     if (name === "shippingArea") {
+//       setFormData((prev) => ({
+//         ...prev,
+//         shippingArea: normalizeShippingKey(value),
+//       }));
+//       return;
+//     }
+
 //     setFormData((prev) => ({ ...prev, [name]: value }));
 //   };
 
@@ -351,8 +425,6 @@
 
 //     const allItemsForBackend = cartItems.map((item) => {
 //       const isMohasagor = item.productId?.startsWith(MOHASAGOR_PREFIX);
-
-//       // fee matching selected dynamic option or calculated shipping fee
 //       const fee = calculatedShippingFee;
 
 //       if (isMohasagor) {
@@ -394,20 +466,17 @@
 //       };
 //     });
 
-//     // Map shippingArea to standard inside/outside backend enum if custom zone key was selected
 //     const selectedOpt = dynamicShippingOptions.find(
 //       (opt) => opt.key === formData.shippingArea,
 //     );
-//     const resolvedShippingArea =
-//       formData.shippingArea === "inside" ||
+//     // `shippingArea` on each option is the exact enum the backend expects
+//     const resolvedShippingArea: "inside" | "outside" | "sub_city" =
+//       (selectedOpt as ZoneShippingOption)?.shippingArea ??
+//       (formData.shippingArea === "inside" ||
 //       formData.shippingArea === "outside" ||
 //       formData.shippingArea === "sub_city"
-//         ? formData.shippingArea
-//         : selectedOpt &&
-//             selectedOpt.label.toLowerCase().includes("dhaka") &&
-//             !selectedOpt.label.toLowerCase().includes("outside")
-//           ? "inside"
-//           : "outside";
+//         ? (formData.shippingArea as "inside" | "outside" | "sub_city")
+//         : "outside");
 
 //     const payload: OrderPayload = {
 //       customerName: formData.name,
@@ -437,37 +506,103 @@
 //     placeOrderMutation.mutate(payload);
 //   };
 
-//   // 1. Ensure debouncedTrack is stable to fix "useEffect changed size" error
+//   // const debouncedTrack = useCallback(
+//   //   debounce(async (data, items, source, gid) => {
+//   //     if (!items || items.length === 0) return;
+
+//   //     const payload = {
+//   //       guestId: gid,
+//   //       customerName: data.name || "",
+//   //       customerPhone: data.phone || "",
+//   //       customerAddress: data.address || "",
+//   //       source: source || "direct",
+//   //       items: items.map((item: any) => ({
+//   //         productId: item.productId,
+//   //         variantId: item.variantId !== "null" ? item.variantId : undefined,
+//   //         qty: Number(item.quantity || 1),
+//   //       })),
+//   //     };
+
+//   //     await trackIncompleteOrder(payload);
+//   //   }, 1500),
+//   //   [],
+//   // );
+
 //   const debouncedTrack = useCallback(
 //     debounce(async (data, items, source, gid) => {
-//       // Only stop if the cart is completely empty
+//       // Only track if there is at least a name or phone number
+//       if (!data.phone && !data.name) return;
 //       if (!items || items.length === 0) return;
 
+//       // Check if we already have an active lead ID in this session to avoid duplicating rows
+//       const existingLeadId = sessionStorage.getItem("active_lead_id");
+
 //       const payload = {
-//         guestId: gid, // The invisible ID that makes "nothing required" work
-//         customerName: data.name || "",
+//         id: existingLeadId || undefined, // If ID exists, backend should update; otherwise create
+//         customerName: data.name || "Guest",
 //         customerPhone: data.phone || "",
 //         customerAddress: data.address || "",
 //         source: source || "direct",
+//         shippingArea: data.shippingArea || "outside",
+//         paymentMethod: data.paymentMethod || "COD",
+//         status: "INCOMPLETE", // 🔥 This is the critical addition
 //         items: items.map((item: any) => ({
 //           productId: item.productId,
-//           variantId: item.variantId !== "null" ? item.variantId : undefined,
-//           qty: Number(item.quantity || 1),
+//           variantId:
+//             item.variantId && item.variantId !== "null"
+//               ? item.variantId
+//               : undefined,
+//           quantity: Number(item.quantity || 1),
 //         })),
 //       };
 
-//       await trackIncompleteOrder(payload);
-//     }, 1500),
-//     [], // Keep this empty to ensure the function never changes
+//       const res = await trackIncompleteOrder(payload);
+
+//       // Store the ID returned by the backend so the next debounce updates the SAME row
+//       if (res?.id || res?.data?.id) {
+//         sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
+//       }
+//     }, 2000), // Increased to 2s to reduce server load
+//     [],
 //   );
 
-//   // 2. The Effect
 //   useEffect(() => {
 //     if (isStoreReady && cartItems.length > 0) {
-//       // This fires IMMEDIATELY when the page loads with items
 //       debouncedTrack(formData, cartItems, orderSource, guestId);
 //     }
 //   }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
+
+//   const { data: paymentSettings } = useQuery({
+//     queryKey: PAYMENT_SETTINGS_QUERY_KEY,
+//     queryFn: fetchPaymentSettings,
+//   });
+
+//   const availablePaymentMethods = useMemo(() => {
+//     const methods: { key: string; label: string }[] = [];
+//     const settingsObj = paymentSettings?.data || (paymentSettings as unknown as { cod_enabled?: boolean; online_payment_enabled?: boolean });
+//     if (settingsObj?.cod_enabled !== false) {
+//       methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
+//     }
+//     if (settingsObj?.online_payment_enabled) {
+//       methods.push({ key: "Online", label: t.checkout.onlinePayment });
+//     }
+//     return methods;
+//   }, [paymentSettings, t]);
+
+//   // Keep formData.paymentMethod synced with available payment options
+//   useEffect(() => {
+//     if (availablePaymentMethods.length > 0) {
+//       const exists = availablePaymentMethods.some(
+//         (m) => m.key === formData.paymentMethod,
+//       );
+//       if (!exists) {
+//         setFormData((prev) => ({
+//           ...prev,
+//           paymentMethod: availablePaymentMethods[0].key,
+//         }));
+//       }
+//     }
+//   }, [availablePaymentMethods, formData.paymentMethod]);
 
 //   if (isLoading)
 //     return (
@@ -479,7 +614,6 @@
 //   return (
 //     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
 //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-//         {/* Form Section */}
 //         <div className="lg:col-span-7 flex flex-col gap-5 md:gap-6">
 //           <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-4">
 //             {t.checkout.shoppingDetails}
@@ -558,8 +692,11 @@
 //                   onChange={handleInputChange}
 //                   className="w-full bg-[#F7F7F7] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
 //                 >
-//                   <option value="COD">{t.checkout.cashOnDelivery}</option>
-//                   <option value="Online">{t.checkout.onlinePayment}</option>
+//                   {availablePaymentMethods.map((m) => (
+//                     <option key={m.key} value={m.key}>
+//                       {m.label}
+//                     </option>
+//                   ))}
 //                 </select>
 //                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
 //                   <FaCaretDown />
@@ -638,6 +775,12 @@
 
 // export default MainCheckoutSection;
 
+
+
+
+
+
+
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
@@ -683,6 +826,8 @@ import {
   fetchPaymentSettings,
   PAYMENT_SETTINGS_QUERY_KEY,
 } from "@/services-api/paymentSettingsService";
+import { setSessionToken } from "@/app/actions/auth";
+import { setCookie } from "cookies-next";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -994,40 +1139,46 @@ const MainCheckoutSection: React.FC = () => {
 
   const placeOrderMutation = useMutation({
     mutationFn: (payload: OrderPayload) => createOrderService(payload),
-    onSuccess: async (data) => {
-      toast.success("Order placed successfully!");
+    onSuccess: async (response) => {
+      // Extract auth from the structure you built: { ...order, auth: { user, accessToken } }
+      const auth = response?.auth || response?.data?.auth;
 
-      // 🔥 NEW: Clear the incomplete order session marker
-      sessionStorage.removeItem("active_lead_id");
+      if (auth && auth.accessToken) {
+        // 1. Set cookies on CLIENT immediately so they are available for the next page load
+        setCookie("auth_token", auth.accessToken, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+        setCookie("token", auth.accessToken, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
 
-      const orderUUID = data?.data?.id || data?.id || "";
-      const hasMohasagor = cartItems.some((i) =>
-        i.productId?.startsWith(MOHASAGOR_PREFIX),
-      );
+        // 2. Backup to localStorage (apiFetch checks this as a last resort)
+        localStorage.setItem("auth_token", auth.accessToken);
+        localStorage.setItem("token", auth.accessToken);
 
-      try {
-        await clearCart(user ? null : guestId);
-      } catch (err) {
-        console.error("Cart API cleanup failed:", err);
+        // 3. Update Zustand Store
+        useAuthStore.getState().setAuthUser({
+          id: auth.user.id,
+          name: auth.user.name,
+          email: auth.user.email || "",
+          phone: auth.user.phone,
+          role: auth.user.role,
+          avatar: auth.user.avatar || null,
+          permissions: auth.user.permissions || [],
+        });
+
+        // 4. Important: Trigger server-side session sync
+        await setSessionToken(auth.accessToken);
+
+        // 5. Artificial delay (200ms) to ensure cookies are written to the disk
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      queryClient.invalidateQueries({
-        queryKey: ["cart", user?.id || null, guestId],
-      });
-
-      sessionStorage.removeItem("order_source");
-      sessionStorage.removeItem("mohasagor_order");
-
-      window.dispatchEvent(new Event("cart_updated"));
-
-      const redirectUrl = orderUUID
-        ? `/thank_you?orderId=${orderUUID}${hasMohasagor ? "&type=mohasagor" : ""}`
-        : "/thank_you";
-
-      router.push(redirectUrl);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Something went wrong.");
+      const orderUUID =
+        response?.id || response?.data?.id || response?.order?.id;
+      router.push(`/thank_you?orderId=${orderUUID}`);
     },
   });
 
@@ -1049,11 +1200,11 @@ const MainCheckoutSection: React.FC = () => {
   };
 
   const handlePlaceOrder = () => {
-    if (!user) {
-      toast.error("Please login/signup to place an order");
-      router.push("/signin?redirect=/order");
-      return;
-    }
+    // if (!user) {
+    //   toast.error("Please login/signup to place an order");
+    //   router.push("/signin?redirect=/order");
+    //   return;
+    // }
     if (!formData.name || !formData.phone || !formData.address) {
       toast.error("Please fill in all required fields");
       return;
@@ -1118,7 +1269,7 @@ const MainCheckoutSection: React.FC = () => {
         ? (formData.shippingArea as "inside" | "outside" | "sub_city")
         : "outside");
 
-    const payload: OrderPayload = {
+    const payload: any = {
       customerName: formData.name,
       customerPhone: formData.phone,
       customerAddress: formData.address,
@@ -1219,7 +1370,12 @@ const MainCheckoutSection: React.FC = () => {
 
   const availablePaymentMethods = useMemo(() => {
     const methods: { key: string; label: string }[] = [];
-    const settingsObj = paymentSettings?.data || (paymentSettings as unknown as { cod_enabled?: boolean; online_payment_enabled?: boolean });
+    const settingsObj =
+      paymentSettings?.data ||
+      (paymentSettings as unknown as {
+        cod_enabled?: boolean;
+        online_payment_enabled?: boolean;
+      });
     if (settingsObj?.cod_enabled !== false) {
       methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
     }
@@ -1414,3 +1570,4 @@ const MainCheckoutSection: React.FC = () => {
 };
 
 export default MainCheckoutSection;
+
