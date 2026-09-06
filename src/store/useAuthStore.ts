@@ -7,7 +7,7 @@ interface User {
 
   name: string;
 
-  email: string;
+  email?: string;
 
   phone: string;
 
@@ -15,7 +15,7 @@ interface User {
 
   role: string;
 
-  permissions: string[]; // 🚀 ADD THIS LINE
+  permissions: string[];
 }
 
 interface AuthState {
