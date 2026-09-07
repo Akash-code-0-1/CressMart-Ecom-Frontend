@@ -132,5 +132,6 @@ export interface Product {
   updated_at?: string;
 
   discount_tag?: string | null;
+  stock_status?: string; 
 }
 

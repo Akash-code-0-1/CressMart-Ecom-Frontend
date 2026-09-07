@@ -55,6 +55,9 @@ interface RawMohasagorProduct {
   variants?: RawMohasagorVariant[];
 }
 
+/**
+ * Helper to normalize labels like "product_color" to "Color"
+ */
 const normalizeAttributeLabel = (label: string, type?: string): string => {
   const source = (type && type.trim()) || label || "";
   const normalized = source.trim().toLowerCase();
@@ -72,7 +75,6 @@ const normalizeAttributeLabel = (label: string, type?: string): string => {
   };
 
   if (knownLabels[normalized]) return knownLabels[normalized];
-
   if (!source) return "Attribute";
 
   return source
@@ -84,179 +86,54 @@ const normalizeAttributeLabel = (label: string, type?: string): string => {
     .join(" ");
 };
 
+/**
+ * FULL MAPPING FUNCTION
+ * Converts Mohasagor API Item to your system's Product type
+ */
 const mapRawProduct = (item: RawMohasagorProduct): Product => {
+  // 1. Pricing Logic
   const regularPrice = item.price
     ? String(item.price)
     : String(item.sale_price || 0);
   const sellPrice = item.sale_price
     ? String(item.sale_price)
     : String(item.price || 0);
-  // const priceNum = Number(sellPrice) || Number(regularPrice) || 0;
 
-  let images: string[] = [];
+  // 2. Image Logic (Maps from item.product_images array)
+  let imagesList: string[] = [];
   if (Array.isArray(item.product_images) && item.product_images.length > 0) {
-    images = item.product_images
-      .map((img) => img.product_image)
+    imagesList = item.product_images
+      .map((img: any) => img.product_image)
       .filter(Boolean);
   }
-  if (images.length === 0 && item.thumbnail_img) {
-    images = [item.thumbnail_img];
+  if (imagesList.length === 0 && item.thumbnail_img) {
+    imagesList = [item.thumbnail_img];
   }
-  if (images.length === 0) {
-    images = ["/images/placeholder.svg"];
+  if (imagesList.length === 0) {
+    imagesList = ["/images/placeholder.svg"];
   }
 
+  // 3. Variant Logic (Maps from item.product_variants)
   const rawVariants = item.product_variants || item.variants || [];
   const mappedVariants = Array.isArray(rawVariants)
-    ? rawVariants.map((v: RawMohasagorVariant, index: number) => {
-        const attrs: {
-          type: string;
-          label: string;
-          value: string;
-          hex?: string;
-        }[] = [];
-
-        const parseRawAttributes = (
-          rawAttrs:
-            | RawMohasagorVariantAttribute[]
-            | Record<string, unknown>
-            | string,
-        ) => {
-          if (!rawAttrs) return;
-          if (typeof rawAttrs === "string") {
-            try {
-              const parsed = JSON.parse(rawAttrs);
-              if (Array.isArray(parsed)) {
-                parsed.forEach((item) => {
-                  if (item && typeof item === "object") {
-                    const parsedItem = item as RawMohasagorVariantAttribute;
-                    const label =
-                      parsedItem.label ||
-                      parsedItem.name ||
-                      parsedItem.type ||
-                      parsedItem.key ||
-                      parsedItem.attributeName;
-                    const value =
-                      parsedItem.value ||
-                      parsedItem.val ||
-                      parsedItem.attributeValue ||
-                      parsedItem.name;
-                    const hex = parsedItem.hex;
-                    if (label && value) {
-                      attrs.push({
-                        label: normalizeAttributeLabel(
-                          String(label),
-                          String(parsedItem.type || ""),
-                        ),
-                        value: String(value),
-                        type: normalizeAttributeLabel(
-                          String(parsedItem.type || ""),
-                          String(parsedItem.type || ""),
-                        ),
-                        hex: hex ? String(hex) : undefined,
-                      });
-                    }
-                  }
-                });
-              }
-            } catch {
-              return;
-            }
-          } else if (Array.isArray(rawAttrs)) {
-            rawAttrs.forEach((item) => {
-              if (!item) return;
-              const label =
-                item.label ||
-                item.name ||
-                item.type ||
-                item.key ||
-                item.attributeName;
-              const value =
-                item.value || item.val || item.attributeValue || item.name;
-              if (label && value) {
-                attrs.push({
-                  label: normalizeAttributeLabel(
-                    String(label),
-                    String(item.type || ""),
-                  ),
-                  value: String(value),
-                  type: normalizeAttributeLabel(
-                    String(item.type || ""),
-                    String(item.type || ""),
-                  ),
-                  hex: item.hex ? String(item.hex) : undefined,
-                });
-              }
-            });
-          } else if (typeof rawAttrs === "object") {
-            Object.entries(rawAttrs).forEach(([key, val]) => {
-              if (!key || val == null) return;
-              if (typeof val === "object" && !Array.isArray(val)) {
-                const nested = val as RawMohasagorVariantAttribute;
-                const value = nested.value || nested.val || nested.name;
-                if (value) {
-                  attrs.push({
-                    label: normalizeAttributeLabel(key, nested.type || ""),
-                    value: String(value),
-                    type: normalizeAttributeLabel(
-                      nested.type || key,
-                      nested.type || "",
-                    ),
-                    hex: nested.hex ? String(nested.hex) : undefined,
-                  });
-                }
-              } else {
-                attrs.push({
-                  label: normalizeAttributeLabel(key),
-                  value: String(val),
-                  type: normalizeAttributeLabel(key),
-                });
-              }
-            });
-          }
-        };
-
-        if (v.attributes) {
-          parseRawAttributes(v.attributes);
-        }
-
-        if (attrs.length === 0) {
-          if (v.color)
-            attrs.push({
-              type: "Color",
-              label: "Color",
-              value: String(v.color),
-            });
-          if (v.size)
-            attrs.push({ type: "Size", label: "Size", value: String(v.size) });
-          if (v.variant)
-            attrs.push({
-              type: "Variant",
-              label: "Variant",
-              value: String(v.variant),
-            });
-          if (v.name && v.name !== v.color && v.name !== v.size) {
-            attrs.push({
-              type: "Variant",
-              label: "Variant",
-              value: String(v.name),
-            });
-          }
-          if (v.value && v.value !== v.color && v.value !== v.size) {
-            attrs.push({
-              type: "Variant",
-              label: "Variant",
-              value: String(v.value),
-            });
-          }
+    ? rawVariants.map((v: any, index: number) => {
+        const attrs: { type: string; label: string; value: string; hex?: string }[] = [];
+        
+        // Handle specific keys seen in your API response: "attribute" and "variant"
+        if (v.attribute && v.variant) {
+          attrs.push({
+            label: normalizeAttributeLabel(String(v.attribute)),
+            value: String(v.variant),
+            type: normalizeAttributeLabel(String(v.attribute)),
+          });
         }
 
         return {
           id: String(v.id || index),
           product_id: `mohasagor-${item.id}`,
-          images: v.image ? [v.image] : images,
+          images: v.image ? [v.image] : imagesList,
           attributes: attrs,
-          stock: Number(v.stock || v.qty || 50),
+          stock: Number(v.stock || v.qty || 0),
           sku: String(v.sku || item.product_code || item.id),
           price: String(v.price || v.sale_price || sellPrice),
           created_at: new Date().toISOString(),
@@ -265,32 +142,58 @@ const mapRawProduct = (item: RawMohasagorProduct): Product => {
       })
     : [];
 
+  // 4. Dynamic Quantity / Stock Status Logic
+  const totalStockFromVariants = mappedVariants.reduce((sum, v) => sum + v.stock, 0);
+  const rootStock = Number((item as any).stock || (item as any).qty || 0);
+  
+  // Use 999 as a "buyable" placeholder if status is "available", else use actual count
+  const finalQuantity = (item as any).stock_status === "available" 
+    ? 999 
+    : (totalStockFromVariants > 0 ? totalStockFromVariants : rootStock);
+
+  // 5. Build Final Product Object
   return {
     id: `mohasagor-${item.id}`,
     name: item.name,
-    slug: `mohasagor-${item.id}`,
-    images: images.map((url) => ({ url })),
-    video_urls: null,
+    slug: item.slug || `mohasagor-${item.id}`,
+    images: imagesList.map((url) => ({ url })),
+    
+    // Default dynamic arrays (functional nulls/empty)
+    video_urls: (item as any).video_urls || [], 
+    specifications: (item as any).specifications || [],
+    faqs: (item as any).faqs || [],
+    shipping_config: (item as any).shipping_config || [],
+    product_tags: [],
+
     regular_price: regularPrice,
     sell_price: sellPrice,
-    // price: priceNum,
-    quantity: 50,
+    quantity: finalQuantity,
+    stock_status: (item as any).stock_status,
+
     short_description: item.category || "Gadgets & Electronics",
-    description: item.details || item.name,
-    brand: { id: "mohasagor", name: "Mohasagor", logo_url: "" },
+    description: item.details || item.name, // Using "details" from your API logs
+    
+    // TypeScript-safe brand mapping
+    brand: (item as any).brand ? { 
+        id: String((item as any).brand.id), 
+        name: String((item as any).brand.name || "Unknown Brand"), 
+        logo_url: (item as any).brand.logo ? String((item as any).brand.logo) : undefined 
+    } : undefined,
+    
     suppliers: [{ id: "mohasagor", name: "Mohasagor", image_url: "" }],
+    
     sku: item.product_code ? String(item.product_code) : String(item.id),
-    unit_name: "Pcs",
-    warranty: "Authentic Product",
-    avg_rating: 5,
-    total_reviews: 1,
-    specifications: null,
-    faqs: null,
-    shipping_config: [],
+    
+    unit_name: (item as any).unit || "Pcs", 
+    warranty: (item as any).warranty || undefined,
+    
+    // Functional values start at 0 (dynamic based on API)
+    avg_rating: Number((item as any).rating || 0),
+    total_reviews: Number((item as any).reviews_count || 0),
+    view_count: Number((item as any).view_count || 0),
+    total_sold: Number((item as any).total_sold || 0),
+    
     variants: mappedVariants,
-    product_tags: [],
-    view_count: 150,
-    total_sold: 45,
   };
 };
 
