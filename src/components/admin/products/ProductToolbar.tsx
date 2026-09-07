@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useMemo } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Globe } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
 import { getAdminTokenAction } from "@/app/actions/auth";
-
+import Link from "next/link"; 
 import ThreeBarIcon from "@/components/store-front/svg/svg/ThreeBarIcon";
 import PrimaryButton from "../common/PrimaryButton";
 import ImportFileIcon from "@/components/store-front/svg/svg/ImportFileIcon";
@@ -248,6 +248,16 @@ export default function ProductToolbar() {
               icon={<PluseIcon />}
             />
           </div>
+
+
+          <Link 
+            href="/admin/dashboard/products/mohasagor" 
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-3.5 rounded-lg text-sm font-bold transition-all shadow-sm"
+          >
+            <Globe size={20} />
+            Browse Mohasagor
+          </Link>
+
         </div>
       </div>
 
