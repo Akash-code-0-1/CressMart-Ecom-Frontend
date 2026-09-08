@@ -13,6 +13,7 @@ import { useMemo } from "react";
 const SUMMARY_CONFIG = [
   { name: "Pending", color: "#26007F" },
   { name: "Confirmed", color: "#7AD100" },
+  { name: "On Hold", color: "#FF7050" },
   { name: "Shipped", color: "#6366F1" }, // Added Shipped status
   { name: "Incomplete", color: "#6A717F" },
   { name: "Delivered", color: "#1884FF" },

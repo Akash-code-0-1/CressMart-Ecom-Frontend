@@ -331,12 +331,14 @@ interface Order {
 interface InvoiceProps {
   order: Order | null | undefined;
   baseStorageUrl: string;
+  editableInvoice: string;
+  setEditableInvoice: (val: string) => void;
 }
 
 export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
-  ({ order, baseStorageUrl }, ref) => {
+  ({ order, baseStorageUrl, editableInvoice, setEditableInvoice }, ref) => {
     // Local state for editable invoice number
-    const [editableInvoice, setEditableInvoice] = useState("");
+    // const [editableInvoice, setEditableInvoice] = useState("");
 
     const { data: settingResponse } = useQuery({
       queryKey: ["global-settings"],
@@ -345,11 +347,11 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
     // FIX: Use a stable dependency [order?.order_number].
     // This ensures the array size NEVER changes and only resets when a NEW order is selected.
-    useEffect(() => {
-      if (order) {
-        setEditableInvoice(String(order.invoice_number || order.order_number));
-      }
-    }, [order?.order_number]);
+    // useEffect(() => {
+    //   if (order) {
+    //     setEditableInvoice(String(order.invoice_number || order.order_number));
+    //   }
+    // }, [order?.order_number]);
 
     if (!order) return null;
 

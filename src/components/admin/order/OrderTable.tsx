@@ -48,6 +48,8 @@ import {
   getAllOrdersService,
   updateOrderStatusService,
   fetchOrderCounts,
+  TAB_STATUS_MAP,
+  editOrderInvoiceService,
 } from "@/services-api/orderService";
 import { customerApi } from "@/services-api/customerService";
 import { useRouter } from "next/navigation";
@@ -210,14 +212,21 @@ type Order = {
     };
   };
 };
-
 export const BulkInvoicePrint = React.forwardRef(
   ({ orders, baseStorageUrl }: any, ref: any) => {
     return (
       <div ref={ref} className="p-0">
-        {orders.map((order: any, index: number) => (
+        {orders.map((order: any) => (
           <div key={order.id} style={{ pageBreakAfter: "always" }}>
-            <InvoicePrint order={order} baseStorageUrl={baseStorageUrl} />
+            <InvoicePrint
+              order={order}
+              baseStorageUrl={baseStorageUrl}
+              // 🚀 PASS THESE TO FIX THE TYPESCRIPT ERROR
+              editableInvoice={String(
+                order.invoice_number || order.order_number,
+              )}
+              setEditableInvoice={() => {}} // Dummy function because we don't edit in bulk
+            />
           </div>
         ))}
       </div>
@@ -238,6 +247,7 @@ export default function OrderTable() {
     "All order",
     "Pending",
     "Confirmed",
+    "On Hold",
     "Incomplete",
     "Shipped",
     "Delivered",
@@ -363,15 +373,11 @@ export default function OrderTable() {
   const { data: serverData, isLoading } = useQuery({
     queryKey: ["admin-orders", tabs[activeTab], page, searchQuery],
     queryFn: async () => {
-      // 🔥 Simplified: All tabs now use the same service
       const currentTabText = tabs[activeTab];
-      let status = "";
 
-      if (currentTabText === "All order") {
-        status = ""; // Backend returns all including Incomplete
-      } else {
-        status = currentTabText.toUpperCase();
-      }
+      // 🚀 FIXED: Instead of .toUpperCase(), use the map
+      // This ensures "On Hold" becomes "ON_HOLD"
+      let status = TAB_STATUS_MAP[currentTabText] || "";
 
       return await getAllOrdersService({
         page,
@@ -506,11 +512,50 @@ export default function OrderTable() {
     },
   });
 
+  const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState("");
+
+  // Sync state when print modal opens
+  useEffect(() => {
+    if (selectedOrderForPrint) {
+      setCurrentInvoiceNumber(
+        selectedOrderForPrint.invoice_number ||
+          selectedOrderForPrint.order_number,
+      );
+    }
+  }, [selectedOrderForPrint]);
+
+  // 🚀 THE SAVE AND PRINT MUTATION
+  const saveAndPrintMutation = useMutation({
+    mutationFn: () =>
+      updateOrderStatusService(selectedOrderForPrint.id, {
+        // @ts-ignore
+        invoice_number: currentInvoiceNumber, // Send the edited number
+      }),
+    onSuccess: (updatedOrder) => {
+      // 1. Refresh list
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+
+      // 2. IMPORTANT: Update the local object with the NEW database data
+      // This ensures the hidden component receives the saved number
+      setSelectedOrderForPrint(updatedOrder.data || updatedOrder);
+
+      // 3. Small delay to allow React to update the DOM
+      setTimeout(() => {
+        handlePrint();
+        setIsPrintModalOpen(false);
+        toast.success("Invoice saved and printing...");
+      }, 400);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to save invoice number");
+    },
+  });
+
   const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
   const handlePrint = useReactToPrint({
-    contentRef: invoiceRef, // Note: newer versions use contentRef instead of content
-    documentTitle: `Invoice_${selectedOrderForPrint?.order_number || "Order"}`,
+    contentRef: invoiceRef,
+    documentTitle: `Invoice_${currentInvoiceNumber}`, // 🚀 Use the updated state
     onAfterPrint: () => setSelectedOrderForPrint(null),
   });
 
@@ -810,46 +855,27 @@ export default function OrderTable() {
       header: "Supplier",
       key: "supplier",
       render: (item: any) => {
-        const items = isIncompleteTab
-          ? item.cart_items || []
-          : item.order_items || [];
-
+        const items = item.order_items || item.cart_items || [];
         const firstItem = items[0];
 
-        // 1. Identify the Supplier name
-        let supplierName = "Own Product"; // Default
+        // 🚀 IMPROVED DETECTION
+        // We check both "mohasagor" and "mohashagor" to be safe.
+        // We check the Order source AND the Product source.
+        const orderSource = item.source?.toLowerCase() || "";
+        const productSource = firstItem?.product?.source?.toLowerCase() || "";
 
-        if (isIncompleteTab) {
-          // Check metadata fetched for incomplete leads
-          const resolved = productDetailsMap[firstItem?.productId];
-          if (resolved?.isExternal || firstItem?.isExternal) {
-            supplierName = resolved?.supplier_name || "Mohashagor";
-          }
-        } else {
-          // Check regular order items
-          // In your backend, external items usually have external_product_id
-          if (firstItem?.external_product_id || firstItem?.isExternal) {
-            supplierName = firstItem?.supplier_name || "Mohashagor";
-          } else if (
-            item.source &&
-            !["direct", "admin_panel", "system"].includes(
-              item.source.toLowerCase(),
-            )
-          ) {
-            // If the source itself is the supplier name
-            supplierName = item.source;
-          }
-        }
+        const isMohashagor =
+          orderSource.includes("mohasagor") ||
+          productSource.includes("mohasagor") ||
+          !firstItem?.product_id ||
+          firstItem?.isExternal;
 
-        // 2. Define colors based on supplier type
-        const isOwn =
-          supplierName.toLowerCase() === "own product" ||
-          supplierName.toLowerCase() === "system";
+        const supplierName = isMohashagor ? "Mohashagor" : "Own Product";
 
         return (
           <span
             className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
-              isOwn
+              !isMohashagor
                 ? "bg-blue-50 text-blue-600 border border-blue-100"
                 : "bg-orange-50 text-orange-600 border border-orange-100"
             }`}
@@ -955,6 +981,27 @@ export default function OrderTable() {
     },
   ];
 
+  const clickableColumns = columns.map((col) => ({
+    ...col,
+    render: (item: any, index: number) => {
+      const content = col.render ? col.render(item, index) : item[col.key];
+
+      // Don't trigger details when clicking the checkbox or the triple-dot menu
+      if (col.key === "checkbox" || col.key === "action") {
+        return content;
+      }
+
+      return (
+        <div
+          className="cursor-pointer w-full h-full py-1"
+          onClick={() => openDetails(item)}
+        >
+          {content}
+        </div>
+      );
+    },
+  }));
+
   if (isLoading)
     return (
       <div className="h-64 flex flex-col items-center justify-center gap-2">
@@ -993,7 +1040,11 @@ export default function OrderTable() {
           )}
         </div>
 
-        <DataTable data={orderList} columns={columns} rowKey="id" />
+        <DataTable
+          data={orderList}
+          columns={clickableColumns} // Use the transformed clickable columns
+          rowKey="id"
+        />
 
         {/* <div className="py-5">
           <Pagination2
@@ -1318,6 +1369,9 @@ export default function OrderTable() {
           ref={invoiceRef}
           order={selectedOrderForPrint}
           baseStorageUrl={baseStorageUrl}
+          // 🚀 ADD THESE PROPS TO SYNC DATA
+          editableInvoice={currentInvoiceNumber}
+          setEditableInvoice={setCurrentInvoiceNumber}
         />
       </div>
 
@@ -1762,10 +1816,13 @@ export default function OrderTable() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handlePrint()}
-                  className="bg-[#1DA1F2] text-white px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md active:scale-95"
+                  onClick={() => saveAndPrintMutation.mutate()} // 🚀 Call the mutation
+                  disabled={saveAndPrintMutation.isPending}
+                  className="bg-[#1DA1F2] text-white px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 transition-all flex items-center gap-2 shadow-md active:scale-95 disabled:opacity-50"
                 >
-                  Confirm & Print
+                  {saveAndPrintMutation.isPending
+                    ? "Saving..."
+                    : "Confirm & Print"}
                 </button>
               </div>
             </div>
@@ -1777,6 +1834,9 @@ export default function OrderTable() {
                   ref={invoiceRef}
                   order={selectedOrderForPrint}
                   baseStorageUrl={baseStorageUrl}
+                  // 🚀 PASS STATE PROPS (Ensure InvoicePrint receives these)
+                  editableInvoice={currentInvoiceNumber}
+                  setEditableInvoice={setCurrentInvoiceNumber}
                 />
               </div>
             </div>

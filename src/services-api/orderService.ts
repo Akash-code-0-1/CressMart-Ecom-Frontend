@@ -58,6 +58,7 @@ export interface UpdateInvoicePayload {
   customerPhone?: string;
   customerAddress?: string;
   customerNote?: string;
+  invoice_number?: string;
 }
 
 export interface OrderQuery {
@@ -251,7 +252,6 @@ export const searchProductsService = async (query: string) => {
 //   "Return Received": "RETURN_RECEIVED",
 // };
 
-
 export const TAB_STATUS_MAP: Record<string, string> = {
   "All order": "",
   Pending: "PENDING",
@@ -259,19 +259,18 @@ export const TAB_STATUS_MAP: Record<string, string> = {
   "On Hold": "ON_HOLD",
   Shipped: "SHIPPED",
   "Sent To Courier": "SENT_TO_COURIER",
-  
-  // 🔥 FIX: Map 'Incomplete' to the actual Enum value 'INCOMPLETE'
-  Incomplete: "INCOMPLETE", 
 
-  
+  // 🔥 FIX: Map 'Incomplete' to the actual Enum value 'INCOMPLETE'
+  Incomplete: "INCOMPLETE",
+
   Delivered: "DELIVERED",
   "Partial Delivered": "PARTIAL_DELIVERED",
   Canceled: "CANCELED",
   Returned: "RETURNED",
-  
+
   // 🔥 FIX: Map your UI label 'Paid Returned' to the backend Enum 'REFUNDED'
-  "Paid Returned": "REFUNDED", 
-  
+  "Paid Returned": "REFUNDED",
+
   Refunded: "REFUNDED",
   "Return Received": "RETURN_RECEIVED",
 };
