@@ -55,8 +55,11 @@ interface RawMohasagorProduct {
   variants?: RawMohasagorVariant[];
 }
 
+
+
 /**
  * Helper to normalize labels like "product_color" to "Color"
+ * Ensures UI attributes look clean (e.g., "product_size" -> "Size")
  */
 const normalizeAttributeLabel = (label: string, type?: string): string => {
   const source = (type && type.trim()) || label || "";
@@ -90,121 +93,112 @@ const normalizeAttributeLabel = (label: string, type?: string): string => {
  * FULL MAPPING FUNCTION
  * Converts Mohasagor API Item to your system's Product type
  */
-const mapRawProduct = (item: RawMohasagorProduct): Product => {
-  // 1. Pricing Logic
-  const regularPrice = item.price
-    ? String(item.price)
-    : String(item.sale_price || 0);
-  const sellPrice = item.sale_price
-    ? String(item.sale_price)
-    : String(item.price || 0);
+const mapRawProduct = (item: any): Product => {
+  // 1. Identification
+  const externalId = String(item.product_code || item.id);
+  const isMainAvailable = item.stock_status === "available" || Number(item.stock) > 0;
+  
+  // 2. Pricing Logic: Reg/Sell = price | Cost = sale_price
+  const mohaPrice = String(item.price || 0);
+  const mohaCost = String(item.sale_price || 0);
 
-  // 2. Image Logic (Maps from item.product_images array)
+  // 3. IMAGE LOGIC (FIXED)
   let imagesList: string[] = [];
   if (Array.isArray(item.product_images) && item.product_images.length > 0) {
-    imagesList = item.product_images
-      .map((img: any) => img.product_image)
-      .filter(Boolean);
-  }
-  if (imagesList.length === 0 && item.thumbnail_img) {
+    // API sends: [{ product_image: "url" }, ...]
+    imagesList = item.product_images.map((img: any) => img.product_image).filter(Boolean);
+  } else if (item.thumbnail_img) {
     imagesList = [item.thumbnail_img];
+  } else {
+    imagesList = ["/placeholder.png"];
   }
-  if (imagesList.length === 0) {
-    imagesList = ["/images/placeholder.svg"];
+
+  // Convert to internal format: [{ url: "..." }]
+  const finalImages = imagesList.map((url: string) => ({ url }));
+
+  // 4. VARIANT LOGIC (WITH STOCK FIX)
+  const mappedVariants = (item.product_variants || []).map((v: any, index: number) => {
+    let variantStock = Number(v.stock || v.qty || 0);
+    
+    // If the main item is available but variant says 0, set to 999
+    if (isMainAvailable && variantStock === 0) {
+      variantStock = 999;
+    }
+
+    return {
+      id: String(v.id || index),
+      stock: variantStock,
+      price: mohaPrice,
+      sku: v.sku ? String(v.sku) : null,
+      attributes: v.attribute ? [{ label: v.attribute, value: v.variant }] : [],
+      // Ensure variants have images for the selector
+      images: v.image ? [v.image] : imagesList,
+    };
+  });
+
+  // 5. QUANTITY CALCULATION
+  let totalQuantity = mappedVariants.reduce((sum: number, v: any) => sum + v.stock, 0);
+  if (mappedVariants.length === 0) {
+    totalQuantity = isMainAvailable ? (Number(item.stock) || 999) : 0;
   }
 
-  // 3. Variant Logic (Maps from item.product_variants)
-  const rawVariants = item.product_variants || item.variants || [];
-  const mappedVariants = Array.isArray(rawVariants)
-    ? rawVariants.map((v: any, index: number) => {
-        const attrs: { type: string; label: string; value: string; hex?: string }[] = [];
-        
-        // Handle specific keys seen in your API response: "attribute" and "variant"
-        if (v.attribute && v.variant) {
-          attrs.push({
-            label: normalizeAttributeLabel(String(v.attribute)),
-            value: String(v.variant),
-            type: normalizeAttributeLabel(String(v.attribute)),
-          });
-        }
-
-        return {
-          id: String(v.id || index),
-          product_id: `mohasagor-${item.id}`,
-          images: v.image ? [v.image] : imagesList,
-          attributes: attrs,
-          stock: Number(v.stock || v.qty || 0),
-          sku: String(v.sku || item.product_code || item.id),
-          price: String(v.price || v.sale_price || sellPrice),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-      })
-    : [];
-
-  // 4. Dynamic Quantity / Stock Status Logic
-  const totalStockFromVariants = mappedVariants.reduce((sum, v) => sum + v.stock, 0);
-  const rootStock = Number((item as any).stock || (item as any).qty || 0);
-  
-  // Use 999 as a "buyable" placeholder if status is "available", else use actual count
-  const finalQuantity = (item as any).stock_status === "available" 
-    ? 999 
-    : (totalStockFromVariants > 0 ? totalStockFromVariants : rootStock);
-
-  // 5. Build Final Product Object
+  // 6. BUILD FINAL OBJECT
   return {
-    id: `mohasagor-${item.id}`,
+    id: externalId,
+    moha_id: Number(item.id), // For descending sort
     name: item.name,
-    slug: item.slug || `mohasagor-${item.id}`,
-    images: imagesList.map((url) => ({ url })),
-    
-    // Default dynamic arrays (functional nulls/empty)
-    video_urls: (item as any).video_urls || [], 
-    specifications: (item as any).specifications || [],
-    faqs: (item as any).faqs || [],
-    shipping_config: (item as any).shipping_config || [],
-    product_tags: [],
-
-    regular_price: regularPrice,
-    sell_price: sellPrice,
-    quantity: finalQuantity,
-    stock_status: (item as any).stock_status,
-
-    short_description: item.category || "Gadgets & Electronics",
-    description: item.details || item.name, // Using "details" from your API logs
-    
-    // TypeScript-safe brand mapping
-    brand: (item as any).brand ? { 
-        id: String((item as any).brand.id), 
-        name: String((item as any).brand.name || "Unknown Brand"), 
-        logo_url: (item as any).brand.logo ? String((item as any).brand.logo) : undefined 
-    } : undefined,
-    
-    suppliers: [{ id: "mohasagor", name: "Mohasagor", image_url: "" }],
-    
-    sku: item.product_code ? String(item.product_code) : String(item.id),
-    
-    unit_name: (item as any).unit || "Pcs", 
-    warranty: (item as any).warranty || undefined,
-    
-    // Functional values start at 0 (dynamic based on API)
-    avg_rating: Number((item as any).rating || 0),
-    total_reviews: Number((item as any).reviews_count || 0),
-    view_count: Number((item as any).view_count || 0),
-    total_sold: Number((item as any).total_sold || 0),
-    
+    slug: item.slug || `prod-${externalId}`,
+    images: finalImages, // ✅ Images are back
+    regular_price: mohaPrice,
+    sell_price: mohaPrice,
+    cost_price: mohaCost,
+    quantity: totalQuantity,
+    stock_status: totalQuantity > 0 ? "available" : "out_of_stock",
+    description: item.details || item.name,
+    short_description: item.details || "", 
+    sku: externalId,
     variants: mappedVariants,
-  };
+    suppliers: [{ id: "mohasagor", name: "Mohasagor", image_url: "" }],
+    // Internal compatibility placeholders
+    video_urls: [], specifications: [], faqs: [], shipping_config: [], product_tags: [],
+    avg_rating: 0, total_reviews: 0, view_count: 0, total_sold: 0,
+  } as any;
 };
-
 /**
  * Client-side: uses the Next.js proxy route (/api/mohasagor/products) to avoid CORS.
  * Used on the suppliers page (always runs in browser).
  */
+// export const fetchMohasagorProducts = async (
+//   page = 1,
+// ): Promise<FilterProductsResponse> => {
+//   const res = await fetch(`/api/mohasagor/products?page=${page}`, {
+//     method: "GET",
+//     headers: { "Content-Type": "application/json" },
+//   });
+
+//   if (!res.ok) throw new Error("Failed to fetch products from Mohasagor API");
+
+//   const json = await res.json();
+//   const rawList: RawMohasagorProduct[] = Array.isArray(json?.products)
+//     ? json.products
+//     : [];
+
+//   return {
+//     data: rawList.map(mapRawProduct),
+//     pagination: {
+//       current_page: json?.current_page || page,
+//       total_pages: json?.last_page || 1,
+//       total_items: json?.total || rawList.length,
+//       limit: json?.per_page || 200,
+//     },
+//   };
+// };
+
 export const fetchMohasagorProducts = async (
   page = 1,
 ): Promise<FilterProductsResponse> => {
-  const res = await fetch(`/api/mohasagor/products?page=${page}`, {
+  // We add &limit=200 to the proxy request
+  const res = await fetch(`/api/mohasagor/products?page=${page}&limit=200`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
@@ -222,7 +216,7 @@ export const fetchMohasagorProducts = async (
       current_page: json?.current_page || page,
       total_pages: json?.last_page || 1,
       total_items: json?.total || rawList.length,
-      limit: json?.per_page || 200,
+      limit: 200, 
     },
   };
 };
