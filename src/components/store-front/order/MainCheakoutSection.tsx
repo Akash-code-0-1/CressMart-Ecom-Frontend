@@ -775,12 +775,6 @@
 
 // export default MainCheckoutSection;
 
-
-
-
-
-
-
 "use client";
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
@@ -899,34 +893,56 @@ const MainCheckoutSection: React.FC = () => {
     })),
   });
 
-  const cartItems: CartItem[] = useMemo(() => {
-    return rawCartItems.map((item, index) => {
-      const pData = productQueries[index]?.data;
-      const existingProduct = (item.product || {}) as Product;
+const cartItems: CartItem[] = useMemo(() => {
+  return rawCartItems.map((item, index) => {
+    // 1. Get fresh data from the background query
+    const pData = productQueries[index]?.data; 
+    const existingProduct = (item.product || {}) as Product;
 
-      const rawShippingConfig =
-        existingProduct.shipping_config ?? pData?.shipping_config;
+    // 2. Resolve Stock Quantity
+    // Priority: fresh DB data > data stored in cart item
+    const dbQty = pData 
+      ? Number(pData.quantity) 
+      : Number(existingProduct.quantity ?? 0);
 
-      // ✅ derive the image from `images` array instead of a nonexistent `featuredImage`
-      const productImage =
-        existingProduct.images?.[0]?.url || pData?.images?.[0]?.url || "";
+    // 3. Resolve Stock Status String
+    const stockStatus = (pData?.stock_status || (existingProduct as any)?.stock_status || "").toLowerCase();
 
-      return {
-        ...item,
-        product: {
-          id: item.productId,
-          name: item.name || existingProduct.name || pData?.name || "Product",
-          featuredImage: item.image || productImage || "",
-          price: Number(
-            item.price || existingProduct.sell_price || pData?.sell_price || 0,
-          ),
-          shipping_type:
-            existingProduct.shipping_type || pData?.shipping_type || "DEFAULT",
-          shipping_config: rawShippingConfig ?? undefined,
-        },
-      };
-    });
-  }, [rawCartItems, productQueries]);
+    // 4. Resolve Image URL
+    // Product type typically has an 'images' array. We take the first one's URL.
+    const productImage = 
+      pData?.images?.[0]?.url || 
+      existingProduct.images?.[0]?.url || 
+      item.image || 
+      "";
+
+    // 5. Clean UI Logic for Label
+    let stockDisplay = "Stock Out";
+    
+    if (dbQty === 999 || stockStatus === "available") {
+      stockDisplay = "Available";
+    } else if (dbQty > 0) {
+      stockDisplay = `Stock: ${dbQty}`;
+    }
+
+    return {
+      ...item,
+      product: {
+        ...existingProduct,
+        id: item.productId,
+        name: pData?.name || item.name || existingProduct.name || "Product",
+        price: Number(pData?.sell_price || item.price || 0),
+        
+        // This is the label the UI will show
+        stockLabel: stockDisplay, 
+        
+        // Internal quantity for calculations
+        quantity: dbQty, 
+        featuredImage: productImage, // We assign the URL string here for the UI
+      },
+    } as any;
+  });
+}, [rawCartItems, productQueries]);
 
   const courierConfig = shippingSettings?.courier_config;
 
@@ -1570,4 +1586,3 @@ const MainCheckoutSection: React.FC = () => {
 };
 
 export default MainCheckoutSection;
-
