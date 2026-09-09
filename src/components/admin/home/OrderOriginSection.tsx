@@ -11,13 +11,13 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { 
-  FaFacebook, 
-  FaInstagram, 
-  FaYoutube, 
-  FaLinkedin, 
-  FaGoogle, 
-  FaWhatsapp 
+import {
+  FaFacebook,
+  FaInstagram,
+  FaYoutube,
+  FaLinkedin,
+  FaGoogle,
+  FaWhatsapp,
 } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/utils/api";
@@ -25,7 +25,7 @@ import { fetchSettings } from "@/services-api/settingsService";
 import { extractImageUrl } from "@/utils/image";
 
 /**
- * Config for colors and icons. 
+ * Config for colors and icons.
  * Icons are omitted for Direct/Own to trigger the Primary Logo logic.
  */
 const sourceConfig: Record<string, { color: string; icon?: any }> = {
@@ -35,9 +35,9 @@ const sourceConfig: Record<string, { color: string; icon?: any }> = {
   linkedin: { color: "#0077B5", icon: FaLinkedin },
   google: { color: "#5C7ABD", icon: FaGoogle },
   whatsapp: { color: "#4ADE80", icon: FaWhatsapp },
-  direct: { color: "#FF7050" }, 
-  own: { color: "#FF7050" },    
-  others: { color: "#FF7050" }, 
+  direct: { color: "#FF7050" },
+  own: { color: "#FF7050" },
+  others: { color: "#FF7050" },
 };
 
 /**
@@ -45,23 +45,33 @@ const sourceConfig: Record<string, { color: string; icon?: any }> = {
  */
 const getIcon = (name: string, primaryLogoUrl: string) => {
   const safeName = (name || "").toLowerCase().trim();
-  
+
   // Sources that should use the Primary Logo
-  const logoSources = ["direct", "own", "others", "site", "system", "other", "direct traffic"];
+  const logoSources = [
+    "direct",
+    "own",
+    "others",
+    "site",
+    "system",
+    "other",
+    "direct traffic",
+  ];
   const isLogoSource = logoSources.includes(safeName);
 
   if (isLogoSource) {
     return (
       <div className="flex items-center justify-center w-6 h-6">
-        <img 
-          src={primaryLogoUrl} 
-          alt="Logo" 
+        <img
+          src={primaryLogoUrl}
+          alt="Logo"
           className="w-5 h-5 object-contain"
           onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              const parent = e.currentTarget.parentElement;
-              if (parent) parent.innerHTML = '<div style="color: #FF7050; font-size: 14px;">●</div>';
-          }} 
+            e.currentTarget.style.display = "none";
+            const parent = e.currentTarget.parentElement;
+            if (parent)
+              parent.innerHTML =
+                '<div style="color: #FF7050; font-size: 14px;">●</div>';
+          }}
         />
       </div>
     );
@@ -73,13 +83,17 @@ const getIcon = (name: string, primaryLogoUrl: string) => {
   if (!Icon) {
     // Final fallback to primary logo if source is unknown
     return (
-        <div className="flex items-center justify-center w-6 h-6">
-          <img src={primaryLogoUrl} className="w-5 h-5 object-contain" alt="fallback" />
-        </div>
+      <div className="flex items-center justify-center w-6 h-6">
+        <img
+          src={primaryLogoUrl}
+          className="w-5 h-5 object-contain"
+          alt="fallback"
+        />
+      </div>
     );
   }
 
-  const iconColor = safeName === 'instagram' ? "#E4405F" : config.color;
+  const iconColor = safeName === "instagram" ? "#E4405F" : config.color;
   return (
     <div className="flex items-center justify-center w-6 h-6">
       <Icon size={18} color={iconColor} />
@@ -94,9 +108,9 @@ const CustomTick = (props: any) => {
   const { x, y, payload, primaryLogoUrl } = props;
   return (
     <foreignObject x={x - 12} y={y + 8} width={24} height={24}>
-        <div className="flex items-center justify-center w-full h-full">
-            {getIcon(payload.value, primaryLogoUrl)}
-        </div>
+      <div className="flex items-center justify-center w-full h-full">
+        {getIcon(payload.value, primaryLogoUrl)}
+      </div>
     </foreignObject>
   );
 };
@@ -112,7 +126,10 @@ const CustomTooltip = ({ active, payload }: any) => {
         <p className="text-sm font-bold text-gray-800 mb-1">{data.name}</p>
         <div className="flex flex-col gap-0.5">
           <p className="text-xs text-gray-500">
-            Sales: <span className="text-[#FF7050] font-bold">${Number(data.value).toLocaleString()}</span>
+            Sales:{" "}
+            <span className="text-[#FF7050] font-bold">
+              ৳{Number(data.value).toLocaleString()}
+            </span>
           </p>
           <p className="text-xs text-gray-500">
             Orders: <span className="text-black font-bold">{data.count}</span>
@@ -129,13 +146,35 @@ interface OrderOriginProps {
   selectedDate: Date;
 }
 
-const OrderOriginSection = ({ activeFilter, selectedDate }: OrderOriginProps) => {
+const OrderOriginSection = ({
+  activeFilter,
+  selectedDate,
+}: OrderOriginProps) => {
   // Fetch origin statistics
+  // const { data: statsData, isLoading: isStatsLoading } = useQuery({
+  //   queryKey: ["order-origin-stats", activeFilter, selectedDate.toISOString()],
+  //   queryFn: async () => {
+  //     const res = await apiFetch(
+  //       `/orders/stats/origin?filter=${activeFilter}&date=${selectedDate.toISOString()}`
+  //     );
+  //     if (!res.ok) throw new Error("Failed");
+  //     const json = await res.json();
+  //     return Array.isArray(json) ? json : json.data || [];
+  //   },
+  // });
+
   const { data: statsData, isLoading: isStatsLoading } = useQuery({
-    queryKey: ["order-origin-stats", activeFilter, selectedDate.toISOString()],
+    // Added 'DELIVERED' to the queryKey to ensure cache updates when status is implied
+    queryKey: [
+      "order-origin-stats",
+      activeFilter,
+      selectedDate.toISOString(),
+      "DELIVERED",
+    ],
     queryFn: async () => {
+      // Pass status=DELIVERED to your backend
       const res = await apiFetch(
-        `/orders/stats/origin?filter=${activeFilter}&date=${selectedDate.toISOString()}`
+        `/orders/stats/origin?filter=${activeFilter}&date=${selectedDate.toISOString()}&status=DELIVERED`,
       );
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
@@ -156,19 +195,34 @@ const OrderOriginSection = ({ activeFilter, selectedDate }: OrderOriginProps) =>
     return extractImageUrl(logoPath) || "/images/minilogo.png";
   }, [settings]);
 
+
   const chartData = Array.isArray(statsData) ? statsData : [];
+
+// Add this before the return statement
+if (!isStatsLoading && chartData.length === 0) {
+  return (
+    <div className="flex flex-col items-center justify-center h-[240px] text-gray-400 text-sm">
+      <p>No delivered orders found</p>
+    </div>
+  );
+}
 
   return (
     <div className="bg-white rounded-[16px] p-4  w-full min-h-[320px] font-poppins relative">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-[#1F2937]">Order origin</h3>
+        <h3 className="text-lg font-bold text-[#1F2937]">
+          Order origin{" "}
+          <span className="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded-full ml-1">
+            (Delivered)
+          </span>
+        </h3>
       </div>
 
       <div className="h-[240px] w-full relative">
         {/* Loading Overlay */}
         {isStatsLoading && (
           <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
-             <div className="w-6 h-6 border-2 border-[#FF7050] border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#FF7050] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
@@ -188,35 +242,41 @@ const OrderOriginSection = ({ activeFilter, selectedDate }: OrderOriginProps) =>
               </linearGradient>
             </defs>
 
-            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#F3F4F6" />
-            
-            <XAxis 
-              dataKey="name" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={(tickProps) => <CustomTick {...tickProps} primaryLogoUrl={primaryLogoUrl} />}
+            <CartesianGrid
+              vertical={false}
+              strokeDasharray="3 3"
+              stroke="#F3F4F6"
+            />
+
+            <XAxis
+              dataKey="name"
+              axisLine={false}
+              tickLine={false}
+              tick={(tickProps) => (
+                <CustomTick {...tickProps} primaryLogoUrl={primaryLogoUrl} />
+              )}
               interval={0}
             />
 
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#9CA3AF', fontSize: 10 }}
-              domain={[0, 'auto']}
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#9CA3AF", fontSize: 10 }}
+              domain={[0, "auto"]}
             />
 
-            <Tooltip 
-              cursor={{ fill: 'transparent' }} 
-              content={<CustomTooltip />} 
+            <Tooltip
+              cursor={{ fill: "transparent" }}
+              content={<CustomTooltip />}
             />
 
             <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
               {chartData.map((entry: any, index: number) => {
                 const sourceKey = (entry.name || "direct").toLowerCase().trim();
                 return (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={sourceConfig[sourceKey]?.color || "#FF7050"} 
+                  <Cell
+                    key={`cell-৳{index}`}
+                    fill={sourceConfig[sourceKey]?.color || "#FF7050"}
                   />
                 );
               })}
