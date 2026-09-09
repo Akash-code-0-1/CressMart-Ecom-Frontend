@@ -31,6 +31,10 @@ export default {
   orderPlacing:
     "আপনার পণ্যের লাইভ স্ট্যাটাস এবং শিপিং আপডেট জানতে নিচের অর্ডার আইডিটি প্রবেশ করান।",
 
+    action: "অ্যাকশন",
+trackOrderAction: "অর্ডার ট্র্যাক করুন",
+noTrackingAvailable: "ট্র্যাকিং উপলব্ধ নেই, ইনভয়েস দেখুন",
+viewInvoice: "ইনভয়েস দেখুন",
 
   home: {
   newArrivals: "নতুন পণ্য",

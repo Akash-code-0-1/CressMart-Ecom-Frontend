@@ -22,11 +22,12 @@ import { invoiceItem } from "@/@types/invoice.type";
 import { getSettings } from "@/services-api/globalSettingsService";
 import { extractImageUrl } from "@/utils/image";
 
-export default function ThankYouContent() {
+export default function ThankYouContent({ showThankYou = true }: { showThankYou?: boolean }) {
+  const [isCompletedOpen, setIsCompletedOpen] = useState(showThankYou);
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const invoiceRef = useRef<HTMLDivElement>(null);
-  const [isCompletedOpen, setIsCompletedOpen] = useState(true);
+  // const [isCompletedOpen, setIsCompletedOpen] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState<CustomerInfo | null>(
     null,
@@ -112,220 +113,185 @@ export default function ThankYouContent() {
       })
     : "N/A";
 
+  // ... keep imports same, replace the RETURN block inside ThankYouContent
   return (
     <div className="min-h-screen bg-[#F7F7F7] py-10 px-4 flex flex-col items-center">
       <div
         ref={invoiceRef}
-        className="w-full max-w-[1020px] bg-white rounded-lg p-8 md:p-12 font-poppins text-[#2D2D2D]"
+        className="p-12 bg-white w-full max-w-[210mm] mx-auto font-lato text-[#023337] box-border shadow-sm rounded-lg"
       >
-        {/* Header Section */}
-        <div className="flex justify-between items-start mb-10">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
+        {/* 1. Header Section */}
+        <div className="flex justify-between items-start mb-12 border-b border-gray-100 pb-8">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 relative">
               <Image
                 src={invoiceLogo}
-                alt="logo"
-                width={160}
-                height={60}
-                className="object-contain rounded-md"
+                alt="Logo"
+                fill
+                className="object-contain"
                 unoptimized
               />
             </div>
-            <div className="text-[11px] text-gray-500 font-medium">
-              <p>www.creassmart.com</p>
-              <p>{settingsdata?.contact_email}</p>
-              <p>+88 01904300117</p>
+            <div className="h-12 w-[1px] bg-gray-300"></div>
+            <div className="text-[13px] space-y-0.5">
+              <p className="font-bold text-[#FF6A00] text-[16px] uppercase tracking-tight">
+                {settingsdata?.company_name || "CREASS"}
+              </p>
+              <p className="text-gray-500 font-medium">
+                {settingsdata?.contact_email}
+              </p>
+              <p className="text-gray-500 font-medium">+88 0141 0050041</p>
             </div>
+          </div>
+          <div className="text-right text-[13px] text-gray-600">
+            <p className="font-bold text-[#023337] uppercase tracking-widest mb-1">
+              Business Address
+            </p>
+            <p className="max-w-[200px]">{settingsdata?.address}</p>
           </div>
         </div>
 
-        <hr className="border-gray-100 mb-8" />
-
-        {/* Info Meta */}
-        <div className="flex justify-between mb-10 text-[13px] flex-wrap gap-5">
-          <div>
-            <p className="text-gray-400 font-medium mb-1">Billed to</p>
-            <p className="font-medium text-lg">{currentCustomer.name}</p>
-            <p className="font-medium text-gray-600">{currentCustomer.phone}</p>
-            <p className="text-gray-500 w-56">{currentCustomer.address}</p>
+        {/* 2. Info Bar */}
+        <div className="grid grid-cols-3 w-full border-t border-gray-100 pt-8 mb-12 items-start">
+          <div className="text-left space-y-1">
+            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">
+              Billed to
+            </p>
+            <p className="font-bold text-[18px] text-[#023337] leading-tight">
+              {currentCustomer.name}
+            </p>
+            <p className="text-[13px] text-gray-700 font-medium">
+              {currentCustomer.phone}
+            </p>
+            <p className="text-[13px] text-gray-600 leading-tight max-w-[200px]">
+              {currentCustomer.address}
+            </p>
           </div>
-          <div className="text-right space-y-4">
-            <div>
-              <p className="text-gray-400 font-medium">Invoice number</p>
-              <p className="font-medium text-gray-800">
+          <div className="flex justify-center items-start">
+            <div className="text-left">
+              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-1">
+                Invoice Number
+              </p>
+              <p className="font-bold text-[18px] text-[#023337]">
                 #{apiResponse.invoice_number}
               </p>
             </div>
-            <div className="flex gap-10">
-              <div>
-                <p className="text-gray-400 font-medium">Date</p>
-                <p className="font-medium text-gray-800">{formattedDate}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 font-medium">Order number</p>
-                <p className="font-medium text-gray-800">
-                  #{apiResponse.order_number}
-                </p>
-              </div>
+          </div>
+          <div className="text-right space-y-4">
+            <div>
+              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-0.5">
+                Date
+              </p>
+              <p className="font-bold text-[15px] text-[#023337]">
+                {formattedDate}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-0.5">
+                Order Number
+              </p>
+              <p className="font-bold text-[18px] text-[#023337]">
+                #{apiResponse.order_number}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Item Table */}
-        <div className="mb-10 overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[11px] text-gray-400 uppercase font-medium border-b border-gray-100">
-                <th className="pb-3">NO.</th>
-                <th className="pb-3 px-4">ITEM DETAIL</th>
-                <th className="pb-3">SKU</th>
-                <th className="pb-3">QTY</th>
-                <th className="pb-3">UNIT</th>
-                <th className="pb-3 text-right">RATE</th>
-                <th className="pb-3 text-right">AMOUNT</th>
+        {/* 3. Items Table */}
+        <table className="w-full mb-12">
+          <thead>
+            <tr className="text-gray-400 text-[11px] font-bold uppercase border-b-2 border-[#023337]/10">
+              <th className="py-4 text-left w-12">NO.</th>
+              <th className="py-4 text-left">ITEM DETAIL</th>
+              <th className="py-4 text-center">QTY</th>
+              <th className="py-4 text-right">RATE</th>
+              <th className="py-4 text-right">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {apiResponse.order_items?.map((item: any, idx: number) => (
+              <tr key={item.id} className="text-[14px]">
+                <td className="py-6 align-top text-gray-500">
+                  {String(idx + 1).padStart(2, "0")}
+                </td>
+                <td className="py-6 font-bold text-[#023337]">
+                  {item.product_name}
+                </td>
+                <td className="py-6 align-top text-center font-bold text-[#023337]">
+                  {item.quantity}
+                </td>
+                <td className="py-6 align-top text-right text-gray-600">
+                  ৳{Number(item.unit_price).toLocaleString()}
+                </td>
+                <td className="py-6 align-top text-right font-bold text-[#023337]">
+                  ৳{(Number(item.unit_price) * item.quantity).toLocaleString()}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {apiResponse.order_items?.map(
-                (item: invoiceItem, idx: number) => {
-                  const variantImg = item.variant?.images?.[0] || (item.variant as any)?.image;
-                  const productImg = item.product?.images?.[0] || (item.product as any)?.image || (item.product as any)?.featuredImage;
-                  const externalImg = item.external_image || (item as any)?.image;
-                  const rawImg = variantImg || productImg || externalImg;
-                  const finalImg =
-                    extractImageUrl(rawImg, backendBaseUrl) ||
-                    "/images/placeholder.svg";
+            ))}
+          </tbody>
+        </table>
 
-                  let vInfo = "";
-                  if (item.variant?.attributes) {
-                    try {
-                      const attrs =
-                        typeof item.variant.attributes === "string"
-                          ? JSON.parse(item.variant.attributes)
-                          : item.variant.attributes;
-                      if (Array.isArray(attrs)) {
-                        vInfo = attrs
-                          .map((a: unknown) => (a as { value: string }).value)
-                          .join(", ");
-                      }
-                    } catch (e) {
-                      vInfo = "";
-                    }
-                  }
-
-                  return (
-                    <tr key={item.id} className="text-[13px]">
-                      <td className="py-5 font-medium">{idx + 1}</td>
-                      <td className="py-5 px-4 flex items-center gap-3">
-                        <div className="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 relative flex-shrink-0">
-                          <Image
-                            src={finalImg}
-                            alt={item.product_name || "product"}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800 line-clamp-1">
-                            {item.product_name}
-                          </p>
-                          {vInfo && (
-                            <p className="text-[11px] text-gray-400 font-medium">
-                              {vInfo}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-5 text-gray-400 font-medium">
-                        {item.variant?.sku || item.product?.sku || "N/A"}
-                      </td>
-                      <td className="py-5 font-medium text-gray-800">
-                        {item.quantity}
-                      </td>
-                      <td className="py-5 text-gray-400 font-medium">
-                        {item.variant?.unit || item.product?.unit || "pcs"}
-                      </td>
-                      <td className="py-5 text-right font-medium">
-                        ৳{Number(item.unit_price).toLocaleString()}
-                      </td>
-                      <td className="py-5 text-right font-medium">
-                        ৳
-                        {(
-                          Number(item.unit_price) * item.quantity
-                        ).toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                },
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer Totals */}
-        <div className="flex flex-col md:flex-row justify-between items-start border-t border-gray-100 pt-8 gap-6">
-          <button
-            onClick={() => setIsEditOpen(true)}
-            data-html2canvas-ignore
-            className="flex items-center gap-2 text-base font-medium text-gray-800 hover:text-[#FF5C24] transition-colors"
-          >
-            <FiEdit3 className="text-xl" /> Edit
-          </button>
-
-          <div className="w-full max-w-[280px] space-y-3">
-            <div className="flex justify-between text-sm text-gray-500 font-medium">
+        {/* 4. Footer Totals */}
+        <div className="flex justify-end mt-10">
+          <div className="w-72 space-y-3.5 text-[15px]">
+            <div className="flex justify-between text-gray-500 font-medium">
               <span>Sub Total</span>
-              <span className="font-medium text-gray-800">
+              <span className="text-[#023337] font-bold">
                 ৳{subtotal.toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-sm text-gray-500 font-medium">
+            <div className="flex justify-between text-gray-500 font-medium">
               <span>Delivery Charge</span>
-              <span className="font-medium text-gray-800">
+              <span className="text-[#023337] font-bold">
                 ৳{shippingFee.toLocaleString()}
               </span>
             </div>
             {discountAmount > 0 && (
-              <div className="flex justify-between text-sm text-red-500 font-medium">
+              <div className="flex justify-between text-[#FF4D4D] font-medium">
                 <span>Discount</span>
-                <span className="font-medium">
-                  -৳{discountAmount.toLocaleString()}
+                <span className="font-bold">
+                  - ৳{discountAmount.toLocaleString()}
                 </span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-medium text-gray-900 border-t border-gray-50 pt-3">
+            <div className="flex justify-between text-[20px] font-black text-[#023337] border-t-2 border-gray-100 pt-4 mt-2">
               <span>Grand Total</span>
-              <span className="text-[#FF5C24]">
-                ৳{apiResponse.total_bill?.toLocaleString()}
-              </span>
+              <span>৳{Number(apiResponse.total_bill).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm text-gray-500 font-medium">
-              <span>Advance Pay</span>
-              <span className="font-medium text-gray-800">
-                ৳{apiResponse?.advance_amount?.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between text-lg font-medium text-gray-900 border-t border-gray-200 pt-3">
+            {Number(apiResponse.advance_amount) > 0 && (
+              <div className="flex justify-between text-gray-400 font-medium">
+                <span>Advance Pay</span>
+                <span className="font-bold">
+                  ৳{Number(apiResponse.advance_amount).toLocaleString()}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between text-[18px] font-bold text-gray-800 pt-3 border-t border-dashed border-gray-200">
               <span>Due Pay</span>
-              <span className="text-[#FF5C24]">
-                ৳{apiResponse.total_amount_due?.toLocaleString()}
+              <span className="text-[#FF6A00]">
+                ৳{Number(apiResponse.total_amount_due).toLocaleString()}
               </span>
             </div>
           </div>
         </div>
 
         {/* Disclaimer */}
-        <div className="mt-16 text-center border-t border-gray-50 pt-6">
-          <p className="text-[14px] font-medium text-red-500">
-            বিঃ দ্রঃ ইনভয়েসসহ আনবক্সিং ভিডিও বাধ্যতামূলক ভিডিও ছাড়া কোনো অভিযোগ
-            গ্রহণযোগ্য নয়*
+        <div className="mt-16 text-center border-t border-gray-50 pt-10">
+          <p className="text-[#FF4D4D] text-[13px] font-bold">
+            বিঃ দ্রঃ ইনভয়েসসহ আনবক্সিং ভিডিও বাধ্যতামূলক ভিডিও ছাড়া কোনো
+            অভিযোগ গ্রহণযোগ্য নয়*
           </p>
         </div>
-      </div>
 
-      {/* Modals */}
-      <OrderCompletedModal
+        <button
+          onClick={() => setIsEditOpen(true)}
+          className="mt-10 flex items-center gap-2 text-sm text-gray-500 hover:text-[#FF5C24]"
+        >
+          <FiEdit3 /> Edit Customer Details
+        </button>
+      </div>
+      {/* Modals stay at the bottom */}
+       <OrderCompletedModal
         isOpen={isCompletedOpen}
         onClose={() => setIsCompletedOpen(false)}
         customerName={currentCustomer.name}

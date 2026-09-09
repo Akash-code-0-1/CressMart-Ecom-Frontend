@@ -397,7 +397,7 @@ const OrdersPage = () => {
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
-          <thead>
+          {/* <thead>
             <tr className="bg-[#F9FAFB] text-[#727272] text-[14px] font-medium">
               <th className="p-5 pl-8">{t.orderId}</th>
               <th className="p-5">{t.orderNumber}</th>
@@ -407,11 +407,23 @@ const OrdersPage = () => {
               <th className="p-5">{t.orderPayment}</th>
               <th className="p-5">{t.orderStatus}</th>
             </tr>
+          </thead> */}
+          <thead>
+            <tr className="bg-[#F9FAFB] text-[#727272] text-[14px] font-medium">
+              <th className="p-5 pl-8">{t.orderId}</th>
+              <th className="p-5">{t.orderNumber}</th>
+              <th className="p-5">{t.orderItems}</th>
+              <th className="p-5">{t.orderDate}</th>
+              <th className="p-5">{t.orderPrice}</th>
+              <th className="p-5">{t.orderPayment}</th>
+              <th className="p-5">{t.orderStatus}</th>
+              <th className="p-5 text-center">{t.action}</th>
+            </tr>
           </thead>
           <tbody className="text-[14px] text-[#4D4D4D]">
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="p-20 text-center text-gray-400">
+                <td colSpan={8} className="p-20 text-center text-gray-400">
                   Loading...
                 </td>
               </tr>
@@ -503,6 +515,15 @@ const OrdersPage = () => {
                     </td>
                     <td className="p-5">
                       <StatusBadge status={order.status} />
+                    </td>
+                    {/* Add this new cell */}
+                    <td className="p-5 text-center">
+                      <a
+                        href={`/order/invoice?orderId=${order.id}`}
+                        className="text-[12px] bg-[#FF7050]/10 text-[#FF7050] px-3 py-1.5 rounded-full font-semibold hover:bg-[#FF7050] hover:text-white transition-colors"
+                      >
+                        {t.viewInvoice}
+                      </a>
                     </td>
                   </tr>
                 );

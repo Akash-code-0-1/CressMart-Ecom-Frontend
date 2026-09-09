@@ -28,6 +28,11 @@ export default {
   orderPlacing:
     "Enter your unique order ID below to check live status and shipment updates of your package.",
 
+  action: "Action",
+trackOrderAction: "Track Order",
+noTrackingAvailable: "No Tracking Available, View Invoice",
+viewInvoice: "View Invoice",
+
 
 home: {
   newArrivals: "New Arrivals",
