@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -342,66 +342,104 @@ const remainingDue = totalDue - shipping.advanceAmount;
     setItems(items.filter((i) => i.productId !== id));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (items.length === 0)
-      return toast.error("Please add at least one product");
+// Add this near your other state declarations
+const hydratedOrderId = React.useRef<string | null>(null);
 
-    setLoading(true);
-    try {
-      const payload: OrderPayload = {
-        // Customer fields
-        customerName: customer.customerName,
-        customerPhone: customer.customerPhone,
-        customerAddress: customer.customerAddress,
-        customerNote: customer.customerNote,
-        // Shipping & order config
-        shippingArea: shipping.shippingArea,
-        paymentMethod: shipping.paymentMethod,
-        source: shipping.source,
-        status: shipping.status,
-        paymentStatus: shipping.paymentStatus,
-        // Financial fields — explicitly named to avoid confusion
-        manualDiscount: Number(shipping.manualDiscount),
-        advanceAmount: Number(shipping.advanceAmount),
-        // Courier IDs (optional)
-        courier_city_id: shipping.courier_city_id
-          ? Number(shipping.courier_city_id)
-          : undefined,
-        courier_zone_id: shipping.courier_zone_id
-          ? Number(shipping.courier_zone_id)
-          : undefined,
-        courier_area_id: shipping.courier_area_id
-          ? Number(shipping.courier_area_id)
-          : undefined,
-        // Items
-        items: items.map((i) => ({
-          productId: i.productId,
-          variantId: i.variantId ?? undefined,
-          quantity: i.quantity,
-        })),
+useEffect(() => {
+  if (isEditMode && existingOrder && hydratedOrderId.current !== existingOrder.id) {
+    hydratedOrderId.current = existingOrder.id; // Mark as hydrated
+    
+    setCustomer({
+      customerName: existingOrder.customer_name || "",
+      customerPhone: existingOrder.customer_phone || "",
+      customerAddress: existingOrder.customer_address || "",
+      customerNote: existingOrder.customer_note || "",
+    });
+
+    const dbFee = Number(existingOrder.shipping_fee) || 0;
+    setShipping({
+      shippingArea: dbFee === 120 ? "outside" : "inside",
+      paymentMethod: existingOrder.payment_method || "COD",
+      source: existingOrder.source || "admin_panel",
+      status: existingOrder.status || "PENDING",
+      paymentStatus: existingOrder.payment_status || "UNPAID",
+      manualDiscount: Number(existingOrder.discount_amount) || 0,
+      advanceAmount: Number(existingOrder.advance_amount) || 0,
+      actualShippingFee: dbFee,
+      courier_city_id: existingOrder.courier_city_id ?? null,
+      courier_zone_id: existingOrder.courier_zone_id ?? null,
+      courier_area_id: existingOrder.courier_area_id ?? null,
+    });
+
+    const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => {
+      const itemImage = item.variant?.images?.[0] || item.product?.images?.[0] || item.external_image || "";
+      return {
+        productId: String(item.product_id),
+        name: item.product_name,
+        sell_price: Number(item.unit_price),
+        quantity: item.quantity,
+        variantId: item.variant_id !== null ? String(item.variant_id) : undefined,
+        image: itemImage,
       };
+    });
+    setItems(mappedItems);
+  }
+}, [existingOrder, isEditMode]);
 
-      if (isEditMode) {
-        await updateOrderStatusService(orderId!, payload);
-        toast.success("Order Updated Successfully");
-      } else {
-        await createOrderService(payload);
-        toast.success("Order Created Successfully");
-      }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (items.length === 0) return toast.error("Please add at least one product");
 
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+  setLoading(true);
+  try {
+    const payload: OrderPayload = {
+      customerName: customer.customerName,
+      customerPhone: customer.customerPhone,
+      customerAddress: customer.customerAddress,
+      customerNote: customer.customerNote,
+      shippingArea: shipping.shippingArea,
+      paymentMethod: shipping.paymentMethod,
+      source: shipping.source,
+      status: shipping.status,
+      paymentStatus: shipping.paymentStatus,
+      manualDiscount: Number(shipping.manualDiscount),
+      advanceAmount: Number(shipping.advanceAmount),
+      courier_city_id: shipping.courier_city_id ?? undefined,
+      courier_zone_id: shipping.courier_zone_id ?? undefined,
+      courier_area_id: shipping.courier_area_id ?? undefined,
+      items: items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId ?? undefined,
+        quantity: i.quantity,
+      })),
+    };
+
+    if (isEditMode) {
+      await updateOrderStatusService(orderId!, payload);
+      
+      // 🚀 THE FIX: This refreshes the query data, but because we used 
+      // the hydratedOrderId ref, it won't overwrite the form while you are editing.
+      await queryClient.invalidateQueries({ queryKey: ["edit-order", orderId] });
+      
+      toast.success("Order Updated Successfully");
       router.push("/admin/dashboard/order");
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast.error(error.message || "Failed to save order");
-      } else {
-        toast.error("An unexpected error occurred");
-      }
-    } finally {
-      setLoading(false);
+    } else {
+      await createOrderService(payload);
+      toast.success("Order Created Successfully");
+      router.push("/admin/dashboard/order");
     }
-  };
+
+    await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      toast.error(error.message || "Failed to save order");
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (isFetchingOrder) {
     return (

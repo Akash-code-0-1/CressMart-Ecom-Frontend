@@ -55,6 +55,7 @@ export default function AddRoleMain() {
       phone: "",
       role: "ADMIN",
       password: "",
+      permissions: [],
     },
   });
 
