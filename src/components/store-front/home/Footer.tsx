@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSettings } from "@/services-api/settingsService";
 import { JSX } from "react/jsx-runtime";
 import LocationIcon from "../svg/LocationIcon";
+import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -124,6 +125,13 @@ const footerLinks = {
     ],
   };
 
+    const { data: chatSettings } = useQuery({
+    queryKey: ["chatSettings"],
+    queryFn: fetchChatSettings,
+  });
+
+  const displayPhone = chatSettings?.phone || "019XXXXXXXX";
+
   return (
     <footer className="w-full bg-white font-inter">
       <div className="max-w-[1720px] mx-auto px-4 md:px-10">
@@ -166,7 +174,7 @@ const footerLinks = {
                   <span className="text-[#727272] font-bold">
                     {t.footer.callUs}:
                   </span>{" "}
-                  {info?.contact_phone || "01904300117"}
+                  {displayPhone}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -303,7 +311,7 @@ const footerLinks = {
         </div>
 
         {/* --- Bottom Copyright --- */}
-        <div className="py-4 text-center">
+        <div className="py-4 text-center mb-20">
           <p className="text-[#727272] text-[15px] font-medium">
             {t.footer.developedBy}{" "}
             <Link href={"https://codeandget.com"} target="_blank">

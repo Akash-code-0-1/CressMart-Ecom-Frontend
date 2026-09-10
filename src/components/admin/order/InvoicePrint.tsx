@@ -291,6 +291,7 @@ import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import { extractImageUrl } from "@/utils/image";
 import { Edit } from "lucide-react";
+import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
 interface Product {
   id: string | number;
@@ -345,6 +346,11 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
       queryFn: getSettings,
     });
 
+    const { data: chatSettings } = useQuery({
+      queryKey: ["chatSettings"],
+      queryFn: fetchChatSettings,
+    });
+
     // FIX: Use a stable dependency [order?.order_number].
     // This ensures the array size NEVER changes and only resets when a NEW order is selected.
     // useEffect(() => {
@@ -372,6 +378,9 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
     const settingsdata = settingResponse?.data;
     const logoUrl =
       extractImageUrl(settingsdata?.primary_logo) || "/images/admin/logo.png";
+
+
+    const displayPhone = chatSettings?.phone || "019XXXXXXXX";
 
     return (
       <>
@@ -415,7 +424,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
                 <p className="font-medium text-gray-500">
                   {settingsdata?.contact_email}
                 </p>
-                <p className="font-medium text-gray-500">+88 0141 0050041</p>
+                <p className="font-medium text-gray-500">{displayPhone}</p>
               </div>
             </div>
             <div className="text-right text-[13px] text-gray-600">

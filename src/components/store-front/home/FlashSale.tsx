@@ -15,6 +15,18 @@ import { translations } from "@/locales";
 interface FlashSaleProps {
   flashSale: FlashSaleData;
 }
+function extractImageUrl(val: unknown): string {
+  if (typeof val === "string") return val;
+  if (val && typeof val === "object") {
+    const inner = (val as Record<string, unknown>).url;
+    if (typeof inner === "string") return inner;
+    if (inner && typeof inner === "object") {
+      const deepUrl = (inner as Record<string, unknown>).url;
+      if (typeof deepUrl === "string") return deepUrl;
+    }
+  }
+  return "";
+}
 
 const FlashSale = ({ flashSale }: FlashSaleProps) => {
   const { language } = useLanguage();
@@ -35,21 +47,25 @@ const FlashSale = ({ flashSale }: FlashSaleProps) => {
 
   // 1. MEMOIZE THE PRODUCTS: This logic will now only run when flashSale changes,
   // NOT when the timer updates every second.
-  const processedProducts = useMemo(() => {
-    if (!flashSale?.products) return [];
+const processedProducts = useMemo(() => {
+  if (!flashSale?.products) return [];
 
-    return flashSale.products.map((item) => {
-      const rowimage = item?.image || "";
-      const usableImage = rowimage.startsWith("http")
-        ? rowimage
-        : `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`;
+  return flashSale.products.map((item) => {
+    // Access the 'image' property directly
+    const rowimage = extractImageUrl(item?.image).trim();
+    
+    const usableImage = rowimage.startsWith("http")
+      ? rowimage
+      : rowimage
+        ? `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`
+        : "/images/placeholder.svg";
 
-      return {
-        ...item,
-        usableImage: usableImage || "/images/placeholder.svg",
-      };
-    });
-  }, [flashSale.products, backendBaseUrl]);
+    return {
+      ...item,
+      usableImage: usableImage || "/images/placeholder.svg",
+    };
+  });
+}, [flashSale.products, backendBaseUrl]);
 
   // 2. SEO Title Update
   useEffect(() => {

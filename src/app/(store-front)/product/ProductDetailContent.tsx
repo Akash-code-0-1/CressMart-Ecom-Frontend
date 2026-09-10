@@ -8,10 +8,12 @@ import { ProductGallery } from "@/components/store-front/product/ProductGallery"
 import { ProductInfo } from "@/components/store-front/product/ProductInfo";
 import ProductDetailsTabs from "@/components/store-front/product/Productdetailstabs";
 import RecentlyViewed from "@/components/store-front/common/RecentViewSection";
+import { getAllcategoryFlatList } from "@/services-api/categoryService";
+import { getBreadcrumbPath } from "@/utils/categoryHelper";
 import Link from "next/link";
 import { FiExternalLink } from "react-icons/fi";
-
 import { extractImageUrl } from "@/utils/image";
+import { useMemo } from "react";
 
 interface Props {
   slug: string;
@@ -22,13 +24,21 @@ function getImageUrl(img: unknown): string {
 }
 
 export default function ProductDetailContent({ slug }: Props) {
+
+
   // 1. Fetch main Product Data
   const { data: product, isLoading: isProductLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => getProductBySlug(slug),
   });
 
-  // 2. 🚀 CHECK FOR LANDING PAGE
+  // 2. Fetch ALL categories (merged into the same component scope)
+  const { data: categoryList } = useQuery({
+    queryKey: ["all-categories"],
+    queryFn: () => getAllcategoryFlatList(),
+  });
+
+  // 3. 🚀 CHECK FOR LANDING PAGE
   const { data: landingPage } = useQuery({
     queryKey: ["landing-page-check", product?.id],
     queryFn: () => fetchLandingPageByProductId(product!.id),
@@ -36,24 +46,23 @@ export default function ProductDetailContent({ slug }: Props) {
     retry: false,
   });
 
+  // Calculate breadcrumbs once we have both the product and the category list
+  const breadcrumbs = useMemo(() => {
+    if (!product?.category_id || !categoryList?.data) return [];
+    return getBreadcrumbPath(categoryList.data, product.category_id);
+  }, [product?.category_id, categoryList?.data]);
+
+  // Handle loading state
   if (isProductLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  // Handle not found
   if (!product) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center py-20 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          Product Not Found
-        </h2>
-        <Link
-          href="/"
-          className="px-6 py-2.5 bg-[#FF7050] text-white rounded-xl"
-        >
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Product Not Found</h2>
+        <Link href="/" className="px-6 py-2.5 bg-[#FF7050] text-white rounded-xl">
           Return to Home
         </Link>
       </div>
@@ -81,7 +90,7 @@ export default function ProductDetailContent({ slug }: Props) {
   return (
     <div className="w-full bg-white pb-20">
       <div className="max-w-[1720px] mx-auto px-4">
-        <Breadcrumbs paths={["Home", "Products"]} activePath={product.name} />
+        <Breadcrumbs paths={breadcrumbs} activePath={product.name} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-[40px] xl:gap-[72px] mt-4">
           <div>

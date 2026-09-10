@@ -21,8 +21,13 @@ import { OrderItem } from "@/@types/order.type";
 import { invoiceItem } from "@/@types/invoice.type";
 import { getSettings } from "@/services-api/globalSettingsService";
 import { extractImageUrl } from "@/utils/image";
+import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
-export default function ThankYouContent({ showThankYou = true }: { showThankYou?: boolean }) {
+export default function ThankYouContent({
+  showThankYou = true,
+}: {
+  showThankYou?: boolean;
+}) {
   const [isCompletedOpen, setIsCompletedOpen] = useState(showThankYou);
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
@@ -38,6 +43,11 @@ export default function ThankYouContent({ showThankYou = true }: { showThankYou?
     queryFn: () => getSettings(),
   });
   const settingsdata = setting?.data;
+
+  const { data: chatSettings } = useQuery({
+    queryKey: ["chatSettings"],
+    queryFn: fetchChatSettings,
+  });
 
   const {
     data: apiResponse,
@@ -113,7 +123,8 @@ export default function ThankYouContent({ showThankYou = true }: { showThankYou?
       })
     : "N/A";
 
-  // ... keep imports same, replace the RETURN block inside ThankYouContent
+  const displayPhone = chatSettings?.phone || "019XXXXXXXX";
+
   return (
     <div className="min-h-screen bg-[#F7F7F7] py-10 px-4 flex flex-col items-center">
       <div
@@ -140,7 +151,7 @@ export default function ThankYouContent({ showThankYou = true }: { showThankYou?
               <p className="text-gray-500 font-medium">
                 {settingsdata?.contact_email}
               </p>
-              <p className="text-gray-500 font-medium">+88 0141 0050041</p>
+              <p className="text-gray-500 font-medium">{displayPhone}</p>
             </div>
           </div>
           <div className="text-right text-[13px] text-gray-600">
@@ -291,7 +302,7 @@ export default function ThankYouContent({ showThankYou = true }: { showThankYou?
         </button>
       </div>
       {/* Modals stay at the bottom */}
-       <OrderCompletedModal
+      <OrderCompletedModal
         isOpen={isCompletedOpen}
         onClose={() => setIsCompletedOpen(false)}
         customerName={currentCustomer.name}
