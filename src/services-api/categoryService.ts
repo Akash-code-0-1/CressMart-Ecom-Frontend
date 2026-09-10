@@ -12,7 +12,7 @@ export interface CategoryQuery {
 // 🚀 1. FETCH ALL GENERAL CATEGORIES (ONLY Level 1 Root Nodes)
 export const fetchAllCategories = async (query: CategoryQuery) => {
   const res = await apiFetch(
-    `/categories?limit=1000${query.search ? `&search=${encodeURIComponent(query.search)}` : ""}${query.status ? `&status=${query.status}` : ""}`,
+    `/categories?limit=5000${query.search ? `&search=${encodeURIComponent(query.search)}` : ""}${query.status ? `&status=${query.status}` : ""}`,
   );
   if (!res.ok)
     throw new Error("Failed to retrieve categories collection array");

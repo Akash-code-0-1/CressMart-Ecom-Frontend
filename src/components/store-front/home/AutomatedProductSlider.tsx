@@ -76,6 +76,8 @@
 // export default AutomatedProductSlider;
 
 
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -194,3 +196,85 @@ const AutomatedProductSlider = ({ title, products, id }: Props) => {
 };
 
 export default AutomatedProductSlider;
+
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import { Swiper, SwiperSlide } from "swiper/react";
+// import { Navigation } from "swiper/modules";
+// import "swiper/css";
+// import "swiper/css/navigation";
+// import ProductCard from "../common/ProductCard";
+// import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+// import { useLanguage } from "@/providers/LanguageProvider";
+// import { translations } from "@/locales";
+
+// interface Props {
+//   title: string;
+//   products: any[];
+//   id: string;
+// }
+
+// const AutomatedProductSlider = ({ title, products, id }: Props) => {
+//   const { language } = useLanguage();
+//   const t = translations[language];
+//   const [isClient, setIsClient] = useState(false);
+
+//   useEffect(() => { setIsClient(true); }, []);
+
+//   if (!products || products.length === 0 || !isClient) return null;
+
+// const formattedProducts = products.map((p) => ({
+//   ...p,
+//   // ProductCard needs these specific keys
+//   sell_price: p.price?.toString() || "0",
+//   regular_price: p.old_price?.toString() || "0",
+//   // THIS IS WHY IMAGES WERE MISSING: ProductCard expects [{url: '...'}]
+//   images: p.image 
+//     ? [{ url: p.image.startsWith('http') ? p.image : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api/v1', '')}/${p.image.replace(/^\/+/, '')}` }] 
+//     : [{ url: "/images/placeholder.svg" }],
+//   avg_rating: Number(p.rating) || 0,
+//   total_reviews: p.review_count || 0,
+//   quantity: p.quantity_left || 0,
+// }));
+
+//   const getTranslatedTitle = () => {
+//     switch (id) {
+//       case "new-arrival": return t.home.newArrivals;
+//       case "best-deals": return t.home.bestDeals;
+//       case "weekly-best": return t.home.weeklyBestSellers;
+//       default: return title;
+//     }
+//   };
+
+//   return (
+//     <section className="w-full bg-[#F9F9F9] py-8 px-4 md:px-10 overflow-hidden">
+//       <div className="max-w-[1710px] mx-auto">
+//         <div className="flex items-center justify-between mb-8">
+//           <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold">{getTranslatedTitle()}</h2>
+//           <div className="flex items-center gap-4">
+//             <button className={`${id}-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronLeft className="text-xl" /></button>
+//             <button className={`${id}-next cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronRight className="text-xl" /></button>
+//           </div>
+//         </div>
+
+//         <Swiper
+//           modules={[Navigation]}
+//           spaceBetween={20}
+//           slidesPerView={2}
+//           navigation={{ prevEl: `.${id}-prev`, nextEl: `.${id}-next` }}
+//           breakpoints={{ 640: { slidesPerView: 2 }, 1024: { slidesPerView: 3 }, 1280: { slidesPerView: 4 }, 1536: { slidesPerView: 5 } }}
+//         >
+//           {formattedProducts.map((product) => (
+//             <SwiperSlide key={product.id}>
+//               <ProductCard product={product} />
+//             </SwiperSlide>
+//           ))}
+//         </Swiper>
+//       </div>
+//     </section>
+//   );
+// };
+
+// export default AutomatedProductSlider;

@@ -740,7 +740,7 @@ const Navbar = () => {
 
       {/* --- MOBILE BOTTOM NAV --- */}
       {isStoreReady && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050] font-poppins">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-[70px] z-[190] flex justify-around items-center px-2 pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] text-[#FF7050] font-poppins ">
           {/* Home Button */}
           <Link
             href="/"
