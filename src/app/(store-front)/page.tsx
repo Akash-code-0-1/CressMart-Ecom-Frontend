@@ -82,7 +82,7 @@ export default async function Page() {
 
       <Testimonials />
       <Brands />
-      <Suppliers />
+      {/* <Suppliers /> */}
       <Blog />
     </>
   );
