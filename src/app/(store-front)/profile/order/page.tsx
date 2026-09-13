@@ -242,6 +242,7 @@ import { getMyOrdersService } from "@/services-api/orderService";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { extractImageUrl } from "@/utils/image";
+import { getTrackingUrl } from "@/services-api/trackOrderService";
 
 const backendBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -284,6 +285,8 @@ export interface Order {
   id: string;
   order_number: string;
   status: string;
+  tracking_code?: string;
+  courier_name?: string;
   total_amount_due: string;
   payment_status: string;
   created_at: string;
@@ -444,9 +447,26 @@ const OrdersPage = () => {
                     className="border-b border-[#F9F9F9] hover:bg-gray-50 transition-colors"
                   >
                     <td className="p-5 pl-8 text-[#727272]">{serialNumber}</td>
-                    <td className="p-5 font-medium text-black">
-                      #{order.order_number}
-                    </td>
+<td className="p-5 font-medium text-black">
+  <div className="flex flex-col gap-1.5">
+    <span>#{order.order_number}</span>
+    
+    {order.tracking_code ? (
+      <a
+        href={getTrackingUrl(order.tracking_code, order.courier_name || "") || "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-fit flex items-center gap-1 text-[9px] bg-[#023337] text-white px-2 py-0.5 rounded shadow-sm hover:bg-[#044a4f] transition-all duration-300 font-bold uppercase tracking-wide"
+      >
+        Track
+      </a>
+    ) : (
+      <span className="w-fit text-[9px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded font-medium uppercase tracking-wide">
+        No Track
+      </span>
+    )}
+  </div>
+</td>
                     <td className="p-5">
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-100">
