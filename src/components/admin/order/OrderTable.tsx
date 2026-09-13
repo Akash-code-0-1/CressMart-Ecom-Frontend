@@ -572,13 +572,18 @@ export default function OrderTable() {
   const getTrackingUrl = (code: string, provider: string) => {
     if (!code) return null;
     const p = provider?.toLowerCase() || "";
-    if (p.includes("steadfast")) return `https://steadfast.com.bd/t/${code}`;
+
+    if (p.includes("steadfast")) return `https://steadfast.com.bd/tl/${code}`;
+
     if (p.includes("pathao"))
-      return `https://pathao.com/courier-tracking?tracking_code=${code}`;
+      return `https://merchant.pathao.com/public-tracking?consignment_id=${code}`;
+
     if (p.includes("redx"))
-      return `https://redx.com.bd/track-order/?trackingId=${code}`;
+      return `https://redx.com.bd/track-global-parcel/?trackingId=${code}`;
+
     if (p.includes("paperfly"))
-      return `https://www.paperfly.com.bd/tracking.php?tracking_number=${code}`;
+      return `https://go.paperfly.com.bd/track/order/${code}`;
+
     return null;
   };
 
@@ -851,36 +856,75 @@ export default function OrderTable() {
         );
       },
     },
+    // {
+    //   header: "Supplier",
+    //   key: "supplier",
+    //   render: (item: any) => {
+    //     const items = item.order_items || item.cart_items || [];
+    //     const firstItem = items[0];
+
+    //     // 🚀 IMPROVED DETECTION
+    //     // We check both "mohasagor" and "mohashagor" to be safe.
+    //     // We check the Order source AND the Product source.
+    //     const orderSource = item.source?.toLowerCase() || "";
+    //     const productSource = firstItem?.product?.source?.toLowerCase() || "";
+
+    //     const isMohashagor =
+    //       orderSource.includes("mohasagor") ||
+    //       productSource.includes("mohasagor") ||
+    //       !firstItem?.product_id ||
+    //       firstItem?.isExternal;
+
+    //     const supplierName = isMohashagor ? "Mohashagor" : "Own Product";
+
+    //     return (
+    //       <span
+    //         className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
+    //           !isMohashagor
+    //             ? "bg-blue-50 text-blue-600 border border-blue-100"
+    //             : "bg-orange-50 text-orange-600 border border-orange-100"
+    //         }`}
+    //       >
+    //         {supplierName}
+    //       </span>
+    //     );
+    //   },
+    // },
+
     {
       header: "Supplier",
       key: "supplier",
       render: (item: any) => {
         const items = item.order_items || item.cart_items || [];
         const firstItem = items[0];
+        const product = firstItem?.product;
 
-        // 🚀 IMPROVED DETECTION
-        // We check both "mohasagor" and "mohashagor" to be safe.
-        // We check the Order source AND the Product source.
-        const orderSource = item.source?.toLowerCase() || "";
-        const productSource = firstItem?.product?.source?.toLowerCase() || "";
+        // Determine the label and source type
+        let displayLabel = "Own Product";
+        let isExternal = false;
 
-        const isMohashagor =
-          orderSource.includes("mohasagor") ||
-          productSource.includes("mohasagor") ||
-          !firstItem?.product_id ||
-          firstItem?.isExternal;
-
-        const supplierName = isMohashagor ? "Mohashagor" : "Own Product";
+        if (product?.suppliers && product.suppliers.length > 0) {
+          displayLabel = product.suppliers[0].name;
+          isExternal = true;
+        } else if (product?.source && product.source !== "local") {
+          // If source exists and is not 'local', treat as external
+          displayLabel = product.source;
+          isExternal = true;
+        } else {
+          // Default for "Own Product" / "local"
+          displayLabel = "Own Product";
+          isExternal = false;
+        }
 
         return (
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${
-              !isMohashagor
-                ? "bg-blue-50 text-blue-600 border border-blue-100"
-                : "bg-orange-50 text-orange-600 border border-orange-100"
+            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter border ${
+              isExternal
+                ? "bg-orange-50 text-orange-600 border-orange-100" // External (Orange)
+                : "bg-blue-50 text-blue-600 border-blue-100" // Own Product (Blue)
             }`}
           >
-            {supplierName}
+            {displayLabel}
           </span>
         );
       },

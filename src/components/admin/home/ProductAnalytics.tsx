@@ -112,7 +112,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
       },
     },
     {
-      header: "Total Sold",
+      header: "Total Ordered",
       key: "total",
       render: (item: {
         stock: number;
@@ -154,7 +154,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
             <thead className="bg-[#F3F6FF]">
               <tr className="text-[13px] font-normal text-[#6A717F] uppercase">
                 <th className="py-3 px-4 rounded-l-[8px]">Product</th>
-                <th className="py-3 px-4 text-center">Sold</th>
+                <th className="py-3 px-4 text-center">Ordered</th>
                 <th className="py-3 px-4 text-center">Status</th>
                 <th className="py-3 px-4 rounded-r-[8px] text-right">Price</th>
               </tr>

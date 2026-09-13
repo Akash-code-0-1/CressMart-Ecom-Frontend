@@ -216,11 +216,18 @@ export const trackOrderService = async (
 export const getTrackingUrl = (code: string, provider: string): string | null => {
   if (!code) return null;
   const p = provider?.toLowerCase() || "";
+
+  if (p.includes("steadfast")) 
+    return `https://steadfast.com.bd/tl/${code}`;
   
-  if (p.includes("steadfast")) return `https://steadfast.com.bd/t/${code}`;
-  if (p.includes("pathao")) return `https://pathao.com/courier-tracking?tracking_code=${code}`;
-  if (p.includes("redx")) return `https://redx.com.bd/track-order/?trackingId=${code}`;
-  if (p.includes("paperfly")) return `https://www.paperfly.com.bd/tracking.php?tracking_number=${code}`;
+  if (p.includes("pathao")) 
+    return `https://merchant.pathao.com/public-tracking?consignment_id=${code}`;
   
+  if (p.includes("redx")) 
+    return `https://redx.com.bd/track-global-parcel/?trackingId=${code}`;
+  
+  if (p.includes("paperfly")) 
+    return `https://go.paperfly.com.bd/track/order/${code}`;
+
   return null;
 };
