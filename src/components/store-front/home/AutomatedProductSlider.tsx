@@ -1,126 +1,3 @@
-
-
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { Swiper, SwiperSlide } from "swiper/react";
-// import { Navigation } from "swiper/modules";
-// import "swiper/css";
-// import "swiper/css/navigation";
-// import ProductCard from "../common/ProductCard";
-// import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-// import Link from "next/link";
-// import { useLanguage } from "@/providers/LanguageProvider";
-// import { translations } from "@/locales";
-
-// interface Props {
-//   title: string; // This acts as a fallback
-//   products: any[];
-//   id: string; // unique ID for swiper navigation
-// }
-
-// const AutomatedProductSlider = ({ title, products, id }: Props) => {
-//   const { language } = useLanguage();
-//   const t = translations[language];
-//   const [isClient, setIsClient] = useState(false);
-
-//   // Prevent hydration mismatch for Swiper
-//   useEffect(() => {
-//     setIsClient(true);
-//   }, []);
-
-//   if (!products || products.length === 0 || !isClient) {
-//     return null;
-//   }
-
-//   // 1. Dynamic Title based on ID and Language
-//   const getTranslatedTitle = () => {
-//     switch (id) {
-//       case "new-arrival":
-//         return t.home.newArrivals;
-//       case "best-deals":
-//         return t.home.bestDeals;
-//       case "weekly-best":
-//         return t.home.weeklyBestSellers;
-//       default:
-//         return title; // Fallback to prop if id doesn't match
-//     }
-//   };
-
-//   // 2. Determine Link
-//   const getViewAllLink = () => {
-//     switch (id) {
-//       case "new-arrival":
-//         return "/shop?sort=newest";
-//       case "best-deals":
-//         return "/shop?sort=price_low";
-//       case "weekly-best":
-//         return "/shop?sort=popularity";
-//       default:
-//         return "/shop";
-//     }
-//   };
-
-//   return (
-//     <section className="w-full bg-[#F9F9F9] py-8 px-4 md:px-10 overflow-hidden">
-//       <div className="max-w-[1710px] mx-auto">
-//         <div className="flex items-center justify-between mb-8">
-//           <div className="flex items-center gap-4 md:gap-6">
-//             {/* Translated Title */}
-//             <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold leading-normal">
-//               {getTranslatedTitle()}
-//             </h2>
-            
-//             {/* Translated View All Link */}
-//             {/* <Link 
-//               href={getViewAllLink()} 
-//               className="text-[#3b82f6] hover:text-blue-700 font-medium text-sm md:text-lg transition-colors underline-offset-4 hover:underline"
-//             >
-//               {t.home.viewAll}
-//             </Link> */}
-//           </div>
-
-//           <div className="flex items-center gap-4">
-//             <button className={`${id}-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white text-black transition-colors duration-200 [&.swiper-button-disabled]:border-[#E2E2E2] [&.swiper-button-disabled]:text-[#E2E2E2] [&.swiper-button-disabled]:cursor-not-allowed`}>
-//               <FaChevronLeft className="text-xl" />
-//             </button>
-//             <button className={`${id}-next cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white text-black transition-colors duration-200 [&.swiper-button-disabled]:border-[#E2E2E2] [&.swiper-button-disabled]:text-[#E2E2E2] [&.swiper-button-disabled]:cursor-not-allowed`}>
-//               <FaChevronRight className="text-xl" />
-//             </button>
-//           </div>
-//         </div>
-
-//         <Swiper
-//           modules={[Navigation]}
-//           spaceBetween={12}
-//           slidesPerView={2}
-//           navigation={{
-//             prevEl: `.${id}-prev`,
-//             nextEl: `.${id}-next`,
-//           }}
-//           breakpoints={{
-//             640: { slidesPerView: 2, spaceBetween: 20 },
-//             1024: { slidesPerView: 3, spaceBetween: 25 },
-//             1280: { slidesPerView: 4, spaceBetween: 30 },
-//             1536: { slidesPerView: 5, spaceBetween: 35 },
-//           }}
-//           className="product-slider"
-//         >
-//           {products.map((product) => (
-//             <SwiperSlide key={product.id}>
-//               <ProductCard product={product} />
-//             </SwiperSlide>
-//           ))}
-//         </Swiper>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default AutomatedProductSlider;
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -134,56 +11,67 @@ import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 
 interface Props {
-  title: string;
+  title: string; 
   products: any[];
-  id: string;
+  id: string; 
 }
 
 const AutomatedProductSlider = ({ title, products, id }: Props) => {
-  const { language } = useLanguage();
+ const { language } = useLanguage();
   const t = translations[language];
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => { setIsClient(true); }, []);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-  if (!products || products.length === 0 || !isClient) return null;
+  // DEBUG LOGS
+  useEffect(() => {
+    // console.log(`DEBUG: Slider ${id} products received:`, products);
+    // console.log(`DEBUG: Slider ${id} isClient:`, isClient);
+  }, [products, isClient, id]);
 
-  // Transform backend product to match ProductCard expectation
-  const formattedProducts = products.map((p) => ({
-    ...p,
-    // Use the values directly from the API
-    sell_price: p.sell_price?.toString() || "0",
-    regular_price: p.regular_price?.toString() || "0",
-    // Ensure images exist. If not, use placeholder.
-    images: Array.isArray(p.images) && p.images.length > 0 
-      ? p.images 
-      : [{ url: "/images/placeholder.svg" }],
-    avg_rating: Number(p.avg_rating) || 0,
-    total_reviews: p.total_reviews || 0,
-    quantity: p.quantity || 0,
-    // Add logic to show stock status based on quantity
-    stock_status: p.quantity > 0 ? "In Stock" : "Out of Stock"
-  }));
-
+  // If this returns null, one of these conditions is true
+  if (!isClient) return null;
+  if (!Array.isArray(products)) {
+    // console.warn(`DEBUG: Slider ${id} products is NOT an array!`);
+    return null;
+  }
+  if (products.length === 0) {
+    // console.warn(`DEBUG: Slider ${id} products array is empty.`);
+    return null;
+  }
+  // 1. Dynamic Title based on ID and Language
   const getTranslatedTitle = () => {
     switch (id) {
-      case "new-arrival": return t.home.newArrivals;
-      case "best-deals": return t.home.bestDeals;
-      case "weekly-best": return t.home.weeklyBestSellers;
-      default: return title;
+      case "new-arrival":
+        return t.home.newArrivals;
+      case "best-deals":
+        return t.home.bestDeals;
+      case "weekly-best":
+        return t.home.weeklyBestSellers;
+      default:
+        return title;
     }
   };
-
-  console.log("Raw product data from API:", products[0]); 
 
   return (
     <section className="w-full bg-[#F9F9F9] py-8 px-4 md:px-10 overflow-hidden">
       <div className="max-w-[1710px] mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold">{getTranslatedTitle()}</h2>
+          <div className="flex items-center gap-4 md:gap-6">
+            <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold leading-normal">
+              {getTranslatedTitle()}
+            </h2>
+          </div>
+
           <div className="flex items-center gap-4">
-            <button className={`${id}-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronLeft className="text-xl" /></button>
-            <button className={`${id}-next cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronRight className="text-xl" /></button>
+            <button className={`${id}-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white text-black transition-colors duration-200 [&.swiper-button-disabled]:border-[#E2E2E2] [&.swiper-button-disabled]:text-[#E2E2E2] [&.swiper-button-disabled]:cursor-not-allowed`}>
+              <FaChevronLeft className="text-xl" />
+            </button>
+            <button className={`${id}-next cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white text-black transition-colors duration-200 [&.swiper-button-disabled]:border-[#E2E2E2] [&.swiper-button-disabled]:text-[#E2E2E2] [&.swiper-button-disabled]:cursor-not-allowed`}>
+              <FaChevronRight className="text-xl" />
+            </button>
           </div>
         </div>
 
@@ -191,7 +79,10 @@ const AutomatedProductSlider = ({ title, products, id }: Props) => {
           modules={[Navigation]}
           spaceBetween={12}
           slidesPerView={2}
-          navigation={{ prevEl: `.${id}-prev`, nextEl: `.${id}-next` }}
+          navigation={{
+            prevEl: `.${id}-prev`,
+            nextEl: `.${id}-next`,
+          }}
           breakpoints={{
             640: { slidesPerView: 2, spaceBetween: 20 },
             1024: { slidesPerView: 3, spaceBetween: 25 },
@@ -200,8 +91,8 @@ const AutomatedProductSlider = ({ title, products, id }: Props) => {
           }}
           className="product-slider"
         >
-          {formattedProducts.map((product) => (
-            <SwiperSlide key={product.id}>
+          {products.map((product) => (
+            <SwiperSlide key={product.id || Math.random()}>
               <ProductCard product={product} />
             </SwiperSlide>
           ))}
@@ -212,3 +103,97 @@ const AutomatedProductSlider = ({ title, products, id }: Props) => {
 };
 
 export default AutomatedProductSlider;
+
+
+
+// "use client";
+
+// import { useEffect, useState } from "react";
+// import { Swiper, SwiperSlide } from "swiper/react";
+// import { Navigation } from "swiper/modules";
+// import "swiper/css";
+// import "swiper/css/navigation";
+// import ProductCard from "../common/ProductCard";
+// import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+// import { useLanguage } from "@/providers/LanguageProvider";
+// import { translations } from "@/locales";
+
+// interface Props {
+//   title: string;
+//   products: any[];
+//   id: string;
+// }
+
+// const AutomatedProductSlider = ({ title, products, id }: Props) => {
+//   const { language } = useLanguage();
+//   const t = translations[language];
+//   const [isClient, setIsClient] = useState(false);
+
+//   useEffect(() => { setIsClient(true); }, []);
+
+//   if (!products || products.length === 0 || !isClient) return null;
+
+//   // Transform backend product to match ProductCard expectation
+//   const formattedProducts = products.map((p) => ({
+//     ...p,
+//     // Use the values directly from the API
+//     sell_price: p.sell_price?.toString() || "0",
+//     regular_price: p.regular_price?.toString() || "0",
+//     // Ensure images exist. If not, use placeholder.
+//     images: Array.isArray(p.images) && p.images.length > 0 
+//       ? p.images 
+//       : [{ url: "/images/placeholder.svg" }],
+//     avg_rating: Number(p.avg_rating) || 0,
+//     total_reviews: p.total_reviews || 0,
+//     quantity: p.quantity || 0,
+//     // Add logic to show stock status based on quantity
+//     stock_status: p.quantity > 0 ? "In Stock" : "Out of Stock"
+//   }));
+
+//   const getTranslatedTitle = () => {
+//     switch (id) {
+//       case "new-arrival": return t.home.newArrivals;
+//       case "best-deals": return t.home.bestDeals;
+//       case "weekly-best": return t.home.weeklyBestSellers;
+//       default: return title;
+//     }
+//   };
+
+//   console.log("Raw product data from API:", products[0]); 
+
+//   return (
+//     <section className="w-full bg-[#F9F9F9] py-8 px-4 md:px-10 overflow-hidden">
+//       <div className="max-w-[1710px] mx-auto">
+//         <div className="flex items-center justify-between mb-8">
+//           <h2 className="text-black font-poppins text-[24px] md:text-[32px] font-semibold">{getTranslatedTitle()}</h2>
+//           <div className="flex items-center gap-4">
+//             <button className={`${id}-prev cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronLeft className="text-xl" /></button>
+//             <button className={`${id}-next cursor-pointer w-10 h-10 rounded-full border border-black flex items-center justify-center bg-white`}><FaChevronRight className="text-xl" /></button>
+//           </div>
+//         </div>
+
+//         <Swiper
+//           modules={[Navigation]}
+//           spaceBetween={12}
+//           slidesPerView={2}
+//           navigation={{ prevEl: `.${id}-prev`, nextEl: `.${id}-next` }}
+//           breakpoints={{
+//             640: { slidesPerView: 2, spaceBetween: 20 },
+//             1024: { slidesPerView: 3, spaceBetween: 25 },
+//             1280: { slidesPerView: 4, spaceBetween: 30 },
+//             1536: { slidesPerView: 5, spaceBetween: 35 },
+//           }}
+//           className="product-slider"
+//         >
+//           {formattedProducts.map((product) => (
+//             <SwiperSlide key={product.id}>
+//               <ProductCard product={product} />
+//             </SwiperSlide>
+//           ))}
+//         </Swiper>
+//       </div>
+//     </section>
+//   );
+// };
+
+// export default AutomatedProductSlider;
