@@ -1434,11 +1434,22 @@ export default function OrderTable() {
                       ? "Incomplete Lead Details"
                       : "Order Summary"}
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">
-                    {detailsModal.order.order_number
-                      ? `#${detailsModal.order.order_number}`
-                      : `LEAD-${detailsModal.order.id.slice(0, 8)}`}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 font-medium mt-0.5">
+                    <span>
+                      {detailsModal.order.order_number
+                        ? `Order: #${detailsModal.order.order_number}`
+                        : `LEAD-${detailsModal.order.id.slice(0, 8)}`}
+                    </span>
+
+                    {detailsModal.order.invoice_number && (
+                      <>
+                        <span className="text-gray-300">|</span>
+                        <span>
+                          Invoice: #{detailsModal.order.invoice_number}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <button

@@ -11,6 +11,7 @@ import "swiper/css/navigation";
 import { FlashSaleData } from "@/@types/flashSale.type";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
+import router from "next/router";
 
 interface FlashSaleProps {
   flashSale: FlashSaleData;
@@ -139,13 +140,13 @@ const processedProducts = useMemo(() => {
             ))}
           </div>
 
-          <Link
+          {/* <Link
             href={`/flash-sale/${flashSale.slug}`}
             className="flex items-center gap-4 text-[#FF7050] font-poppins text-[16px] md:text-[20px] font-semibold group hover:opacity-80 transition-all"
           >
             {t.flashSale.goToFlashSale}
             <FiArrowRight className="text-xl md:text-2xl transition-transform group-hover:translate-x-2" />
-          </Link>
+          </Link> */}
         </div>
 
         <div className="w-full lg:w-[65%] min-w-0">
@@ -168,10 +169,11 @@ const processedProducts = useMemo(() => {
                 1280: { slidesPerView: 3, spaceBetween: 25 },
               }}
             >
-              {processedProducts.map((item) => (
+              {/* {processedProducts.map((item) => (
                 <SwiperSlide key={item.id}>
                   <div
                     className="relative min-h-[380px] sm:min-h-[447px] rounded-[24px] overflow-hidden p-4 sm:p-6 flex flex-col justify-end"
+                    onClick={() => router.push(`/product/${item.slug || item.id}`)}
                     style={{
                       background:
                         "linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.73) 100%)",
@@ -221,6 +223,64 @@ const processedProducts = useMemo(() => {
                       </div>
                     </div>
                   </div>
+                </SwiperSlide>
+              ))} */}
+
+              {processedProducts.map((item) => (
+                <SwiperSlide key={item.id}>
+                  <Link href={`/product/${item.slug || item.id}`}>
+                    <div
+                      className="relative min-h-[380px] sm:min-h-[447px] rounded-[24px] overflow-hidden p-4 sm:p-6 flex flex-col justify-end cursor-pointer"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.73) 100%)",
+                      }}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center p-6 sm:p-10 mb-28 sm:mb-20">
+                        <Image
+                          src={item.usableImage}
+                          alt={item.name}
+                          width={260}
+                          height={260}
+                          className="object-contain max-h-[180px] sm:max-h-full"
+                          priority={false}
+                          unoptimized
+                        />
+                      </div>
+
+                      <div className="relative z-10 space-y-2 sm:space-y-3">
+                        <h3 className="text-white font-poppins text-[16px] md:text-[24px] font-semibold leading-tight line-clamp-2">
+                          {item.name}
+                        </h3>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-[#32CD32] font-poppins text-[18px] sm:text-[24px] font-semibold">
+                            {t.product.bdt} {item.price}
+                          </span>
+                          {item.old_price > item.price && (
+                            <span className="text-white font-poppins text-[13px] sm:text-[16px] font-semibold line-through">
+                              {t.product.bdt} {item.old_price}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="pt-1 sm:pt-2">
+                          <div className="flex justify-end mb-1">
+                            <span className="text-white font-poppins text-[12px] sm:text-[14px]">
+                              {item.quantity_left} {t.product.itemsLeft}
+                            </span>
+                          </div>
+                          <div className="w-full h-[5px] sm:h-[6px] bg-white/20 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-white rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(item.quantity_left, 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
                 </SwiperSlide>
               ))}
             </Swiper>

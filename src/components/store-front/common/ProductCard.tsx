@@ -154,22 +154,29 @@ const ProductCard = ({ product, isShowWishlist = true }: ProductCardProps) => {
   const inStock = product.quantity > 0;
   const ratingValue = Number(product.avg_rating) || 0;
 
-  // Use first image from array or a placeholder
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
+// --- REPLACE YOUR EXISTING IMAGE LOGIC WITH THIS ---
+  const backendBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:8082";
 
-  const rowimage: any = extractImageUrl(product?.images[0]).trim();
-  const usableImage = rowimage.startsWith("http")
-    ? rowimage
-    : rowimage
-      ? `${backendBaseUrl}/${rowimage.replace(/^\/+/, "")}`
-      : "/images/placeholder.svg";
+  // 1. Get the raw image data (either a string or an object)
+  const imageSource = product?.images?.[0];
 
-  const imageAlt =
-    typeof rowimage === "object" && rowimage?.alt_text
-      ? rowimage?.alt_text
-      : product.name;
+  // 2. Extract the string URL regardless of whether it's {url: "..."} or "/uploads/..."
+  let rawUrl = "";
+  if (typeof imageSource === "string") {
+    rawUrl = imageSource;
+  } else if (imageSource && typeof imageSource === "object") {
+    rawUrl = (imageSource as any).url || "";
+  }
+
+  // 3. Final URL construction
+  const usableImage = rawUrl 
+    ? (rawUrl.startsWith("http") 
+        ? rawUrl 
+        : `${backendBaseUrl}/${rawUrl.replace(/^\/+/, "")}`)
+    : "/images/placeholder.svg";
+
+  const imageAlt = product.name || "Product Image";
+
 
   return (
     <div className="group flex flex-col p-2.5 md:p-3 bg-[#F2F2F2] border-[1.5px] border-[#E3E3E3] rounded-2xl w-full md:max-w-[350px] font-poppins h-full justify-between">

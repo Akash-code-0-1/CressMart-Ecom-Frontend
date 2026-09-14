@@ -776,7 +776,7 @@
 // export default MainCheckoutSection;
 
 "use client";
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   useQuery,
   useQueries,
@@ -1335,49 +1335,106 @@ const cartItems: CartItem[] = useMemo(() => {
   //   [],
   // );
 
-  const debouncedTrack = useCallback(
-    debounce(async (data, items, source, gid) => {
-      // Only track if there is at least a name or phone number
-      if (!data.phone && !data.name) return;
-      if (!items || items.length === 0) return;
+  // const debouncedTrack = useCallback(
+  //   debounce(async (data, items, source, gid) => {
+  //     // Only track if there is at least a name or phone number
+  //     if (!data.phone && !data.name) return;
+  //     if (!items || items.length === 0) return;
 
-      // Check if we already have an active lead ID in this session to avoid duplicating rows
-      const existingLeadId = sessionStorage.getItem("active_lead_id");
+  //     // Check if we already have an active lead ID in this session to avoid duplicating rows
+  //     const existingLeadId = sessionStorage.getItem("active_lead_id");
 
-      const payload = {
-        id: existingLeadId || undefined, // If ID exists, backend should update; otherwise create
-        customerName: data.name || "Guest",
-        customerPhone: data.phone || "",
-        customerAddress: data.address || "",
-        source: source || "direct",
-        shippingArea: data.shippingArea || "outside",
-        paymentMethod: data.paymentMethod || "COD",
-        status: "INCOMPLETE", // 🔥 This is the critical addition
-        items: items.map((item: any) => ({
-          productId: item.productId,
-          variantId:
-            item.variantId && item.variantId !== "null"
-              ? item.variantId
-              : undefined,
-          quantity: Number(item.quantity || 1),
-        })),
-      };
+  //     const payload = {
+  //       id: existingLeadId || undefined, // If ID exists, backend should update; otherwise create
+  //       customerName: data.name || "Guest",
+  //       customerPhone: data.phone || "",
+  //       customerAddress: data.address || "",
+  //       source: source || "direct",
+  //       shippingArea: data.shippingArea || "outside",
+  //       paymentMethod: data.paymentMethod || "COD",
+  //       status: "INCOMPLETE", // 🔥 This is the critical addition
+  //       items: items.map((item: any) => ({
+  //         productId: item.productId,
+  //         variantId:
+  //           item.variantId && item.variantId !== "null"
+  //             ? item.variantId
+  //             : undefined,
+  //         quantity: Number(item.quantity || 1),
+  //       })),
+  //     };
 
-      const res = await trackIncompleteOrder(payload);
+  //     const res = await trackIncompleteOrder(payload);
 
-      // Store the ID returned by the backend so the next debounce updates the SAME row
-      if (res?.id || res?.data?.id) {
-        sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
-      }
-    }, 2000), // Increased to 2s to reduce server load
-    [],
-  );
+  //     // Store the ID returned by the backend so the next debounce updates the SAME row
+  //     if (res?.id || res?.data?.id) {
+  //       sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
+  //     }
+  //   }, 2000), // Increased to 2s to reduce server load
+  //   [],
+  // );
 
-  useEffect(() => {
-    if (isStoreReady && cartItems.length > 0) {
-      debouncedTrack(formData, cartItems, orderSource, guestId);
-    }
-  }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
+  // useEffect(() => {
+  //   if (isStoreReady && cartItems.length > 0) {
+  //     debouncedTrack(formData, cartItems, orderSource, guestId);
+  //   }
+  // }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
+
+
+// 1. Keep a ref for the saved ID
+const isBangladeshiPhone = (value?: string): boolean => {
+  if (!value) return false;
+
+  const normalized = value.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+  return /^(?:\+?88)?01[3-9]\d{8}$/.test(normalized);
+};
+
+const leadIdRef = useRef<string | null>(null);
+
+const saveLead = useCallback(async (force = false) => {
+  // Only proceed if valid phone exists
+  if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
+
+  const payload = {
+    id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
+    customerName: formData.name || "Guest",
+    customerPhone: formData.phone,
+    customerAddress: formData.address || "N/A",
+    source: orderSource,
+    shippingArea: formData.shippingArea,
+    paymentMethod: formData.paymentMethod,
+    status: "INCOMPLETE",
+    items: cartItems.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId && item.variantId !== "null" ? item.variantId : undefined,
+      quantity: Number(item.quantity || 1),
+    })),
+  };
+
+  try {
+    const res = await trackIncompleteOrder(payload);
+    const newId = res?.id || res?.data?.id;
+    if (newId) leadIdRef.current = newId;
+  } catch (e) {
+    console.error("Failed to track:", e);
+  }
+}, [formData, cartItems, orderSource]);
+
+// 2. ONLY save on blur (when user finishes typing in an input)
+const handleBlur = () => {
+  saveLead();
+};
+
+// 3. Trigger ONLY on window unload (leaving the page)
+useEffect(() => {
+  const handleUnload = () => {
+    saveLead();
+  };
+  window.addEventListener("beforeunload", handleUnload);
+  return () => {
+    window.removeEventListener("beforeunload", handleUnload);
+    saveLead(); // Save on component unmount
+  };
+}, [saveLead]);
 
   const { data: paymentSettings } = useQuery({
     queryKey: PAYMENT_SETTINGS_QUERY_KEY,
