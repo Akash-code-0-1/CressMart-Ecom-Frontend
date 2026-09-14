@@ -1,17 +1,120 @@
 
+// import BannerSlider from "@/components/store-front/home/BannerSlider";
+// import Blog from "@/components/store-front/home/Blog";
+// import Brands from "@/components/store-front/home/Brands";
+// import FeaturedCategory from "@/components/store-front/home/FeaturedCategory";
+// import Features from "@/components/store-front/home/Features";
+// import FlashSale from "@/components/store-front/home/FlashSale";
+// import PromotionDiscountProduct from "@/components/store-front/home/CampaignSection";
+// import AutomatedProductSlider from "@/components/store-front/home/AutomatedProductSlider";
+// import Suppliers from "@/components/store-front/home/Suppliers";
+// import Testimonials from "@/components/store-front/home/Testimonials";
+// import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
+// import NewArrivals from "@/components/store-front/home/NewArrivals";
+// import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";
+
+// export const dynamic = "force-dynamic";
+
+// export default async function Page() {
+//   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+//   const fetchCollections = async () => {
+//     try {
+//       const [newRes, bestRes, weeklyRes] = await Promise.all([
+//         fetch(`${baseUrl}/products/new-arrivals?limit=10`, { cache: "no-store" }),
+//         fetch(`${baseUrl}/products/best-sellers?limit=10`, { cache: "no-store" }),
+//         fetch(`${baseUrl}/products/weekly-best-sellers?limit=10`, { cache: "no-store" }),
+//       ]);
+
+//       const newJson = await newRes.json();
+//       const bestJson = await bestRes.json();
+//       const weeklyJson = await weeklyRes.json();
+
+//       // DEBUG LOGS
+//       // console.log("DEBUG: New Arrivals:", newJson);
+//       // console.log("DEBUG: Best Sales:", bestJson);
+//       // console.log("DEBUG: Weekly Best:", weeklyJson);
+
+//       return {
+//         newArrivals: Array.isArray(newJson) ? newJson : (newJson.data || []),
+//         bestSales: Array.isArray(bestJson) ? bestJson : (bestJson.data || []),
+//         weeklyBestSellers: Array.isArray(weeklyJson) ? weeklyJson : (weeklyJson.data || []),
+//       };
+//     } catch (e) {
+//       console.error("❌ Fetch error:", e);
+//       return { newArrivals: [], bestSales: [], weeklyBestSellers: [] };
+//     }
+//   };
+//   const [collections, tags] = await Promise.all([
+//     fetchCollections(),
+//     getHomeTags()
+//   ]);
+
+//   const flashSaleArray = Array.isArray(tags)
+//     ? tags.filter((tag: HomeTagSection) => tag.is_flash_sale === true && tag.end_date)
+//     : [];
+
+//       // 3. Filter other tags (excluding the flash sale one to avoid duplicates)
+//   const otherTags = Array.isArray(tags) 
+//     ? tags.filter((t: any) => !t.is_flash_sale && t.products && t.products.length > 0)
+//     : [];
+
+//   const activeFlashSale = flashSaleArray[0];
+
+//   return (
+//     <>
+//       <BannerSlider />
+//       <Features />
+//       <FeaturedCategory />
+      
+//       <AutomatedProductSlider
+//         title="New Arrivals"
+//         products={collections.newArrivals}
+//         id="new-arrival"
+//       />
+//       <AutomatedProductSlider
+//         title="Best Deals"
+//         products={collections.bestSales}
+//         id="best-deals"
+//       />
+//       <AutomatedProductSlider
+//         title="Weekly Best Sellers"
+//         products={collections.weeklyBestSellers}
+//         id="weekly-best"
+//       />
+
+//             {/* DYNAMIC TAG SECTIONS */}
+//       {otherTags.map((tag: any) => (
+//         <AutomatedProductSlider
+//           key={tag.id}
+//           title={tag.name}
+//           products={tag.products} // Assumes getHomeTags already fetches nested products
+//           id={tag.slug || tag.id}
+//         />
+//       ))}
+
+//       {activeFlashSale && <FlashSale flashSale={activeFlashSale} />}
+
+//       <Testimonials />
+//       <Brands />
+//       {/* <Suppliers /> */}
+//       <Blog />
+//     </>
+//   );
+// }
+
+
+
+
 import BannerSlider from "@/components/store-front/home/BannerSlider";
 import Blog from "@/components/store-front/home/Blog";
 import Brands from "@/components/store-front/home/Brands";
 import FeaturedCategory from "@/components/store-front/home/FeaturedCategory";
 import Features from "@/components/store-front/home/Features";
 import FlashSale from "@/components/store-front/home/FlashSale";
-import PromotionDiscountProduct from "@/components/store-front/home/CampaignSection";
 import AutomatedProductSlider from "@/components/store-front/home/AutomatedProductSlider";
-import Suppliers from "@/components/store-front/home/Suppliers";
 import Testimonials from "@/components/store-front/home/Testimonials";
 import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
-import NewArrivals from "@/components/store-front/home/NewArrivals";
-import WeeklyBestSellerProduct from "@/components/store-front/home/WeeklyBestSellerProduct";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +133,6 @@ export default async function Page() {
       const bestJson = await bestRes.json();
       const weeklyJson = await weeklyRes.json();
 
-      // DEBUG LOGS
-      // console.log("DEBUG: New Arrivals:", newJson);
-      // console.log("DEBUG: Best Sales:", bestJson);
-      // console.log("DEBUG: Weekly Best:", weeklyJson);
-
       return {
         newArrivals: Array.isArray(newJson) ? newJson : (newJson.data || []),
         bestSales: Array.isArray(bestJson) ? bestJson : (bestJson.data || []),
@@ -45,6 +143,7 @@ export default async function Page() {
       return { newArrivals: [], bestSales: [], weeklyBestSellers: [] };
     }
   };
+
   const [collections, tags] = await Promise.all([
     fetchCollections(),
     getHomeTags()
@@ -54,7 +153,13 @@ export default async function Page() {
     ? tags.filter((tag: HomeTagSection) => tag.is_flash_sale === true && tag.end_date)
     : [];
 
+  const otherTags = Array.isArray(tags) 
+    ? tags.filter((t: any) => !t.is_flash_sale && t.products && t.products.length > 0)
+    : [];
+
   const activeFlashSale = flashSaleArray[0];
+
+  // console.log(tags);
 
   return (
     <>
@@ -62,27 +167,23 @@ export default async function Page() {
       <Features />
       <FeaturedCategory />
       
-      <AutomatedProductSlider
-        title="New Arrivals"
-        products={collections.newArrivals}
-        id="new-arrival"
-      />
-      <AutomatedProductSlider
-        title="Best Deals"
-        products={collections.bestSales}
-        id="best-deals"
-      />
-      <AutomatedProductSlider
-        title="Weekly Best Sellers"
-        products={collections.weeklyBestSellers}
-        id="weekly-best"
-      />
+      <AutomatedProductSlider title="New Arrivals" products={collections.newArrivals} id="new-arrival" />
+      <AutomatedProductSlider title="Best Deals" products={collections.bestSales} id="best-deals" />
+      <AutomatedProductSlider title="Weekly Best Sellers" products={collections.weeklyBestSellers} id="weekly-best" />
+
+      {otherTags.map((tag: any) => (
+        <AutomatedProductSlider
+          key={tag.id}
+          title={tag.title}
+          products={tag.products}
+          id={`tag-${tag.id}`}
+        />
+      ))}
 
       {activeFlashSale && <FlashSale flashSale={activeFlashSale} />}
 
       <Testimonials />
       <Brands />
-      {/* <Suppliers /> */}
       <Blog />
     </>
   );

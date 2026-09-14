@@ -82,29 +82,16 @@ export const getAllIncompleteOrdersService = async (params: {
  * Tracks an incomplete order (lead) by creating an order row with status 'INCOMPLETE'.
  * This works for both Guests and Logged-in users.
  */
-export const trackIncompleteOrder = async (
-  payload: Record<string, unknown>,
-) => {
+export const trackIncompleteOrder = async (payload: Record<string, unknown>) => {
+  // Point to main orders endpoint
   const res = await apiFetch("/orders", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ...payload,
-      status: "INCOMPLETE",
-      paymentMethod: payload.paymentMethod || "COD",
-      shippingArea: payload.shippingArea || "outside",
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, status: 'INCOMPLETE' }),
   });
-
-  if (!res.ok) {
-    const errorJson = await res.json().catch(() => ({}));
-    console.warn("Tracking lead error:", errorJson?.message);
-    return null;
-  }
   return res.json();
 };
+
 
 /**
  * Deletes an incomplete order by its ID from the main orders table.
