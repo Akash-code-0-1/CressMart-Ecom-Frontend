@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MoreVertical, Trash2, Edit3, Loader2, CirclePlus } from "lucide-react";
@@ -41,6 +41,7 @@ export default function CampaignTable() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const page = Number(searchParams.get("page")) || 1;
   const limit = Number(searchParams.get("limit")) || 10;
@@ -52,6 +53,24 @@ export default function CampaignTable() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
     null,
   );
+
+  // --- 🚀 Professional Menu States ---
+  const [menuPos, setMenuPos] = useState({
+    top: 0,
+    left: 0,
+    opensUpward: false,
+  });
+
+  // Close menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 1. Fetch Data
   const { data: serverPayload, isLoading } = useQuery({
@@ -87,12 +106,15 @@ export default function CampaignTable() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (campaign: Campaign) => {
+const openEditModal = (id: string) => {
+  const campaign = campaignList.find((c) => c.id === id);
+  if (campaign) {
     setModalMode("edit");
     setSelectedCampaign(campaign);
     setIsModalOpen(true);
     setActiveMenuId(null);
-  };
+  }
+};
 
   const backendBaseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
@@ -199,37 +221,28 @@ export default function CampaignTable() {
       key: "action",
       className: "text-right",
       render: (item: Campaign) => (
-        <div className="relative inline-block">
-          <button
-            onClick={() =>
-              setActiveMenuId(activeMenuId === item.id ? null : item.id)
-            }
-          >
-            <MoreVertical size={20} />
-          </button>
-          {activeMenuId === item.id && (
-            <div className="absolute right-0 mt-2 w-36 bg-white border rounded shadow-lg z-50 py-1 text-left">
-              <button
-                onClick={() => openEditModal(item)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
-              >
-                <Edit3 size={14} /> Edit Item
-              </button>
-              <button
-                onClick={() => {
-                  if (
-                    confirm("Are you sure you want to delete this campaign?")
-                  ) {
-                    deleteMutation.mutate(item.id);
-                  }
-                }}
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-              >
-                <Trash2 size={14} /> Delete Item
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+
+            // --- 🚀 DYNAMIC POSITIONING LOGIC ---
+            const menuHeight = 100;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const shouldOpenUp = spaceBelow < menuHeight;
+
+            setMenuPos({
+              top: shouldOpenUp ? rect.top - menuHeight + 20 : rect.bottom + 8,
+              left: rect.left - 130, // Adjust based on menu width
+              opensUpward: shouldOpenUp,
+            });
+
+            setActiveMenuId(activeMenuId === item.id ? null : item.id);
+          }}
+          className="p-1 hover:bg-gray-100 rounded-full"
+        >
+          <MoreVertical size={20} />
+        </button>
       ),
     },
   ];
@@ -266,6 +279,36 @@ export default function CampaignTable() {
           />
         )}
       </div>
+
+      {/* --- 🚀 PORTAL MENU --- */}
+      {activeMenuId && (
+        <div
+          ref={menuRef}
+          style={{
+            position: "fixed",
+            top: `${menuPos.top}px`,
+            left: `${menuPos.left}px`,
+            zIndex: 9999,
+          }}
+          className="w-40 bg-white border border-gray-200 rounded-lg shadow-xl py-1"
+        >
+          <button
+            onClick={() => openEditModal(activeMenuId)}// Ensure you pass correct object
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50 text-black"
+          >
+            <Edit3 size={16} /> Edit Item
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("Are you sure?")) deleteMutation.mutate(activeMenuId);
+              setActiveMenuId(null);
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={16} /> Delete Item
+          </button>
+        </div>
+      )}
 
       {/* Reusable Pagination Component */}
       {!isLoading && campaignList.length > 0 && (

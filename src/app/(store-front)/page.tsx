@@ -115,6 +115,7 @@ import FlashSale from "@/components/store-front/home/FlashSale";
 import AutomatedProductSlider from "@/components/store-front/home/AutomatedProductSlider";
 import Testimonials from "@/components/store-front/home/Testimonials";
 import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
+import CampaignSection from "@/components/store-front/home/CampaignSection";
 
 export const dynamic = "force-dynamic";
 
@@ -165,6 +166,7 @@ export default async function Page() {
     <>
       <BannerSlider />
       <Features />
+      <CampaignSection />
       <FeaturedCategory />
       
       <AutomatedProductSlider title="New Arrivals" products={collections.newArrivals} id="new-arrival" />

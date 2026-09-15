@@ -114,6 +114,13 @@ export default function CampaignModal({ mode, data, onClose }: ModalProps) {
   });
 
   useEffect(() => {
+  if (mode === "edit" && data) {
+    setFormData(getInitialState());
+  }
+  console.log(data, "DEBUG: Campaign data in modal");
+}, [data, mode]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
@@ -125,6 +132,8 @@ export default function CampaignModal({ mode, data, onClose }: ModalProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
 
   const handleSelectProduct = (product: Product) => {
     const productId = String(product.id);

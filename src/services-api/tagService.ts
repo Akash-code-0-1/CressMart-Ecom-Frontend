@@ -167,7 +167,7 @@ export const getHomeTags = async (): Promise<HomeTagSection[]> => {
       headers: {
         "Content-Type": "application/json",
       },
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
 
     if (!response.ok) {

@@ -13,7 +13,8 @@ import { getBreadcrumbPath } from "@/utils/categoryHelper";
 import Link from "next/link";
 import { FiExternalLink } from "react-icons/fi";
 import { extractImageUrl } from "@/utils/image";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { apiFetch } from "@/utils/api";
 
 interface Props {
   slug: string;
@@ -45,6 +46,14 @@ export default function ProductDetailContent({ slug }: Props) {
     enabled: !!product?.id,
     retry: false,
   });
+
+  useEffect(() => {
+  if (product?.id) {
+    // Call the tracking endpoint
+    apiFetch(`/products/recent/${product.id}`, { method: "POST" })
+      .catch(console.error);
+  }
+}, [product?.id]);
 
   // Calculate breadcrumbs once we have both the product and the category list
   const breadcrumbs = useMemo(() => {

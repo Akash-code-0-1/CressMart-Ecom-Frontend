@@ -11,6 +11,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Search,
+  X,
+  Check,
 } from "lucide-react";
 import {
   uploadTagMedia,
@@ -22,6 +25,7 @@ import PrimaryButton from "../../../common/PrimaryButton";
 import IamgeIcon from "@/components/store-front/svg/svg/IamgeIcon";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { searchProducts } from "@/services-api/productService";
 
 const Label = ({
   children,
@@ -55,6 +59,16 @@ export default function AddTagMain() {
   const baseStorageUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
     "http://localhost:8082";
+
+    const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+const [searchTerm, setSearchTerm] = useState("");
+
+// Search query
+const { data: searchResults, isLoading: isSearching } = useQuery({
+  queryKey: ["product-search", searchTerm],
+  queryFn: () => searchProducts(searchTerm),
+  enabled: searchTerm.length > 1,
+});
 
   const methods = useForm({
     defaultValues: {
@@ -96,6 +110,13 @@ export default function AddTagMain() {
     if (isEditMode && existingTag) {
       const formatDate = (isoStr: string) =>
         isoStr ? isoStr.split("T")[0] : "";
+
+    const initialProducts = existingTag.product_tags?.map((pt: any) => ({
+        id: pt.product.id,
+        name: pt.product.name
+    })) || [];
+    
+    setSelectedProducts(initialProducts);
 
       reset({
         name: existingTag.name || "",
@@ -160,6 +181,7 @@ export default function AddTagMain() {
       banner_url: string | null;
       start_date: string | null;
       end_date: string | null;
+      product_ids?: string[]; 
     }) => {
       if (isEditMode && tagId) return updateTag(tagId, payload);
       return createTag(payload);
@@ -182,6 +204,19 @@ export default function AddTagMain() {
     },
   });
 
+const [showDropdown, setShowDropdown] = useState(false);
+const dropdownRef = useRef<HTMLDivElement>(null);
+
+// Handle selection
+const handleSelectProduct = (product: any) => {
+  const isAlreadySelected = selectedProducts.find((p) => p.id === product.id);
+  if (isAlreadySelected) {
+    setSelectedProducts(selectedProducts.filter((p) => p.id !== product.id));
+  } else {
+    setSelectedProducts([...selectedProducts, product]);
+  }
+};
+
   const onSubmitFormHandler = (data: {
     name: string;
     slug: string;
@@ -197,6 +232,7 @@ export default function AddTagMain() {
     meta_title: string;
     meta_tags: string;
     meta_description: string;
+    // product_ids: string[];
   }) => {
     if (!data.name.trim()) return;
 
@@ -227,6 +263,7 @@ export default function AddTagMain() {
       meta_title: data.meta_title || null,
       meta_tags: data.meta_tags || null,
       meta_description: data.meta_description || null,
+      product_ids: selectedProducts.map(p => p.id),
     });
   };
 
@@ -435,7 +472,70 @@ export default function AddTagMain() {
                 </div>
               </div>
             </div>
+
+
+
+<div className="bg-white rounded-[8px] p-5 border border-gray-100 space-y-4 relative" ref={dropdownRef}>
+  <h3 className="text-[#003032] font-semibold text-lg border-b border-gray-200 pb-2">
+    Associate Products
+  </h3>
+
+  {/* Chips Display */}
+  <div className="flex flex-wrap gap-2">
+    {selectedProducts.map((product) => (
+      <div
+        key={product.id}
+        className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-medium border border-blue-100"
+      >
+        {product.name}
+        <X
+          size={14}
+          className="cursor-pointer hover:text-red-500"
+          onClick={() => handleSelectProduct(product)}
+        />
+      </div>
+    ))}
+  </div>
+
+  {/* Search Input */}
+  <div className="relative flex items-center bg-gray-50 rounded-lg border border-gray-200">
+    <Search className="ml-3 text-gray-400" size={18} />
+    <input
+      type="text"
+      placeholder="Search products to add..."
+      value={searchTerm}
+      onFocus={() => setShowDropdown(true)}
+      onChange={(e) => {
+        setSearchTerm(e.target.value);
+        setShowDropdown(true);
+      }}
+      className="w-full bg-transparent px-3 py-2.5 text-sm outline-none"
+    />
+    {isSearching && <Loader2 className="mr-3 animate-spin text-blue-400" size={16} />}
+  </div>
+
+  {/* Dropdown */}
+  {showDropdown && searchTerm.length > 1 && (
+    <div className="absolute z-[110] w-[95%] mt-1 bg-white border border-gray-100 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+      {searchResults?.map((product: any) => (
+        <div
+          key={product.id}
+          onClick={() => handleSelectProduct(product)}
+          className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-0"
+        >
+          <span className="text-sm text-gray-700">{product.name}</span>
+          {selectedProducts.find((p) => p.id === product.id) && (
+            <Check size={16} className="text-green-500" />
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
           </div>
+
 
           {/* RIGHT PANELS CONTROL MATRIX */}
           <div className="lg:col-span-4 space-y-4">

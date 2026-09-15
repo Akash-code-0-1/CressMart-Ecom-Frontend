@@ -51,7 +51,7 @@ const TopHeader = () => {
 
         {/* Center: Dynamic Announcement */}
         <div className="flex-1 overflow-hidden relative">
-          <div className="whitespace-nowrap flex animate-marquee-normal">
+          <div className="animate-marquee w-max">
             <span className="text-[#2E2E2E] text-[13px] md:text-[14px] px-10">
               {announcement}
             </span>
