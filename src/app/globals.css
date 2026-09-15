@@ -459,3 +459,20 @@ li > p {
 li + p {
   margin-top: -0.5rem;
 }
+
+@layer utilities {
+  .animate-marquee {
+    display: flex;
+    white-space: nowrap;
+    animation: marquee 15s linear infinite;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
