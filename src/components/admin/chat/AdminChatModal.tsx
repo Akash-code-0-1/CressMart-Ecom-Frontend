@@ -238,7 +238,7 @@ const AdminChatModal = ({ isOpen, onClose }: AdminChatModalProps) => {
         );
         if (res.ok) {
           const cleanMsgs = await res.json();
-          console.log("AdminChatModal Fetched Messages API response:", cleanMsgs);
+          // console.log("AdminChatModal Fetched Messages API response:", cleanMsgs);
           const rawData = cleanMsgs?.data !== undefined ? cleanMsgs.data : cleanMsgs;
           const messageArray = Array.isArray(rawData) ? rawData : rawData?.messages || [];
           setMessages(messageArray);

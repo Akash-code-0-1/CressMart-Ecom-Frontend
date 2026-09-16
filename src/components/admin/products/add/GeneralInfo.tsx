@@ -36,7 +36,7 @@ export default function GeneralInfoSection({
       dragIndexRef.current = index;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", String(index));
-      console.log("[Drag] dragStart → index:", index);
+      // console.log("[Drag] dragStart → index:", index);
     },
     [],
   );
@@ -47,7 +47,7 @@ export default function GeneralInfoSection({
   }, []);
 
   const handleDragEnd = useCallback(() => {
-    console.log("[Drag] dragEnd — resetting ref. was:", dragIndexRef.current);
+    // console.log("[Drag] dragEnd — resetting ref. was:", dragIndexRef.current);
     dragIndexRef.current = null;
   }, []);
 
@@ -58,14 +58,14 @@ export default function GeneralInfoSection({
 
       const refVal = dragIndexRef.current;
       const dtVal = e.dataTransfer.getData("text/plain");
-      console.log(
-        "[Drag] drop → refVal:",
-        refVal,
-        "| dataTransfer raw:",
-        dtVal,
-        "| dropIndex:",
-        dropIndex,
-      );
+      // console.log(
+      //   "[Drag] drop → refVal:",
+      //   refVal,
+      //   "| dataTransfer raw:",
+      //   dtVal,
+      //   "| dropIndex:",
+      //   dropIndex,
+      // );
 
       const draggedIndex = refVal !== null ? refVal : Number(dtVal);
 
@@ -76,11 +76,11 @@ export default function GeneralInfoSection({
         Number.isNaN(draggedIndex) ||
         draggedIndex === dropIndex
       ) {
-        console.log("[Drag] drop ignored — same index or invalid");
+        // console.log("[Drag] drop ignored — same index or invalid");
         return;
       }
 
-      console.log("[Drag] reordering:", draggedIndex, "→", dropIndex);
+      // console.log("[Drag] reordering:", draggedIndex, "→", dropIndex);
       setImages((prev: string[]) => {
         const updated = [...prev];
         const [movedItem] = updated.splice(draggedIndex, 1);

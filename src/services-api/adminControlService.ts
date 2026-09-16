@@ -13,7 +13,7 @@ export const fetchAdminStaff = async (params: {
 
   if (!res.ok) throw new Error("Failed to fetch admin staff");
   const data = await res.json();
-  console.log("Admin staff fetched successfully:", data);
+  // console.log("Admin staff fetched successfully:", data);
   return data;
 };
 
