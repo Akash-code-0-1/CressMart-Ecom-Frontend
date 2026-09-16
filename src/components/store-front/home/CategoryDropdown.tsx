@@ -112,7 +112,7 @@ const CategoryDropdown = <T extends CategoryItem = CategoryItem>({
                 key={key}
                 onClick={() => {
                   if (onSelect) onSelect(category);
-                  else console.log(category);
+                  // else console.log(category);
                   setOpen(false);
                 }}
                 className="block w-full text-left px-4 py-3 text-[14px] text-[#5E5E5E] hover:bg-[#F9F9F9] hover:text-[#FF7050] transition-all"

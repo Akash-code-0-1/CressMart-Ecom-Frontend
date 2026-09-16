@@ -53,7 +53,7 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
     return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   };
 
-  console.log(stats, "OverviewSection.tsx: stats prop");
+  // console.log(stats, "OverviewSection.tsx: stats prop");
 
   // Calendar Day Generator
   const renderDays = (): ReactNode[] => {

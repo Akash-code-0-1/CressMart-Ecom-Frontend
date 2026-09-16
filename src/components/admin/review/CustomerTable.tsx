@@ -61,7 +61,7 @@ export default function CustomerTable() {
     },
   });
 
-  console.log(serverPayload);
+  // console.log(serverPayload);
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>

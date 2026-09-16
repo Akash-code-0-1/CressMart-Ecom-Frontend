@@ -811,7 +811,7 @@ export default function ProductTable() {
     );
   }
 
-  console.log(productList, "productList");
+  // console.log(productList, "productList");
 
   return (
     <div className="bg-white font-poppins">

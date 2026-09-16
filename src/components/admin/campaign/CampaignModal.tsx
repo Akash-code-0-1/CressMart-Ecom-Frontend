@@ -117,7 +117,7 @@ export default function CampaignModal({ mode, data, onClose }: ModalProps) {
   if (mode === "edit" && data) {
     setFormData(getInitialState());
   }
-  console.log(data, "DEBUG: Campaign data in modal");
+  // console.log(data, "DEBUG: Campaign data in modal");
 }, [data, mode]);
 
   useEffect(() => {

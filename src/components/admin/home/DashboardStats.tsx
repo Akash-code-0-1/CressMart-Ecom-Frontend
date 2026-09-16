@@ -60,7 +60,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({
 
   useEffect(() => {
     if (chartData.length > 0) {
-      console.log("📊 Chart Data Arrived:", chartData);
+      // console.log("📊 Chart Data Arrived:", chartData);
     }
   }, [chartData]);
 
