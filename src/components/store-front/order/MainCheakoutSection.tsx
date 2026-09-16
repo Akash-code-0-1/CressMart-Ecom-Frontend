@@ -1484,9 +1484,9 @@ useEffect(() => {
     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
         <div className="lg:col-span-7 flex flex-col gap-5 md:gap-6">
-          <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-4">
+          <h1 className="text-lg md:text-xl font-semibold mb-2 md:mb-4">
             {t.checkout.shoppingDetails}
-          </h2>
+          </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InputField

@@ -54,6 +54,8 @@ export interface LandingPageData {
   buttonColor?: string;
   videoLink?: string;
   productId?: string;
+  offerText?: string;
+  couponCode?: string;
   productImages?: string[];
   offers?: OfferItem[];
   features?: FeatureItem[];
@@ -164,7 +166,9 @@ export default function LandingPageRenderer({
   const offers = parseJsonArray<OfferItem>(liveData.offers);
   const features = parseJsonArray<FeatureItem>(liveData.features);
   const productImages = parseJsonArray<unknown>(
-    liveData.productImages || (liveData as any).product_images || (liveData as any).images,
+    liveData.productImages ||
+      (liveData as any).product_images ||
+      (liveData as any).images,
   );
   const reviews = parseJsonArray<ReviewItem>(liveData.reviews);
   const faqs = parseJsonArray<FAQItem>(liveData.faqs);
@@ -198,12 +202,9 @@ export default function LandingPageRenderer({
     getImageUrl(getProductImageAt(selectedProduct, 0));
 
   const orderMainImg =
-    getImageUrl(getProductImageAt(selectedProduct, 0)) ||
-    heroImageSrc;
+    getImageUrl(getProductImageAt(selectedProduct, 0)) || heroImageSrc;
 
-  const videoThumbSrc =
-    getYoutubeThumbnail(liveData.videoLink) ||
-    heroImageSrc;
+  const videoThumbSrc = getYoutubeThumbnail(liveData.videoLink) || heroImageSrc;
 
   const getYoutubeVideoId = (url?: string) => {
     if (!url) return "";
@@ -226,6 +227,34 @@ export default function LandingPageRenderer({
     }
   };
 
+  function CopyCouponButton({
+    code,
+    buttonColor,
+  }: {
+    code: string;
+    buttonColor?: string;
+  }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+      navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <button
+        onClick={handleCopy}
+        className="shrink-0 flex items-center justify-center min-w-[130px] px-6 py-3.5 rounded-full text-sm font-black tracking-widest transition-all duration-300"
+        style={{
+          backgroundColor: copied ? "#095525" : buttonColor || "#38bdf8",
+          color: "#ffffff",
+        }}
+      >
+        {copied ? "COPIED!" : code}
+      </button>
+    );
+  }
   return (
     <div
       className="w-full flex flex-col transition-all min-h-screen"
@@ -324,7 +353,28 @@ export default function LandingPageRenderer({
             >
               {t.landingPage.purchaseNow}
             </button>
+
+            {/* RESPONSIVE COUPON SECTION */}
+            {(liveData.offerText || liveData.couponCode) && (
+              <div className="mt-8 w-full max-w-[640px] flex flex-col md:flex-row items-center md:justify-between border-2 border-transparent hover:border-slate-100 rounded-3xl p-6 transition-all duration-500 group text-center md:text-left">
+                {/* Offer Text */}
+                <div className="flex-1 flex flex-col gap-1 md:pr-8 mb-4 md:mb-0">
+                  <p className="text-[22px] md:text-[24px] font-extrabold text-slate-900 leading-tight tracking-tight">
+                    {liveData.offerText || "Unlock your special discount"}
+                  </p>
+                </div>
+
+                {/* Coupon Code Button */}
+                <div className="shrink-0 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                  <CopyCouponButton
+                    code={liveData.couponCode || "SAVE"}
+                    buttonColor={liveData.buttonColor}
+                  />
+                </div>
+              </div>
+            )}
           </div>
+
           <div className="w-full relative aspect-[760/649] rounded-3xl overflow-hidden">
             {heroImageSrc ? (
               <Image
@@ -573,8 +623,7 @@ export default function LandingPageRenderer({
           >
             {(reviews?.length ? reviews : [{}]).map(
               (review: ReviewItem, index: number) => {
-                const reviewImg =
-                  getImageUrl(review?.image) || heroImageSrc;
+                const reviewImg = getImageUrl(review?.image) || heroImageSrc;
                 return (
                   <SwiperSlide key={index}>
                     <div className="flex flex-col md:flex-row items-center justify-center container mx-auto">

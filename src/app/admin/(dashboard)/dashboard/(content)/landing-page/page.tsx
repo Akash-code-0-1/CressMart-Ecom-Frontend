@@ -371,6 +371,25 @@ export default function LandingPagePage() {
                 </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <FieldLabel text="Hero Offer Text" />
+                <input
+                  {...register("offerText")}
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg py-2.5 px-3 text-[15px]"
+                  placeholder="e.g. Special Discount"
+                />
+              </div>
+              <div>
+                <FieldLabel text="Coupon Code" />
+                <input
+                  {...register("couponCode")}
+                  className="w-full bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg py-2.5 px-3 text-[15px] uppercase"
+                  placeholder="e.g. SAVE20"
+                />
+              </div>
+            </div>
           </div>
 
           {/* OFFERS / TRUST BAR */}
@@ -1077,6 +1096,25 @@ export default function LandingPagePage() {
                   >
                     PURCHASE
                   </button>
+
+                  {/* The new card block goes here */}
+                  {(liveData.offerText || liveData.couponCode) && (
+                    <div className="mt-4 w-full flex items-center justify-between border border-dashed border-slate-300 rounded-2xl p-3">
+                      <div className="flex-1 text-left pr-3">
+                        <p className="text-[9px] font-bold text-slate-900 leading-tight">
+                          {liveData.offerText || "Unlock your special discount"}
+                        </p>
+                      </div>
+                      <div
+                        className="shrink-0 px-3 py-1 rounded-lg text-[8px] font-black tracking-widest text-white shadow-sm"
+                        style={{
+                          backgroundColor: liveData.buttonColor || "#38bdf8",
+                        }}
+                      >
+                        {liveData.couponCode || "SAVE"}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

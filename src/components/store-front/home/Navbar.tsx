@@ -589,9 +589,9 @@ const Navbar = () => {
         <div className="p-6 h-full flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">
+            <span className="text-xl font-bold text-gray-800">
               {t.navbar.yourCart} ({cartItems.length})
-            </h2>
+            </span>
             <button
               onClick={() => setIsCartOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
@@ -630,9 +630,9 @@ const Navbar = () => {
 
                       <div className="flex-1 flex flex-col justify-between">
                         <div>
-                          <h4 className="text-sm font-medium text-gray-800 line-clamp-1">
+                          <span className="text-sm font-medium text-gray-800 line-clamp-1">
                             {item.name}
-                          </h4>
+                          </span>
 
                           {/* variant section  */}
                           {Array.isArray(item.variantInfo) &&

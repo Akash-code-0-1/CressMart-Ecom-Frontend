@@ -6,9 +6,9 @@ export default function BlogComments() {
   const t = translations[language];
   return (
     <section className="container mx-auto px-4 md:mt-20 mt-10 bg-[#FAFAFA] md:bg-transparent rounded-3xl md:mb-20 mb-10">
-      <h3 className="text-black font-poppins text-2xl font-bold mb-2">
+      <h2 className="text-black font-poppins text-2xl font-bold mb-2">
       {t.blogComments.title}
-      </h3>
+      </h2>
       <p className="text-[#8C8C8C] text-sm mb-8">
         {t.blogComments.subtitle}
       </p>

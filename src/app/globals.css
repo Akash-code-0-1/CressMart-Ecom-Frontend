@@ -476,3 +476,26 @@ li + p {
     transform: translateX(-50%);
   }
 }
+
+
+.blog-rich-text {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Force rich text to respect mobile screens */
+.blog-rich-text * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Force mobile-friendly font sizes for headings */
+.blog-rich-text h1 { font-size: 1.5rem !important; line-height: 1.3 !important; }
+.blog-rich-text h2 { font-size: 1.25rem !important; line-height: 1.3 !important; }
+
+/* Handle Tables if they exist */
+.blog-rich-text table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
