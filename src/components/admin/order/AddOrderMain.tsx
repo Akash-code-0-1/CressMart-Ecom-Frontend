@@ -23,6 +23,7 @@ import {
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { extractImageUrl } from "@/utils/image";
+import { fetchShippingSettings } from "@/services-api/shippingService";
 
 type orderItem = {
   productId: string;
@@ -295,7 +296,27 @@ const subtotal = items.reduce(
 );
 
 // 🚀 FIXED: Make shipping fee dynamic based on selection, even in edit mode
-const shippingFee = shipping.shippingArea === "inside" ? 60 : 120;
+  const [shippingZones, setShippingZones] = useState<any[]>([]);
+
+  // 2. Add fetch effect
+  useEffect(() => {
+    async function loadShipping() {
+      const data = await fetchShippingSettings();
+      if (data?.courier_config?.zones) {
+        setShippingZones(data.courier_config.zones);
+      }
+    }
+    loadShipping();
+  }, []);
+
+  // 3. Update Shipping logic
+  // Change state to hold the selected zone object instead of a string 'inside'/'outside'
+  const [selectedZone, setSelectedZone] = useState<string>(""); 
+  const [feeType, setFeeType] = useState<"inside" | "outside" | "subcity">("inside");
+
+  // Calculate Fee dynamically
+  const activeZone = shippingZones.find(z => z.zone === selectedZone);
+  const shippingFee = activeZone ? Number(activeZone[feeType]) : 0;
 
 const totalDue = subtotal + shippingFee - shipping.manualDiscount;
 const remainingDue = totalDue - shipping.advanceAmount;
@@ -397,7 +418,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       customerPhone: customer.customerPhone,
       customerAddress: customer.customerAddress,
       customerNote: customer.customerNote,
-      shippingArea: shipping.shippingArea,
+      shippingArea: selectedZone,
       paymentMethod: shipping.paymentMethod,
       source: shipping.source,
       status: shipping.status,
@@ -407,6 +428,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       courier_city_id: shipping.courier_city_id ?? undefined,
       courier_zone_id: shipping.courier_zone_id ?? undefined,
       courier_area_id: shipping.courier_area_id ?? undefined,
+
       items: items.map((i) => ({
         productId: i.productId,
         variantId: i.variantId ?? undefined,
@@ -731,21 +753,34 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-black">
-                    SHIPPING AREA
-                  </label>
-                  <select
-                    value={shipping.shippingArea}
-                    onChange={(e) =>
-                      setShipping({ ...shipping, shippingArea: e.target.value })
-                    }
-                    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
-                  >
-                    <option value="inside">Inside Dhaka (৳60)</option>
-                    <option value="outside">Outside Dhaka (৳120)</option>
-                  </select>
-                </div>
+<div className="space-y-1">
+  <label className="text-sm font-semibold text-black">SHIPPING AREA</label>
+  <select
+    value={selectedZone}
+    onChange={(e) => setSelectedZone(e.target.value)}
+    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
+  >
+    <option value="">Select a zone</option>
+    {shippingZones.map((z, idx) => (
+      <option key={idx} value={z.zone}>{z.zone}</option>
+    ))}
+  </select>
+</div>
+
+{/* If a zone is selected, show fee type selection */}
+{activeZone && (
+  <div className="space-y-1 mt-2">
+    <select 
+      value={feeType} 
+      onChange={(e) => setFeeType(e.target.value as any)}
+      className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
+    >
+      <option value="inside">Inside ({activeZone.inside})</option>
+      <option value="outside">Outside ({activeZone.outside})</option>
+      <option value="subcity">Sub City ({activeZone.subcity})</option>
+    </select>
+  </div>
+)}
               </div>
             </div>
 

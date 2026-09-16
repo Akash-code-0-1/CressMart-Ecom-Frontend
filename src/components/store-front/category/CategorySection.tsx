@@ -139,20 +139,19 @@ function CategoryItem({
         </span>
       </div>
 
-      {(isBranchOpen || activeCategoryId === "") &&
-        node.children.length > 0 && (
-          <ul className="flex flex-col gap-3 ml-6">
-            {node.children.map((child: CategoryTreeNode) => (
-              <CategoryItem
-                key={child.id}
-                node={child}
-                level={level + 1}
-                activeCategoryId={activeCategoryId}
-                activePath={activePath}
-                onUpdate={onUpdate}
-                onSelectCategory={onSelectCategory}
-              />
-            ))}
+{isBranchOpen && node.children.length > 0 && (
+      <ul className="flex flex-col gap-3 ml-6 border-l border-gray-100 pl-2">
+        {node.children.map((child: CategoryTreeNode) => (
+          <CategoryItem
+            key={child.id}
+            node={child}
+            level={level + 1}
+            activeCategoryId={activeCategoryId}
+            activePath={activePath}
+            onUpdate={onUpdate}
+            onSelectCategory={onSelectCategory}
+          />
+        ))}
           </ul>
         )}
     </li>

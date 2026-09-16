@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import CategoryBanner from "@/components/store-front/category/CategoryBanner";
 import FilterSidebar from "@/components/store-front/category/FilterSidebar";
 import ProductGridHeader from "@/components/store-front/category/ProductGridHeader";
@@ -21,6 +21,12 @@ import React from "react";
 import { useLanguage } from "@/providers/LanguageProvider";
 import { translations } from "@/locales";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { getAllcategoryFlatList } from "@/services-api/categoryService";
+import { getBreadcrumbPath } from "@/utils/categoryHelper";
+import { Breadcrumbs } from "@/components/store-front/product/Breadcrumbs";
+
+
+
 
 const CategoryPage = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -47,6 +53,11 @@ const CategoryPage = () => {
     queryFn: () => getCategory(targetCategorySlug),
     enabled: !!targetCategorySlug,
   });
+
+  const { data: categoryList } = useQuery({
+  queryKey: ["all-categories"],
+  queryFn: () => getAllcategoryFlatList(),
+});
 
   const activeCategoryId =
     queryCategoryId || (category?.id ? String(category.id) : "");
@@ -119,6 +130,18 @@ const CategoryPage = () => {
     },
   });
 
+  const breadcrumbs = useMemo(() => {
+  if (!category?.id || !categoryList?.data) return [];
+  
+  // Get full array: [Parent, Sub, Child]
+  const fullPath = getBreadcrumbPath(categoryList.data, category?.id);
+  
+  // Return all but the last one for the 'paths' prop
+  return fullPath.slice(0, -1);
+}, [category?.id, categoryList?.data]);
+
+const activeCategoryName = category?.name || "All Products";
+
   if (
     (targetCategorySlug && categoryLoading) ||
     (productsLoading && !filterProductsData)
@@ -142,11 +165,8 @@ const CategoryPage = () => {
       {/* 1. Breadcrumb & Banner */}
       <div className="max-w-[1720px] mx-auto py-4">
         <nav className="mb-4 font-poppins font-medium text-base flex items-center gap-2">
-          <Link href="/" className="text-[#727272]">
-            Home
-          </Link>{" "}
-          <FaChevronRight color="#FF7050" size={15} />
-          <span className="text-[#FF7050]">{displayTitle}</span>
+
+          <Breadcrumbs paths={breadcrumbs} activePath={activeCategoryName} />
         </nav>
         <CategoryBanner
           bannerImage={category?.background_image_url}

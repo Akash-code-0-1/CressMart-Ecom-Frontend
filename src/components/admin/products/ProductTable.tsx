@@ -398,6 +398,8 @@ interface TableData {
   sku?: string;
   priority?: number;
   status?: "PUBLISHED" | "DRAFT" | "active" | string;
+  view_count: number;     // Mapping from API
+  quantity: number;       // Mapping from API (Availability/Stock)
 }
 
 export default function ProductTable() {
@@ -687,6 +689,35 @@ export default function ProductTable() {
         </span>
       ),
     },
+  {
+    header: "Views",
+    key: "view_count", // Matches your JSON
+    headerClassName: "px-4 py-3 text-center",
+    className: "px-4 py-3 align-middle text-center",
+    render: (product) => (
+      <span className="text-[14px] text-gray-600 font-medium">
+        {product.view_count || 0}
+      </span>
+    ),
+  },
+  {
+    header: "Availability",
+    key: "quantity", // Matches your JSON (quantity)
+    headerClassName: "px-4 py-3 text-center",
+    className: "px-4 py-3 align-middle text-center",
+    render: (product) => {
+      const isAvailable = product.quantity > 0;
+      return (
+        <span
+          className={`text-[12px] font-semibold px-2 py-1 rounded-full ${
+            isAvailable ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+          }`}
+        >
+          {isAvailable ? `${product.quantity} In Stock` : "Out of Stock"}
+        </span>
+      );
+    },
+  },
     {
       header: "Status",
       key: "status",
@@ -779,6 +810,8 @@ export default function ProductTable() {
       </div>
     );
   }
+
+  console.log(productList, "productList");
 
   return (
     <div className="bg-white font-poppins">

@@ -110,8 +110,12 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
-  const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(null);
-  const [openMobileSubDropdown, setOpenMobileSubDropdown] = useState<string | null>(null);
+  const [openMobileDropdown, setOpenMobileDropdown] = useState<number | null>(
+    null,
+  );
+  const [openMobileSubDropdown, setOpenMobileSubDropdown] = useState<
+    string | null
+  >(null);
   const searchRef = useRef<HTMLFormElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -265,14 +269,16 @@ const Navbar = () => {
 
           <Link href="/" className="shrink-0 flex items-center">
             <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
+              <h1>
               <Image
                 src={usableImageUrl}
-                alt="Creass Mart"
+                alt="Creass Mart - Buy With Confidence"
                 fill
                 priority
                 unoptimized
                 className="object-contain"
               />
+              </h1>
             </div>
           </Link>
 
@@ -376,12 +382,13 @@ const Navbar = () => {
                 )}
               </button>
 
-              {/* Fixed profile container to prevent layout breaking */}
+              {/* Replace your existing UserIcon block with this improved one */}
               <div
                 onClick={handleProfileNav}
                 className="relative w-8 h-8 md:w-10 md:h-10 cursor-pointer flex items-center justify-center rounded-full overflow-hidden shrink-0 bg-white"
               >
-                {avatarUrl ? (
+                {/* Show avatar only if store is hydrated AND user is logged in */}
+                {isStoreReady && user && avatarUrl ? (
                   <Image
                     src={avatarUrl}
                     alt="User"
@@ -484,7 +491,9 @@ const Navbar = () => {
                 <div
                   onClick={() => {
                     if (link.children && link.children.length > 0) {
-                      setOpenMobileDropdown(openMobileDropdown === idx ? null : idx);
+                      setOpenMobileDropdown(
+                        openMobileDropdown === idx ? null : idx,
+                      );
                       setOpenMobileSubDropdown(null);
                     } else {
                       router.push(`/category/${link.slug}`);
@@ -502,51 +511,57 @@ const Navbar = () => {
                 </div>
 
                 {/* Subcategory list */}
-                {openMobileDropdown === idx && link.children && link.children.length > 0 && (
-                  <div className="pl-3 pb-3 space-y-1">
-                    {link.children.map((sub) => (
-                      <div key={sub.id}>
-                        {/* Sub row */}
-                        <div
-                          onClick={() => {
-                            if (sub.children && sub.children.length > 0) {
-                              setOpenMobileSubDropdown(
-                                openMobileSubDropdown === sub.id ? null : sub.id
-                              );
-                            } else {
-                              router.push(`/category/${sub.slug}`);
-                              setIsDrawerOpen(false);
-                            }
-                          }}
-                          className="flex justify-between items-center py-2.5 pr-2 text-gray-600 text-sm font-medium cursor-pointer hover:text-[#FF7050]"
-                        >
-                          <span>{sub.name}</span>
-                          {sub.children && sub.children.length > 0 && (
-                            <FiChevronDown
-                              className={`transition-transform duration-200 text-gray-400 ${openMobileSubDropdown === sub.id ? "rotate-180" : ""}`}
-                            />
-                          )}
-                        </div>
-
-                        {/* Child category list */}
-                        {openMobileSubDropdown === sub.id && sub.children && sub.children.length > 0 && (
-                          <div className="pl-3 pb-2 space-y-1 border-l border-gray-100">
-                            {sub.children.map((child) => (
-                              <Link
-                                key={child.id}
-                                href={`/category/${child.slug}`}
-                                onClick={() => setIsDrawerOpen(false)}
-                                className="block py-1.5 text-gray-500 text-xs hover:text-[#FF7050] transition-colors"
-                              >
-                                {child.name}
-                              </Link>
-                            ))}
+                {openMobileDropdown === idx &&
+                  link.children &&
+                  link.children.length > 0 && (
+                    <div className="pl-3 pb-3 space-y-1">
+                      {link.children.map((sub) => (
+                        <div key={sub.id}>
+                          {/* Sub row */}
+                          <div
+                            onClick={() => {
+                              if (sub.children && sub.children.length > 0) {
+                                setOpenMobileSubDropdown(
+                                  openMobileSubDropdown === sub.id
+                                    ? null
+                                    : sub.id,
+                                );
+                              } else {
+                                router.push(`/category/${sub.slug}`);
+                                setIsDrawerOpen(false);
+                              }
+                            }}
+                            className="flex justify-between items-center py-2.5 pr-2 text-gray-600 text-sm font-medium cursor-pointer hover:text-[#FF7050]"
+                          >
+                            <span>{sub.name}</span>
+                            {sub.children && sub.children.length > 0 && (
+                              <FiChevronDown
+                                className={`transition-transform duration-200 text-gray-400 ${openMobileSubDropdown === sub.id ? "rotate-180" : ""}`}
+                              />
+                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+
+                          {/* Child category list */}
+                          {openMobileSubDropdown === sub.id &&
+                            sub.children &&
+                            sub.children.length > 0 && (
+                              <div className="pl-3 pb-2 space-y-1 border-l border-gray-100">
+                                {sub.children.map((child) => (
+                                  <Link
+                                    key={child.id}
+                                    href={`/category/${child.slug}`}
+                                    onClick={() => setIsDrawerOpen(false)}
+                                    className="block py-1.5 text-gray-500 text-xs hover:text-[#FF7050] transition-colors"
+                                  >
+                                    {child.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             ))}
           </div>

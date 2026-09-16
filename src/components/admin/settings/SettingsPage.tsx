@@ -408,20 +408,54 @@ import ShopSettingsIcon from "@/components/store-front/svg/svg/ShopSettingsIcon"
 import PrimaryButton from "../common/PrimaryButton";
 import { PageBuilder } from "./PageBuilder";
 import toast from "react-hot-toast";
+import { SeoTagInput } from "../products/add/SeoTagInput";
 
-const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
+// const InputGroup = ({ label, name, placeholder, type = "text" }: any) => {
+//   const { register } = useFormContext();
+//   return (
+//     <div className="flex flex-col gap-3 w-full">
+//       <label className="text-[15px] font-bold text-[#000000] font-lato uppercase tracking-wider">
+//         {label}
+//       </label>
+//       <input
+//         {...register(name)}
+//         type={type}
+//         placeholder={placeholder}
+//         className="bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-base outline-none placeholder:text-[#A2A2A2] border-none font-poppins"
+//       />
+//     </div>
+//   );
+// };
+
+const InputGroup = ({
+  label,
+  name,
+  placeholder,
+  type = "text",
+  className = "",
+}: any) => {
   const { register } = useFormContext();
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <label className="text-[15px] font-bold text-[#000000] font-lato uppercase tracking-wider">
-        {label}
-      </label>
-      <input
-        {...register(name)}
-        type={type}
-        placeholder={placeholder}
-        className="bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-base outline-none placeholder:text-[#A2A2A2] border-none font-poppins"
-      />
+    <div className={`flex flex-col w-full ${className}`}>
+      {label && (
+        <label className="text-[15px] font-bold text-[#000000] font-lato uppercase tracking-wider mb-3">
+          {label}
+        </label>
+      )}
+      {type === "textarea" ? (
+        <textarea
+          {...register(name)}
+          placeholder={placeholder}
+          className="bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-base outline-none placeholder:text-[#A2A2A2] border border-gray-200 font-poppins min-h-[100px]"
+        />
+      ) : (
+        <input
+          {...register(name)}
+          type={type}
+          placeholder={placeholder}
+          className="bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-base outline-none placeholder:text-[#A2A2A2] border border-gray-200 font-poppins"
+        />
+      )}
     </div>
   );
 };
@@ -438,6 +472,9 @@ export default function SettingsPage() {
       header_logo: "",
       footer_logo: "",
       favicon: "",
+      home_meta_title: "",
+      home_meta_tags: "",
+      home_meta_description: "",
       social_links: [],
       offers: [],
       chat_support: {},
@@ -749,6 +786,39 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Home Page SEO Section */}
+        <section className="mb-12 font-lato">
+          <h3 className="text-[22px] font-bold mb-6">Home Page SEO</h3>
+          <div className="grid grid-cols-1 gap-4 bg-white">
+            <InputGroup
+              name="home_meta_title"
+              placeholder="Meta Title"
+              className="font-normal"
+            />
+
+            {/* Custom Meta Tag Field */}
+            <div className="flex flex-col w-full">
+              <Controller
+                name="home_meta_tags"
+                control={control}
+                render={({ field }) => (
+                  <SeoTagInput
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+
+            <InputGroup
+              name="home_meta_description"
+              placeholder="Meta Description"
+              type="textarea"
+              className="font-normal"
+            />
+          </div>
+        </section>
 
         {/* Country & Settings Grid */}
         <div className="grid grid-cols-1 gap-12 mb-12">

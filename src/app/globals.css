@@ -464,7 +464,7 @@ li + p {
   .animate-marquee {
     display: flex;
     white-space: nowrap;
-    animation: marquee 15s linear infinite;
+    animation: marquee 20s linear infinite;
   }
 }
 
