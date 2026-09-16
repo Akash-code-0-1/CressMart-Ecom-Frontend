@@ -75,9 +75,9 @@ const Blog: React.FC = () => {
       <div className="max-w-[1720px] mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-medium text-black">
+          <h1 className="text-2xl md:text-3xl font-medium text-black">
             {t.blog.title}
-          </h2>
+          </h1>
           <ViewButton onClick={() => router.push("/blog")} />
         </div>
 
@@ -102,9 +102,9 @@ const Blog: React.FC = () => {
               </div>
 
               {/* Title */}
-              <h3 className="text-lg font-semibold text-black mb-3 leading-tight line-clamp-2">
+              <h1 className="text-lg font-semibold text-black mb-3 leading-tight line-clamp-2">
                 {blog.title}
-              </h3>
+              </h1>
 
               {/* Footer: Date & Read More */}
               <div className="flex justify-between items-center flex-wrap gap-3">

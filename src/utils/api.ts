@@ -106,12 +106,12 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
     // 🚀 IMPROVED FALLBACK (Fulfills your original 'localStorage' requirement but better)
     // Your original code only checked 'token'. This checks all 3 possible keys.
-    if (!token) {
-      token =
-        localStorage.getItem("auth_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("admin_token");
-    }
+    // if (!token) {
+    //   token =
+    //     localStorage.getItem("auth_token") ||
+    //     localStorage.getItem("token") ||
+    //     localStorage.getItem("admin_token");
+    // }
   } else {
     // 3. SERVER SIDE (Matches your original logic but safer)
     try {

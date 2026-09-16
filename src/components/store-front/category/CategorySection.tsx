@@ -118,7 +118,7 @@ function CategoryItem({
               }
             />
           )}
-          <span
+          <h2
             className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${
               isRoot
                 ? isActive
@@ -130,7 +130,7 @@ function CategoryItem({
             }`}
           >
             {node.name}
-          </span>
+          </h2>
         </div>
         <span
           className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"} md:text-[20px] text-base font-normal`}

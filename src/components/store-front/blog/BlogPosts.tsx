@@ -114,9 +114,9 @@ const BlogPosts = () => {
                   </p>
                 </div>
                 {/* Title */}
-                <h3 className="text-black font-poppins text-[18px] md:text-[22px] font-semibold leading-[1.4] mb-4 hover:text-[#FF7050] transition-colors cursor-pointer line-clamp-2">
+                <h2 className="text-black font-poppins text-[18px] md:text-[22px] font-semibold leading-[1.4] mb-4 hover:text-[#FF7050] transition-colors cursor-pointer line-clamp-2">
                   {post.title}
-                </h3>
+                </h2>
 
                 {/* Excerpt (Dynamic from meta_description) */}
                 <p className="text-[#585858] font-inter text-[14px] md:text-[15px] leading-relaxed line-clamp-2">

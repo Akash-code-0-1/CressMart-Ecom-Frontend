@@ -21,9 +21,9 @@ const RelatedProducts = ({ productId }: { productId: string }) => {
   if (isLoading) {
     return (
       <div className="w-full">
-        <h3 className="text-xl font-semibold font-poppins mb-4 px-1">
+        <h2 className="text-xl font-semibold font-poppins mb-4 px-1">
           {t.relatedProducts.title}
-        </h3>
+        </h2>
 
         <p className="text-sm text-[#727272] mb-3 px-1">
           {t.relatedProducts.loading}

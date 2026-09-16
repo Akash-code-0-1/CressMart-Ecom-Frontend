@@ -335,7 +335,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     ?.toLowerCase()
     .startsWith("mohasagor");
 
-  console.log(product);
+  // console.log(product);
 
   return (
     <div className="flex flex-col gap-4 font-poppins px-1 sm:px-0 md:mt-0 mt-4">

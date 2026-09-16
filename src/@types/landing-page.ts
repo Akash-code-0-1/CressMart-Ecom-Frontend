@@ -30,6 +30,8 @@ export interface CreateLandingPageDto {
   headline: string;
   subHeadline?: string;
   topImage: string;
+  offerText?: string;
+  couponCode?: string;
   offers?: LandingPageOffer[];
   features?: LandingPageFeature[];
   reviews?: LandingPageReview[];

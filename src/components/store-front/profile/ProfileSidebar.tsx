@@ -78,22 +78,26 @@ const ProfileSidebar = () => {
   //   router.push("/signin");
   // };
 
-  const handleLogout = async () => {
-  // 1. Wipe React Query Cache
+const handleLogout = async () => {
+  // A. Clear React Query Cache
   queryClient.clear();
   
-  // 2. Clear Auth Store
+  // B. Clear Zustand Store
   if (clearAuth) {
-    clearAuth(); // Ensure this sets user to null
+    clearAuth();
   }
   
-  // 3. Optional: Clear LocalStorage manually as a fallback
-  localStorage.removeItem("auth-storage"); // Replace with your actual storage key
-
-  // 4. API logout
+  // C. KILL LOCALSTORAGE (Crucial)
+  // Check your useAuthStore to see what the exact key is. 
+  // It is likely 'auth-storage' or 'auth-user-storage'
+  localStorage.removeItem("auth-storage"); 
+  localStorage.removeItem("token"); 
+  localStorage.removeItem("auth_token");
+  
+  // D. Kill Cookies via Server Action
   await deleteSessionToken();
   
-  // 5. Hard refresh to force clean state
+  // E. Force a clean state reload
   window.location.href = "/signin"; 
 };
 

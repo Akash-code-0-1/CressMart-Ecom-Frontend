@@ -330,7 +330,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({ status, date, desc }) => (
   <div className="relative pl-10">
     <div className="absolute left-0 top-1.5 w-4 h-4 bg-[#FF7050] rounded-full border-4 border-white ring-1 ring-[#FF7050]" />
     <div className="flex justify-between items-start mb-1 flex-wrap gap-2">
-      <h4 className="text-base font-semibold text-black">{status}</h4>
+      <h2 className="text-base font-semibold text-black">{status}</h2>
       <span className="text-xs text-gray-400 font-medium">{date}</span>
     </div>
     {desc && (

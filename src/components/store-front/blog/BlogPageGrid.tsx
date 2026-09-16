@@ -87,9 +87,9 @@ const BlogPageGrid = () => {
                 </p>
 
                 {/* Title */}
-                <h3 className="text-black text-[18px] md:text-[20px] font-bold leading-[1.4] line-clamp-2 hover:text-[#FF7050] transition-colors">
+                <h2 className="text-black text-[18px] md:text-[20px] font-bold leading-[1.4] line-clamp-2 hover:text-[#FF7050] transition-colors">
                   {item.title}
-                </h3>
+                </h2>
               </div>
             );
           })}
