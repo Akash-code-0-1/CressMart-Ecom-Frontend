@@ -524,40 +524,50 @@ export default function OrderTable() {
     }
   }, [selectedOrderForPrint]);
 
-  // 🚀 THE SAVE AND PRINT MUTATION
-  const saveAndPrintMutation = useMutation({
-    mutationFn: () =>
-      updateOrderStatusService(selectedOrderForPrint.id, {
-        // @ts-ignore
-        invoice_number: currentInvoiceNumber, // Send the edited number
-      }),
-    onSuccess: (updatedOrder) => {
-      // 1. Refresh list
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+const saveAndPrintMutation = useMutation({
+  mutationFn: () =>
+    updateOrderStatusService(selectedOrderForPrint.id, {
+      invoice_number: currentInvoiceNumber,
+    }as any),
+onSuccess: (updatedOrder) => {
+  const freshData = updatedOrder.data || updatedOrder;
+  
+  // 🚀 IMPORTANT: Use functional state update to ensure you have the latest state
+  setSelectedOrderForPrint((prev: any) => ({
+    ...prev,
+    ...freshData,
+    // Explicitly keep the items from the previous state if the API didn't return them
+    order_items: freshData.order_items || prev.order_items || prev.cart_items || []
+  }));
 
-      // 2. IMPORTANT: Update the local object with the NEW database data
-      // This ensures the hidden component receives the saved number
-      setSelectedOrderForPrint(updatedOrder.data || updatedOrder);
-
-      // 3. Small delay to allow React to update the DOM
-      setTimeout(() => {
-        handlePrint();
-        setIsPrintModalOpen(false);
-        toast.success("Invoice saved and printing...");
-      }, 400);
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to save invoice number");
-    },
-  });
+  // Trigger print after a short delay
+  setTimeout(() => {
+    if (invoiceRef.current) {
+      handlePrint();
+    }
+  }, 500);
+},
+  onError: (error: any) => {
+    toast.error(error.message || "Failed to save invoice number");
+  },
+});
 
   const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
-  const handlePrint = useReactToPrint({
-    contentRef: invoiceRef,
-    documentTitle: `Invoice_${currentInvoiceNumber}`, // 🚀 Use the updated state
-    onAfterPrint: () => setSelectedOrderForPrint(null),
-  });
+const handlePrint = useReactToPrint({
+  // 1. Ensure the contentRef is strictly the InvoicePrint
+  contentRef: invoiceRef,
+  documentTitle: `Invoice_${currentInvoiceNumber}`,
+  // 2. Add this property to ensure styles are included
+  pageStyle: `
+    @page { size: auto; margin: 10mm; }
+    @media print {
+      body * { visibility: hidden; }
+      #invoice-print-area, #invoice-print-area * { visibility: visible; }
+      #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  `,
+});
 
   // useEffect(() => {
   //   // Only trigger if we have an order AND the ref is actually attached to a DOM element
@@ -586,6 +596,25 @@ export default function OrderTable() {
 
     return null;
   };
+
+useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        @page { margin: 10mm; size: auto; }
+        /* Only show the invoice ref container, hide everything else */
+        body * { visibility: hidden; }
+        .invoice-print-container, .invoice-print-container * { visibility: visible; }
+        .invoice-print-container { position: absolute; left: 0; top: 0; width: 100%; }
+        /* Force table visibility */
+        table { display: table !important; }
+        tr { display: table-row !important; }
+        td, th { display: table-cell !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
 
   const isLead = (item: any) => !!item.cart_items && !item.order_items;
 
@@ -1185,25 +1214,24 @@ export default function OrderTable() {
               </button>
             )} */}
 
-            {!isIncompleteTab && (
-              <button
-                onClick={() => {
-                  const o = orderList.find((x: any) => x.id === activeMenuId);
-                  if (o) {
-                    setSelectedOrderForPrint(o);
-                    setIsPrintModalOpen(true); // Only opens the modal
-                  }
-                  setActiveMenuId(null);
-                }}
-                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
-              >
-                <Printer
-                  size={16}
-                  className="text-gray-400 group-hover:text-[#1DA1F2]"
-                />
-                <span className="font-medium">Print Invoice</span>
-              </button>
-            )}
+{!isIncompleteTab && (
+  <button
+    onClick={() => {
+      // 🚀 Explicitly find the item from the orderList
+      const o = orderList.find((x: any) => x.id === activeMenuId);
+      if (o) {
+        // console.log("Selected Order:", o); // CHECK YOUR CONSOLE: Do you see order_items/cart_items here?
+        setSelectedOrderForPrint(o);
+        setIsPrintModalOpen(true);
+      }
+      setActiveMenuId(null);
+    }}
+    className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
+  >
+    <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
+    <span className="font-medium">Print Invoice</span>
+  </button>
+)}
 
             <button
               onClick={() => {
@@ -1407,17 +1435,23 @@ export default function OrderTable() {
         </div>
       )}
 
-      {/* Hidden component for printing */}
-      <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
-        <InvoicePrint
-          ref={invoiceRef}
-          order={selectedOrderForPrint}
-          baseStorageUrl={baseStorageUrl}
-          // 🚀 ADD THESE PROPS TO SYNC DATA
-          editableInvoice={currentInvoiceNumber}
-          setEditableInvoice={setCurrentInvoiceNumber}
-        />
-      </div>
+{/* Invoice Workspace */}
+<div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
+  <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
+    {/* 
+      1. Removed the spinner/loading check
+      2. Added 'key' - this forces InvoicePrint to re-mount fresh when selectedOrderForPrint changes
+    */}
+    <InvoicePrint
+      key={selectedOrderForPrint?.id} 
+      ref={invoiceRef}
+      order={selectedOrderForPrint}
+      baseStorageUrl={baseStorageUrl}
+      editableInvoice={currentInvoiceNumber}
+      setEditableInvoice={setCurrentInvoiceNumber}
+    />
+  </div>
+</div>
 
       {/* --- DETAILS MODAL --- */}
       {detailsModal.open && detailsModal.order && (

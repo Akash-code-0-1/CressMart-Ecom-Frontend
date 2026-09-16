@@ -68,15 +68,34 @@ const ProfileSidebar = () => {
     },
   ];
 
+  // const handleLogout = async () => {
+  //   queryClient.clear();
+  //   if (clearAuth) {
+  //     clearAuth();
+  //   }
+  //   await deleteSessionToken();
+  //   router.refresh();
+  //   router.push("/signin");
+  // };
+
   const handleLogout = async () => {
-    queryClient.clear();
-    if (clearAuth) {
-      clearAuth();
-    }
-    await deleteSessionToken();
-    router.refresh();
-    router.push("/signin");
-  };
+  // 1. Wipe React Query Cache
+  queryClient.clear();
+  
+  // 2. Clear Auth Store
+  if (clearAuth) {
+    clearAuth(); // Ensure this sets user to null
+  }
+  
+  // 3. Optional: Clear LocalStorage manually as a fallback
+  localStorage.removeItem("auth-storage"); // Replace with your actual storage key
+
+  // 4. API logout
+  await deleteSessionToken();
+  
+  // 5. Hard refresh to force clean state
+  window.location.href = "/signin"; 
+};
 
   const handleEditAvatarClick = () => {
     fileInputRef.current?.click();

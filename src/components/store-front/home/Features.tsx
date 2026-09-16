@@ -38,9 +38,9 @@ const Features = () => {
               </div>
 
               <div className="flex flex-col">
-                <h3 className="text-[#000000] text-[14px] sm:text-[16px] lg:text-[24px] font-normal leading-tight lg:leading-normal mb-1">
+                <h2 className="text-[#000000] text-[14px] sm:text-[16px] lg:text-[24px] font-normal leading-tight lg:leading-normal mb-1">
                   {item.title}
-                </h3>
+                </h2>
 
                 <p className="text-[#8C8C8C] text-[10px] sm:text-[12px] font-normal leading-normal max-w-[150px] lg:max-w-[174px]">
                   {item.desc}
