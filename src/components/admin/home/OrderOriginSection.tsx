@@ -275,7 +275,7 @@ if (!isStatsLoading && chartData.length === 0) {
                 const sourceKey = (entry.name || "direct").toLowerCase().trim();
                 return (
                   <Cell
-                    key={`cell-৳{index}`}
+                    key={`cell-${index}`}
                     fill={sourceConfig[sourceKey]?.color || "#FF7050"}
                   />
                 );

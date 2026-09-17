@@ -48,13 +48,15 @@ const ProductDetailsTabs = ({ product }: Props) => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative pb-[16px] text-sm md:text-[20px] mr-8 whitespace-nowrap cursor-pointer ${
+                  className={`relative pb-[16px] text-sm md:text-[20px] mr-8 whitespace-nowrap cursor-pointer flex items-center ${
                     activeTab === tab.id
                       ? "text-[#FF7050] font-semibold"
                       : "text-[#848484]"
                   }`}
                 >
-                  {tab.label} {tab.count !== undefined && ` (${tab.count})`}
+                  <h2 className="text-sm md:text-[20px] font-inherit whitespace-nowrap">
+                    {tab.label} {tab.count !== undefined && ` (${tab.count})`}
+                  </h2>
                   {activeTab === tab.id && (
                     <span className="absolute bottom-0 left-0 w-full h-[4px] bg-[#FF7050]" />
                   )}

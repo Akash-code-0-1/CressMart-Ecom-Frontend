@@ -384,6 +384,7 @@ interface ExtendedTableColumn<T> {
 interface TableData {
   id: string;
   name: string;
+   sell_price: number | string;
   images?: {
     url: string;
     alt_text?: string;
@@ -689,6 +690,18 @@ export default function ProductTable() {
         </span>
       ),
     },
+
+      {
+  header: "Sell Price",
+  key: "sell_price",
+  headerClassName: "px-4 py-3 text-right",
+  className: "px-4 py-3 align-middle text-right",
+  render: (product) => (
+    <span className="text-[13px] xl:text-[15px] text-[#023337] font-semibold">
+      ৳{Number(product.sell_price || 0).toLocaleString()}
+    </span>
+  ),
+},
   {
     header: "Views",
     key: "view_count", // Matches your JSON
@@ -718,6 +731,7 @@ export default function ProductTable() {
       );
     },
   },
+
     {
       header: "Status",
       key: "status",
