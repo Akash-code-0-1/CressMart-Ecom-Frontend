@@ -11,6 +11,9 @@ import {
   getOrderByIdService,
   editOrderInvoiceService,
 } from "@/services-api/orderService";
+import { getSettings } from "@/services-api/globalSettingsService";
+import { extractImageUrl } from "@/utils/image";
+import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
 // Components
 import OrderCompletedModal from "@/components/store-front/thank_you/Ordercompletedmodal";
@@ -18,10 +21,6 @@ import EditOrderModal, {
   CustomerInfo,
 } from "@/components/store-front/thank_you/Editordermodal";
 import { OrderItem } from "@/@types/order.type";
-import { invoiceItem } from "@/@types/invoice.type";
-import { getSettings } from "@/services-api/globalSettingsService";
-import { extractImageUrl } from "@/utils/image";
-import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
 export default function ThankYouContent({
   showThankYou = true,
@@ -31,8 +30,6 @@ export default function ThankYouContent({
   const [isCompletedOpen, setIsCompletedOpen] = useState(showThankYou);
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
-  const invoiceRef = useRef<HTMLDivElement>(null);
-  // const [isCompletedOpen, setIsCompletedOpen] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState<CustomerInfo | null>(
     null,
@@ -40,15 +37,12 @@ export default function ThankYouContent({
 
   const { data: setting } = useQuery({
     queryKey: ["setting"],
-    queryFn: () => getSettings(),
+    queryFn: getSettings,
   });
-  const settingsdata = setting?.data;
-
   const { data: chatSettings } = useQuery({
     queryKey: ["chatSettings"],
     queryFn: fetchChatSettings,
   });
-
   const {
     data: apiResponse,
     isLoading,
@@ -59,15 +53,18 @@ export default function ThankYouContent({
     enabled: !!orderId,
   });
 
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ||
-    "http://localhost:8082";
+  const settingsdata = setting?.data;
+  const logoUrl =
+    extractImageUrl(settingsdata?.primary_logo) || "/images/admin/logo.png";
+  const displayPhone = chatSettings?.phone || "019XXXXXXXX";
 
-  const invoiceLogo =
-    extractImageUrl(settingsdata?.primary_logo, backendBaseUrl) ||
-    "/images/admin/logo.png";
+  // Calculate Subtotal manually
+  const subtotal =
+    apiResponse?.order_items?.reduce(
+      (acc: number, item: any) => acc + Number(item.unit_price) * item.quantity,
+      0,
+    ) || 0;
 
-  // edit invoice mutation
   const editInvoiceMutation = useMutation({
     mutationFn: (updated: CustomerInfo) =>
       editOrderInvoiceService(orderId!, {
@@ -84,231 +81,226 @@ export default function ThankYouContent({
   });
 
   if (isLoading)
-    return (
-      <div className="p-20 text-center font-medium">Fetching Invoice...</div>
-    );
+    return <div className="p-20 text-center">Fetching Invoice...</div>;
   if (!apiResponse)
     return <div className="p-20 text-center">Order not found.</div>;
 
-  // calculation and data preparation
   const currentCustomer = editedCustomer || {
     name: apiResponse.customer_name,
     phone: apiResponse.customer_phone,
     address: apiResponse.customer_address,
   };
 
-  const subtotal =
-    apiResponse.order_items?.reduce(
-      (acc: number, item: OrderItem) =>
-        acc + Number(item.unit_price) * item.quantity,
-      0,
-    ) || 0;
-  const shippingFee = Number(
-    apiResponse.shipping_fee ??
-      apiResponse.delivery_fee ??
-      apiResponse.delivery_charge ??
-      apiResponse.shippingFee ??
-      0,
-  );
-  const discountAmount = Number(apiResponse.discount_amount || 0);
-
-  const formattedDate = apiResponse.created_at
-    ? new Date(apiResponse.created_at).toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : "N/A";
-
-  const displayPhone = chatSettings?.phone || "019XXXXXXXX";
-
   return (
-    <div className="min-h-screen bg-[#F7F7F7] py-10 px-4 flex flex-col items-center">
-      <div
-        ref={invoiceRef}
-        className="p-12 bg-white w-full max-w-[210mm] mx-auto font-lato text-[#023337] box-border shadow-sm rounded-lg"
-      >
-        {/* 1. Header Section */}
-        <div className="flex justify-between items-start mb-12 border-b border-gray-100 pb-8">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 relative">
+    <div className="min-h-screen bg-[#F7F7F7] py-10 px-4 flex flex-col items-center font-inter">
+      <div className="p-10 bg-white w-[210mm] text-[#023337] shadow-sm rounded-lg">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-12">
+          <div className="flex gap-5">
+            <div className="w-[105px] h-[100px] relative">
               <Image
-                src={invoiceLogo}
+                src={logoUrl}
                 alt="Logo"
+                className="object-contain h-full w-full"
                 fill
-                className="object-contain"
                 unoptimized
               />
             </div>
-            <div className="h-12 w-[1px] bg-gray-300"></div>
-            <div className="text-[13px] space-y-0.5">
-              <p className="font-bold text-[#FF6A00] text-[16px] uppercase tracking-tight">
-                {settingsdata?.company_name || "CREASS"}
+            <div className="text-[13px] text-[#5E6470] border-gray-200 space-y-0.5">
+              <p className="font-medium">{settingsdata?.company_name}</p>
+              <p className="font-bold text-[#FF6A00] text-[14px] uppercase tracking-tight">
+                CREASS
               </p>
-              <p className="text-gray-500 font-medium">
-                {settingsdata?.contact_email}
-              </p>
-              <p className="text-gray-500 font-medium">{displayPhone}</p>
+              <p>www.creassmart.com</p>
+              <p className="font-normal">{settingsdata?.contact_email}</p>
+              <p className="font-normal">{displayPhone}</p>
             </div>
           </div>
-          <div className="text-right text-[13px] text-gray-600">
-            <p className="font-bold text-[#023337] uppercase tracking-widest mb-1">
-              Business Address
+          <div className="text-right font-normal text-[11px] text-[#5E6470] pt-13">
+            <p className="font-normal text-[#5E6470] uppercase tracking-widest mb-1">
+              Business address
             </p>
-            <p className="max-w-[200px]">{settingsdata?.address}</p>
+            <p>{settingsdata?.address}</p>
           </div>
         </div>
 
-        {/* 2. Info Bar */}
-        <div className="grid grid-cols-3 w-full border-t border-gray-100 pt-8 mb-12 items-start">
-          <div className="text-left space-y-1">
-            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">
-              Billed to
-            </p>
-            <p className="font-bold text-[18px] text-[#023337] leading-tight">
-              {currentCustomer.name}
-            </p>
-            <p className="text-[13px] text-gray-700 font-medium">
-              {currentCustomer.phone}
-            </p>
-            <p className="text-[13px] text-gray-600 leading-tight max-w-[200px]">
-              {currentCustomer.address}
-            </p>
-          </div>
-          <div className="flex justify-center items-start">
-            <div className="text-left">
-              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-1">
-                Invoice Number
+        <div className="border border-[#D7DAE0] rounded-xl px-6 py-6 mb-8 text-gray-800 text-[13px] leading-relaxed">
+          {/* Info Bar */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div>
+              <p className="text-[#5E6470] font-medium text-[11px] mb-1">
+                Billed to
               </p>
-              <p className="font-bold text-[18px] text-[#023337]">
+              <p className="font-bold text-[#1A1C21]">{currentCustomer.name}</p>
+              <p className="text-[#023337]">{currentCustomer.phone}</p>
+              <p className="text-[#023337] max-w-[200px]">
+                {currentCustomer.address}
+              </p>
+            </div>
+            <div className="ml-20">
+              <p className="text-[#5E6470] font-medium text-[11px] mb-1">
+                Invoice number
+              </p>
+              <p className="font-bold text-[#1A1C21] text-[13px]">
                 #{apiResponse.invoice_number}
               </p>
             </div>
-          </div>
-          <div className="text-right space-y-4">
-            <div>
-              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-0.5">
+            <div className="text-right">
+              <p className="text-[#5E6470] font-medium text-[11px] mb-1">
                 Date
               </p>
-              <p className="font-bold text-[15px] text-[#023337]">
-                {formattedDate}
+              <p className="font-bold text-[#1A1C21]">
+                {new Date(apiResponse.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </p>
-            </div>
-            <div>
-              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-0.5">
-                Order Number
+              <p className="font-bold text-[#1A1C21]">
+                {new Date(apiResponse.created_at).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
               </p>
-              <p className="font-bold text-[18px] text-[#023337]">
+              <p className="text-[#5E6470] font-medium text-[11px] mt-2 mb-1">
+                Order number
+              </p>
+              <p className="font-bold text-[#1A1C21]">
                 #{apiResponse.order_number}
               </p>
             </div>
           </div>
-        </div>
 
-        {/* 3. Items Table */}
-        <table className="w-full mb-12">
-          <thead>
-            <tr className="text-gray-400 text-[11px] font-bold uppercase border-b-2 border-[#023337]/10">
-              <th className="py-4 text-left w-12">NO.</th>
-              <th className="py-4 text-left">ITEM DETAIL</th>
-              <th className="py-4 text-center">QTY</th>
-              <th className="py-4 text-right">RATE</th>
-              <th className="py-4 text-right">AMOUNT</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {apiResponse.order_items?.map((item: any, idx: number) => (
-              <tr key={item.id} className="text-[14px]">
-                <td className="py-6 align-top text-gray-500">
-                  {String(idx + 1).padStart(2, "0")}
-                </td>
-                <td className="py-6 font-bold text-[#023337]">
-                  {item.product_name}
-                </td>
-                <td className="py-6 align-top text-center font-bold text-[#023337]">
-                  {item.quantity}
-                </td>
-                <td className="py-6 align-top text-right text-gray-600">
-                  ৳{Number(item.unit_price).toLocaleString()}
-                </td>
-                <td className="py-6 align-top text-right font-bold text-[#023337]">
-                  ৳{(Number(item.unit_price) * item.quantity).toLocaleString()}
-                </td>
+          {/* Table */}
+          <table className="w-full mb-6 text-left border-collapse">
+            <thead>
+              <tr className="text-[#5E6470] text-[10px] uppercase border-b border-gray-200 border-t tracking-wider">
+                <th className="py-3 font-semibold">NO.</th>
+                <th className="py-3 font-semibold">ITEM DETAIL</th>
+                <th className="py-3 font-semibold">SKU</th>
+                <th className="py-3 font-semibold text-center">QTY</th>
+                <th className="py-3 font-semibold">UNIT</th>
+                <th className="py-3 font-semibold text-right">RATE</th>
+                <th className="py-3 font-semibold text-right">AMOUNT</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100 border-b border-gray-200">
+              {apiResponse.order_items?.map((item: any, idx: number) => (
+                <tr key={item.id} className="text-[13px]">
+                  <td className="py-4 text-[#5E6470] font-medium align-top">
+                    {idx + 1}
+                  </td>
+                  <td className="py-4 align-top">
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-100 rounded overflow-hidden relative flex-shrink-0">
+                        <Image
+                          src={
+                            extractImageUrl(
+                              item.product?.images?.[0] || item.external_image,
+                            ) || "/images/placeholder.svg"
+                          }
+                          alt="Item"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900">
+                          {item.product_name}
+                        </p>
+                        <p className="text-gray-400 text-[11px]">
+                          High-quality premium product
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 text-gray-600 font-medium align-top">
+                    {item.sku || item.product?.sku || "N/A"}
+                  </td>
+                  <td className="py-4 text-center text-gray-900 font-medium align-top">
+                    {item.quantity}
+                  </td>
+                  <td className="py-4 text-gray-600 align-top">
+                    {item.unit || item.product?.unit || "pcs"}
+                  </td>
+                  <td className="py-4 text-right text-gray-900 font-medium align-top">
+                    ৳{Number(item.unit_price).toLocaleString()}
+                  </td>
+                  <td className="py-4 text-right font-bold text-gray-900 align-top">
+                    ৳
+                    {(Number(item.unit_price) * item.quantity).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {/* 4. Footer Totals */}
-        <div className="flex justify-end mt-10">
-          <div className="w-72 space-y-3.5 text-[15px]">
-            <div className="flex justify-between text-gray-500 font-medium">
-              <span>Sub Total</span>
-              <span className="text-[#023337] font-bold">
-                ৳{subtotal.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between text-gray-500 font-medium">
-              <span>Delivery Charge</span>
-              <span className="text-[#023337] font-bold">
-                ৳{shippingFee.toLocaleString()}
-              </span>
-            </div>
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-[#FF4D4D] font-medium">
-                <span>Discount</span>
-                <span className="font-bold">
-                  - ৳{discountAmount.toLocaleString()}
-                </span>
+          {/* Calculations */}
+          <div className="flex justify-end pt-2">
+            <div className="w-64 space-y-2 text-[12px]">
+              <div className="flex justify-between text-gray-600">
+                <p>Sub Total</p>
+                <p className="font-medium text-gray-900">
+                  ৳{subtotal.toLocaleString()}
+                </p>
               </div>
-            )}
-            <div className="flex justify-between text-[20px] font-black text-[#023337] border-t-2 border-gray-100 pt-4 mt-2">
-              <span>Grand Total</span>
-              <span>৳{Number(apiResponse.total_bill).toLocaleString()}</span>
-            </div>
-            {Number(apiResponse.advance_amount) > 0 && (
-              <div className="flex justify-between text-gray-400 font-medium">
-                <span>Advance Pay</span>
-                <span className="font-bold">
-                  ৳{Number(apiResponse.advance_amount).toLocaleString()}
-                </span>
+              <div className="flex justify-between text-gray-600">
+                <p>Delivery Charge</p>
+                <p className="font-medium text-gray-900">
+                  ৳{Number(apiResponse.shipping_fee || 0).toLocaleString()}
+                </p>
               </div>
-            )}
-            <div className="flex justify-between text-[18px] font-bold text-gray-800 pt-3 border-t border-dashed border-gray-200">
-              <span>Due Pay</span>
-              <span className="text-[#FF6A00]">
-                ৳{Number(apiResponse.total_amount_due).toLocaleString()}
-              </span>
+              {Number(apiResponse.discount_amount || 0) > 0 && (
+                <div className="flex justify-between text-red-500">
+                  <p>Discount</p>
+                  <p className="font-medium">
+                    - ৳{Number(apiResponse.discount_amount).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
+                <p>Grand Total</p>
+                <p>৳{Number(apiResponse.total_bill || 0).toLocaleString()}</p>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <p>Advance Pay</p>
+                <p className="font-medium text-gray-900">
+                  ৳{Number(apiResponse.advance_amount || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
+                <p>Due Pay</p>
+                <p>
+                  ৳{Number(apiResponse.total_amount_due || 0).toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Disclaimer */}
-        <div className="mt-16 text-center border-t border-gray-50 pt-10">
-          <p className="text-[#FF4D4D] text-[13px] font-bold">
+        <button
+          onClick={() => setIsEditOpen(true)}
+          className="mb-8 flex items-center gap-2 text-sm text-gray-500 hover:text-[#FF5C24]"
+        >
+          <FiEdit3 /> Edit Customer Details
+        </button>
+
+        <div className="mt-16 text-center border-t border-gray-100">
+          <p className="text-red-600 text-[12px] font-bold">
             বিঃ দ্রঃ ইনভয়েসসহ আনবক্সিং ভিডিও বাধ্যতামূলক ভিডিও ছাড়া কোনো
             অভিযোগ গ্রহণযোগ্য নয়*
           </p>
         </div>
-
-        <button
-          onClick={() => setIsEditOpen(true)}
-          className="mt-10 flex items-center gap-2 text-sm text-gray-500 hover:text-[#FF5C24]"
-        >
-          <FiEdit3 /> Edit Customer Details
-        </button>
       </div>
-      {/* Modals stay at the bottom */}
+
       <OrderCompletedModal
         isOpen={isCompletedOpen}
         onClose={() => setIsCompletedOpen(false)}
         customerName={currentCustomer.name}
         invoiceNo={apiResponse.invoice_number}
       />
-
       <EditOrderModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}

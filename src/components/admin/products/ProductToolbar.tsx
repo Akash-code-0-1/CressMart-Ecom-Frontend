@@ -319,7 +319,7 @@ export default function ProductToolbar() {
             <option value="">All Statuses</option>
             <option value="PUBLISHED">Published</option>
             <option value="DRAFT">Draft</option>
-            <option value="OUT_OF_STOCK">Out of Stock</option>
+            {/* <option value="OUT_OF_STOCK">Out of Stock</option> */}
           </select>
         </div>
       </div>

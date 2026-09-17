@@ -2,10 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import CategoryRichTextEditor from "./CategoryRichTextEditor";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, ArrowLeft, CheckCircle, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Trash2, X } from "lucide-react";
 import { apiFetch } from "@/utils/api";
 import {
   uploadCategoryImage,
@@ -29,6 +29,55 @@ const Label = ({
     {children} {required && <span className="text-red-500">*</span>}
   </label>
 );
+
+const TagInput = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+  const [input, setInput] = useState("");
+  const tags = value ? value.split(",").map(t => t.trim()).filter(Boolean) : [];
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && input.trim()) {
+      e.preventDefault();
+      if (!tags.includes(input.trim())) {
+        onChange([...tags, input.trim()].join(", "));
+      }
+      setInput("");
+    }
+  };
+
+  const removeTag = (index: number) => {
+    onChange(tags.filter((_, i) => i !== index).join(", "));
+  };
+
+  return (
+    <div className="w-full">
+      {/* Container with focus-within blue border effect */}
+      <div className="flex flex-wrap gap-2 p-2 border border-gray-200 rounded-[8px] bg-[#F9F9F9] min-h-[46px] items-center focus-within:border-blue-500 transition-colors">
+        {tags.map((tag, idx) => (
+          /* Blue pill style: bg-blue-50, text-blue-600, border-blue-200 */
+          <span 
+            key={idx} 
+            className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-sm font-medium border border-blue-200"
+          >
+            {tag}
+            {/* Red hover on X */}
+            <X 
+              size={14} 
+              className="cursor-pointer hover:text-red-600" 
+              onClick={() => removeTag(idx)} 
+            />
+          </span>
+        ))}
+        <input
+          className="flex-1 outline-none text-sm px-2 bg-transparent text-black"
+          placeholder={tags.length === 0 ? "e.g. electronics, gadgets..." : ""}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default function AddCategoryMain() {
   const queryClient = useQueryClient();
@@ -388,14 +437,21 @@ export default function AddCategoryMain() {
                 className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
               />
             </div>
-            <div>
+<div>
               <Label>Meta Tags</Label>
-              <input
-                type="text"
-                {...register("meta_tags")}
-                placeholder="Ex: electronics, gadgets, devices"
-                className="w-full bg-[#F9F9F9] rounded-[8px] px-4 py-3 text-sm outline-none text-black"
+              <Controller
+                name="meta_tags"
+                control={methods.control}
+                render={({ field }) => (
+                  <TagInput 
+                    value={field.value || ""} 
+                    onChange={field.onChange} 
+                  />
+                )}
               />
+              <p className="text-xs text-gray-400 mt-1">
+                Press Enter or comma to add keywords.
+              </p>
             </div>
             <div>
               <Label>Meta Description</Label>
