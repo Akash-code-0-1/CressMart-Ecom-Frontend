@@ -340,9 +340,6 @@
 
 // InvoicePrint.displayName = "InvoicePrint";
 
-
-
-
 "use client";
 import { getSettings } from "@/services-api/globalSettingsService";
 import { useQuery } from "@tanstack/react-query";
@@ -408,18 +405,20 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
     if (!order) return null;
 
+    // 1. Calculate values based purely on the items and order fields
     const subTotal =
       order.order_items?.reduce(
-        (acc: number, item: OrderItem) =>
-          acc + Number(item.unit_price) * item.quantity,
+        (acc, item) => acc + Number(item.unit_price) * item.quantity,
         0,
       ) || 0;
-    const discount = Number(order.discount_amount) || 0;
+
     const deliveryCharge = Number(order.shipping_fee) || 0;
-    const grandTotal =
-      Number(order.total_bill) || subTotal + deliveryCharge - discount;
+    const discount = Number(order.discount_amount) || 0;
     const advancePay = Number(order.advance_amount) || 0;
-    const duePay = Number(order.total_amount_due) || grandTotal - advancePay;
+
+    // 2. Define the exact order as per your Bill Summary
+    const grandTotal = subTotal + deliveryCharge - discount;
+    const duePay = grandTotal - advancePay; // This is the Remaining Due
 
     const settingsdata = settingResponse?.data;
     const logoUrl =
@@ -428,9 +427,9 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
     return (
       <>
-<style
-  dangerouslySetInnerHTML={{
-    __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
       @media print {
         @page { size: A4; margin: 10mm; }
         body * { visibility: hidden; }
@@ -447,11 +446,11 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
         td, th { display: table-cell !important; }
       }
     `,
-  }}
-/>
+          }}
+        />
 
         <div
-        id="invoice-print-area"
+          id="invoice-print-area"
           ref={ref}
           className="p-10 bg-white w-[210mm] text-[#023337] font-inter"
         >
@@ -615,50 +614,46 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
               </tbody>
             </table>
 
-            {/* Calculations */}
-            <div className="flex justify-end pt-2">
-              <div className="w-64 space-y-2 text-[12px]">
-                <div className="flex justify-between text-gray-600">
-                  <p>Sub Total</p>
-                  <p className="font-medium text-gray-900">
-                    ৳{subTotal.toLocaleString()}
-                  </p>
-                </div>
+<div className="flex justify-end pt-2">
+  <div className="w-64 space-y-2 text-[12px]">
+    <div className="flex justify-between text-gray-600">
+      <p>Sub Total</p>
+      <p className="font-medium text-gray-900">৳{subTotal.toLocaleString()}</p>
+    </div>
 
-                <div className="flex justify-between text-gray-600">
-                  <p>Delivery Charge</p>
-                  <p className="font-medium text-gray-900">
-                    ৳{deliveryCharge.toLocaleString()}
-                  </p>
-                </div>
+    <div className="flex justify-between text-gray-600">
+      <p>Delivery Charge</p>
+      <p className="font-medium text-gray-900">৳{deliveryCharge.toLocaleString()}</p>
+    </div>
 
-                {discount > 0 && (
-                  <div className="flex justify-between text-red-500">
-                    <p>Discount</p>
-                    <p className="font-medium">
-                      - ৳{discount.toLocaleString()}
-                    </p>
-                  </div>
-                )}
+    {discount > 0 && (
+      <div className="flex justify-between text-red-500">
+        <p>Discount</p>
+        <p className="font-medium">- ৳{discount.toLocaleString()}</p>
+      </div>
+    )}
 
-                <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
-                  <p>Grand Total</p>
-                  <p>৳{grandTotal.toLocaleString()}</p>
-                </div>
+    {/* Grand Total */}
+    <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
+      <p>Total Due</p>
+      <p>৳{grandTotal.toLocaleString()}</p>
+    </div>
 
-                <div className="flex justify-between text-gray-600">
-                  <p>Advance Pay</p>
-                  <p className="font-medium text-gray-900">
-                    ৳{advancePay.toLocaleString()}
-                  </p>
-                </div>
+    {/* Advance Payment */}
+    <div className="flex justify-between text-gray-600">
+      <p>Advance Pay</p>
+      <p className="font-medium text-gray-900">৳{advancePay.toLocaleString()}</p>
+    </div>
 
-                <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
-                  <p>Due Pay</p>
-                  <p>৳{duePay.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
+    {/* Remaining Due */}
+    <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
+      <p>Remaining Due</p>
+      <p>৳{duePay.toLocaleString()}</p>
+    </div>
+  </div>
+</div>
+
+
           </div>
 
           <div className="mt-16 text-center border-t border-gray-100">

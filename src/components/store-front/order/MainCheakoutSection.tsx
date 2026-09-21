@@ -776,7 +776,13 @@
 // export default MainCheckoutSection;
 
 "use client";
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import {
   useQuery,
   useQueries,
@@ -893,56 +899,60 @@ const MainCheckoutSection: React.FC = () => {
     })),
   });
 
-const cartItems: CartItem[] = useMemo(() => {
-  return rawCartItems.map((item, index) => {
-    // 1. Get fresh data from the background query
-    const pData = productQueries[index]?.data; 
-    const existingProduct = (item.product || {}) as Product;
+  const cartItems: CartItem[] = useMemo(() => {
+    return rawCartItems.map((item, index) => {
+      // 1. Get fresh data from the background query
+      const pData = productQueries[index]?.data;
+      const existingProduct = (item.product || {}) as Product;
 
-    // 2. Resolve Stock Quantity
-    // Priority: fresh DB data > data stored in cart item
-    const dbQty = pData 
-      ? Number(pData.quantity) 
-      : Number(existingProduct.quantity ?? 0);
+      // 2. Resolve Stock Quantity
+      // Priority: fresh DB data > data stored in cart item
+      const dbQty = pData
+        ? Number(pData.quantity)
+        : Number(existingProduct.quantity ?? 0);
 
-    // 3. Resolve Stock Status String
-    const stockStatus = (pData?.stock_status || (existingProduct as any)?.stock_status || "").toLowerCase();
+      // 3. Resolve Stock Status String
+      const stockStatus = (
+        pData?.stock_status ||
+        (existingProduct as any)?.stock_status ||
+        ""
+      ).toLowerCase();
 
-    // 4. Resolve Image URL
-    // Product type typically has an 'images' array. We take the first one's URL.
-    const productImage = 
-      pData?.images?.[0]?.url || 
-      existingProduct.images?.[0]?.url || 
-      item.image || 
-      "";
+      // 4. Resolve Image URL
+      // Product type typically has an 'images' array. We take the first one's URL.
+      const productImage =
+        pData?.images?.[0]?.url ||
+        existingProduct.images?.[0]?.url ||
+        item.image ||
+        "";
 
-    // 5. Clean UI Logic for Label
-    let stockDisplay = "Stock Out";
-    
-    if (dbQty === 999 || stockStatus === "available") {
-      stockDisplay = "Available";
-    } else if (dbQty > 0) {
-      stockDisplay = `Stock: ${dbQty}`;
-    }
+      // 5. Clean UI Logic for Label
+      let stockDisplay = "Stock Out";
 
-    return {
-      ...item,
-      product: {
-        ...existingProduct,
-        id: item.productId,
-        name: pData?.name || item.name || existingProduct.name || "Product",
-        price: Number(pData?.sell_price || item.price || 0),
-        
-        // This is the label the UI will show
-        stockLabel: stockDisplay, 
-        
-        // Internal quantity for calculations
-        quantity: dbQty, 
-        featuredImage: productImage, // We assign the URL string here for the UI
-      },
-    } as any;
-  });
-}, [rawCartItems, productQueries]);
+      if (dbQty === 999 || stockStatus === "available") {
+        stockDisplay = "Available";
+      } else if (dbQty > 0) {
+        stockDisplay = `Stock: ${dbQty}`;
+      }
+
+      return {
+        ...item,
+        product: {
+          ...existingProduct,
+          id: item.productId,
+          name: pData?.name || item.name || existingProduct.name || "Product",
+          price: Number(pData?.sell_price || item.price || 0),
+
+          // This is the label the UI will show
+          stockLabel: stockDisplay,
+
+          // Internal quantity for calculations
+          quantity: dbQty,
+          featuredImage: productImage, // We assign the URL string here for the UI
+        },
+      } as any;
+    });
+  }, [rawCartItems, productQueries]);
 
   const courierConfig = shippingSettings?.courier_config;
 
@@ -982,15 +992,17 @@ const cartItems: CartItem[] = useMemo(() => {
     }
   }, [isSubCityAvailable, formData.shippingArea]);
 
-  const dynamicShippingOptions = useMemo((): (
-    | ZoneShippingOption
-    | {
+  const dynamicShippingOptions = useMemo<
+    Array<
+      ZoneShippingOption & {
         key: string;
         label: string;
         fee: number;
         shippingArea: "inside" | "outside" | "sub_city";
+        id?: number | string;
       }
-  )[] => {
+    >
+  >(() => {
     // ── Priority 1: CUSTOM shipping products override everything ──
     const customOptions: ZoneShippingOption[] = [];
     cartItems.forEach((item) => {
@@ -1024,6 +1036,7 @@ const cartItems: CartItem[] = useMemo(() => {
               if (!exists) {
                 customOptions.push({
                   key: zoneName.toLowerCase().replace(/\s+/g, "_"),
+                  id: 1, 
                   label: zoneName,
                   fee: chargeNum,
                   shippingArea: area,
@@ -1063,6 +1076,7 @@ const cartItems: CartItem[] = useMemo(() => {
     const fallback: ZoneShippingOption[] = [
       {
         key: "inside",
+        id: 1, 
         label: t.checkout.insideDhakaLabel || "Inside Dhaka",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1074,6 +1088,7 @@ const cartItems: CartItem[] = useMemo(() => {
       },
       {
         key: "outside",
+        id: 1, 
         label: t.checkout.outsideDhakaLabel || "Outside Dhaka",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1087,6 +1102,7 @@ const cartItems: CartItem[] = useMemo(() => {
     if (isSubCityAvailable) {
       fallback.push({
         key: "sub_city",
+        id: 1, 
         label: t.checkout.subCityLabel || "Sub City",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1276,6 +1292,7 @@ const cartItems: CartItem[] = useMemo(() => {
     const selectedOpt = dynamicShippingOptions.find(
       (opt) => opt.key === formData.shippingArea,
     );
+
     // `shippingArea` on each option is the exact enum the backend expects
     const resolvedShippingArea: "inside" | "outside" | "sub_city" =
       (selectedOpt as ZoneShippingOption)?.shippingArea ??
@@ -1303,7 +1320,12 @@ const cartItems: CartItem[] = useMemo(() => {
       paymentMethod: formData.paymentMethod,
       shippingArea: resolvedShippingArea,
       shippingFee: calculatedShippingFee,
-      shipping_fee: calculatedShippingFee,
+      shipping_fee: Number(calculatedShippingFee),
+
+      // 🚀 Now selectedOpt.id will exist!
+      courier_zone_id: selectedOpt ? Number(selectedOpt.id) : undefined,
+      shipping_type: resolvedShippingArea,
+
       delivery_charge: calculatedShippingFee,
       source: orderSource,
       items: allItemsForBackend,
@@ -1379,62 +1401,67 @@ const cartItems: CartItem[] = useMemo(() => {
   //   }
   // }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
 
+  // 1. Keep a ref for the saved ID
+  const isBangladeshiPhone = (value?: string): boolean => {
+    if (!value) return false;
 
-// 1. Keep a ref for the saved ID
-const isBangladeshiPhone = (value?: string): boolean => {
-  if (!value) return false;
-
-  const normalized = value.replace(/\s+/g, "").replace(/[^\d+]/g, "");
-  return /^(?:\+?88)?01[3-9]\d{8}$/.test(normalized);
-};
-
-const leadIdRef = useRef<string | null>(null);
-
-const saveLead = useCallback(async (force = false) => {
-  // Only proceed if valid phone exists
-  if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
-
-  const payload = {
-    id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
-    customerName: formData.name || "Guest",
-    customerPhone: formData.phone,
-    customerAddress: formData.address || "N/A",
-    source: orderSource,
-    shippingArea: formData.shippingArea,
-    paymentMethod: formData.paymentMethod,
-    status: "INCOMPLETE",
-    items: cartItems.map((item) => ({
-      productId: item.productId,
-      variantId: item.variantId && item.variantId !== "null" ? item.variantId : undefined,
-      quantity: Number(item.quantity || 1),
-    })),
+    const normalized = value.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+    return /^(?:\+?88)?01[3-9]\d{8}$/.test(normalized);
   };
 
-  try {
-    const res = await trackIncompleteOrder(payload);
-    const newId = res?.id || res?.data?.id;
-    if (newId) leadIdRef.current = newId;
-  } catch (e) {
-    console.error("Failed to track:", e);
-  }
-}, [formData, cartItems, orderSource]);
+  const leadIdRef = useRef<string | null>(null);
 
-// 2. ONLY save on blur (when user finishes typing in an input)
-const handleBlur = () => {
-  saveLead();
-};
+  const saveLead = useCallback(
+    async (force = false) => {
+      // Only proceed if valid phone exists
+      if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
 
-// 3. Trigger ONLY on window unload (leaving the page)
-useEffect(() => {
-  const handleUnload = () => {
+      const payload = {
+        id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
+        customerName: formData.name || "Guest",
+        customerPhone: formData.phone,
+        customerAddress: formData.address || "N/A",
+        source: orderSource,
+        shippingArea: formData.shippingArea,
+        paymentMethod: formData.paymentMethod,
+        status: "INCOMPLETE",
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          variantId:
+            item.variantId && item.variantId !== "null"
+              ? item.variantId
+              : undefined,
+          quantity: Number(item.quantity || 1),
+        })),
+      };
+
+      try {
+        const res = await trackIncompleteOrder(payload);
+        const newId = res?.id || res?.data?.id;
+        if (newId) leadIdRef.current = newId;
+      } catch (e) {
+        console.error("Failed to track:", e);
+      }
+    },
+    [formData, cartItems, orderSource],
+  );
+
+  // 2. ONLY save on blur (when user finishes typing in an input)
+  const handleBlur = () => {
     saveLead();
   };
-  window.addEventListener("beforeunload", handleUnload);
-  return () => {
-    window.removeEventListener("beforeunload", handleUnload);
-    saveLead(); // Save on component unmount
-  };
-}, [saveLead]);
+
+  // 3. Trigger ONLY on window unload (leaving the page)
+  useEffect(() => {
+    const handleUnload = () => {
+      saveLead();
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      saveLead(); // Save on component unmount
+    };
+  }, [saveLead]);
 
   const { data: paymentSettings } = useQuery({
     queryKey: PAYMENT_SETTINGS_QUERY_KEY,

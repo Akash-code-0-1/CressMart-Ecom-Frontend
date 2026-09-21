@@ -200,9 +200,9 @@ const footerLinks = {
 
           {/* Column 2: Company */}
           <div>
-            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
+            <h2 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               {t.footer.company}
-            </h4>
+            </h2>
             <ul className="space-y-4">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
@@ -219,9 +219,9 @@ const footerLinks = {
 
           {/* Column 3: Account */}
           <div>
-            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
+            <h2 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               {t.footer.account}
-            </h4>
+            </h2>
             <ul className="space-y-4">
               {footerLinks.account.map((link) => (
                 <li key={link.path}>
@@ -238,9 +238,9 @@ const footerLinks = {
 
           {/* Column 4: Corporate */}
           <div>
-            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
+            <h2 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               {t.footer.corporate}
-            </h4>
+            </h2>
             <ul className="space-y-4">
               {footerLinks.corporate.map((link) => (
                 <li key={link.path}>
@@ -257,9 +257,9 @@ const footerLinks = {
 
           {/* Column 5: Socials */}
           <div>
-            <h4 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
+            <h2 className="text-black font-poppins text-[20px] md:text-[22px] font-semibold mb-6 md:mb-8">
               {t.footer.getInTouch}
-            </h4>
+            </h2>
             <div className="space-y-5">
               {info?.social_links?.map((social: any) => (
                 <Link

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -58,12 +58,6 @@ export default function ThankYouContent({
     extractImageUrl(settingsdata?.primary_logo) || "/images/admin/logo.png";
   const displayPhone = chatSettings?.phone || "019XXXXXXXX";
 
-  // Calculate Subtotal manually
-  const subtotal =
-    apiResponse?.order_items?.reduce(
-      (acc: number, item: any) => acc + Number(item.unit_price) * item.quantity,
-      0,
-    ) || 0;
 
   const editInvoiceMutation = useMutation({
     mutationFn: (updated: CustomerInfo) =>
@@ -79,6 +73,21 @@ export default function ThankYouContent({
       setIsEditOpen(false);
     },
   });
+
+// 1. Calculate Subtotal
+  const subtotal = useMemo(() => 
+    apiResponse?.order_items?.reduce((acc: number, item: any) => 
+      acc + (Number(item.unit_price) * item.quantity), 0
+    ) || 0, [apiResponse]);
+
+  // 2. Extract values
+  const shippingFee = Number(apiResponse?.shipping_fee || 0);
+  const discountAmount = Number(apiResponse?.discount_amount || 0);
+  const advanceAmount = Number(apiResponse?.advance_amount || 0);
+
+  // 3. MATH: The source of truth
+  const grandTotal = subtotal + shippingFee - discountAmount;
+  const duePay = grandTotal - advanceAmount;
 
   if (isLoading)
     return <div className="p-20 text-center">Fetching Invoice...</div>;
@@ -237,7 +246,7 @@ export default function ThankYouContent({
             </tbody>
           </table>
 
-          {/* Calculations */}
+{/* Calculations */}
           <div className="flex justify-end pt-2">
             <div className="w-64 space-y-2 text-[12px]">
               <div className="flex justify-between text-gray-600">
@@ -249,31 +258,33 @@ export default function ThankYouContent({
               <div className="flex justify-between text-gray-600">
                 <p>Delivery Charge</p>
                 <p className="font-medium text-gray-900">
-                  ৳{Number(apiResponse.shipping_fee || 0).toLocaleString()}
+                  ৳{shippingFee.toLocaleString()}
                 </p>
               </div>
-              {Number(apiResponse.discount_amount || 0) > 0 && (
+              {discountAmount > 0 && (
                 <div className="flex justify-between text-red-500">
                   <p>Discount</p>
                   <p className="font-medium">
-                    - ৳{Number(apiResponse.discount_amount).toLocaleString()}
+                    - ৳{discountAmount.toLocaleString()}
                   </p>
                 </div>
               )}
-              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
+              {/* Grand Total - USE MANUAL CALCULATION */}
+              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
                 <p>Grand Total</p>
-                <p>৳{Number(apiResponse.total_bill || 0).toLocaleString()}</p>
+                <p>৳{grandTotal.toLocaleString()}</p>
               </div>
               <div className="flex justify-between text-gray-600">
                 <p>Advance Pay</p>
                 <p className="font-medium text-gray-900">
-                  ৳{Number(apiResponse.advance_amount || 0).toLocaleString()}
+                  ৳{advanceAmount.toLocaleString()}
                 </p>
               </div>
-              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1">
+              {/* Due Pay - USE MANUAL CALCULATION */}
+              <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
                 <p>Due Pay</p>
                 <p>
-                  ৳{Number(apiResponse.total_amount_due || 0).toLocaleString()}
+                  ৳{duePay.toLocaleString()}
                 </p>
               </div>
             </div>

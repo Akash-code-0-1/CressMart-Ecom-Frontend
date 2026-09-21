@@ -247,6 +247,8 @@ const Navbar = () => {
     },
   });
 
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -270,19 +272,19 @@ const Navbar = () => {
           <Link href="/" className="shrink-0 flex items-center">
             <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
               <h1>
-              <Image
-                src={usableImageUrl}
-                alt="Creass Mart - Buy With Confidence"
-                fill
-                priority
-                unoptimized
-                className="object-contain"
-              />
+                <Image
+                  src={usableImageUrl}
+                  alt="Creass Mart - Buy With Confidence"
+                  fill
+                  priority
+                  unoptimized
+                  className="object-contain"
+                />
               </h1>
             </div>
           </Link>
 
-          <form
+          {/* <form
             onSubmit={handleSearch}
             ref={searchRef}
             className="hidden lg:flex relative flex-1 max-w-[846px] bg-[#F2F2F2] rounded-lg items-center p-2 px-4 gap-3"
@@ -360,7 +362,86 @@ const Navbar = () => {
                 )}
               </div>
             )}
-          </form>
+          </form> */}
+
+          <div className="flex items-center flex-1 lg:max-w-[846px] justify-end">
+            {/* Mobile Trigger Button */}
+            <button
+              className="lg:hidden p-2"
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            >
+              <FiSearch size={22} className="text-[#FF7050]" />
+            </button>
+
+            {/* Search Form */}
+            <form
+              onSubmit={(e) => {
+                handleSearch(e);
+                setIsMobileSearchOpen(false);
+              }}
+              ref={searchRef}
+              className={`
+      ${
+        isMobileSearchOpen
+          ? "fixed top-[70px] left-0 w-full p-4 bg-white z-[100] border-b border-gray-100 flex lg:hidden"
+          : "hidden lg:flex"
+      } 
+      flex-1 bg-[#F2F2F2] rounded-lg items-center p-2 px-4 gap-3
+    `}
+            >
+              {/* Category Dropdown (Only on Desktop) */}
+              <div className="hidden lg:flex">
+                <CategoryDropdown
+                  categories={categories}
+                  onSelect={(cat: Category) => {
+                    router.push(`/category/${cat.slug}`);
+                    setIsMobileSearchOpen(false);
+                  }}
+                />
+                <div className="h-6 w-px bg-[#E2E2E2] mx-2" />
+              </div>
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowPredictions(true);
+                }}
+                onFocus={() => setShowPredictions(true)}
+                placeholder={t.search.searchPlaceholder}
+                className="bg-transparent flex-1 outline-none text-[#727272] w-full"
+              />
+
+              <button
+                type="submit"
+                className="bg-white lg:bg-white p-2.5 rounded-[8px] cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <FiSearch size={22} className="text-[#FF7050]" />
+              </button>
+
+              {/* Predictions Dropdown */}
+              {showPredictions && searchQuery.length >= 2 && (
+                <div className="absolute top-[100%] left-0 w-full bg-white shadow-2xl rounded-b-lg border-x border-b border-gray-100 z-[120] max-h-[300px] overflow-y-auto">
+                  {(searchResults || []).map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => {
+                        router.push(`/product/${product.slug}`);
+                        setIsMobileSearchOpen(false);
+                        setSearchQuery("");
+                      }}
+                      className="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50"
+                    >
+                      <span className="text-sm text-gray-700">
+                        {product.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </form>
+          </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">

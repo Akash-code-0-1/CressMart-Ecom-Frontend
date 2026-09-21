@@ -89,6 +89,7 @@ type OrderPayload = {
   source: string;
   status: string;
   paymentStatus: string;
+  shipping_fee: number; // Add this
   manualDiscount: number;
   advanceAmount: number;
   courier_city_id?: number;
@@ -171,7 +172,6 @@ export default function AddOrderMain() {
   // --- 2. POPULATE FORM (Render-time hydration when existingOrder is loaded) ---
   const [loadedOrderId, setLoadedOrderId] = useState<string | null>(null);
 
-  
   // if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
   //   setLoadedOrderId(existingOrder.id);
   //   setCustomer({
@@ -216,59 +216,57 @@ export default function AddOrderMain() {
   //   setItems(mappedItems);
   // }
 
+  if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
+    setLoadedOrderId(existingOrder.id);
 
-if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
-  setLoadedOrderId(existingOrder.id);
-  
-  // 1. Load Customer Data
-  setCustomer({
-    customerName: existingOrder.customer_name || "",
-    customerPhone: existingOrder.customer_phone || "",
-    customerAddress: existingOrder.customer_address || "",
-    customerNote: existingOrder.customer_note || "",
-  });
+    // 1. Load Customer Data
+    setCustomer({
+      customerName: existingOrder.customer_name || "",
+      customerPhone: existingOrder.customer_phone || "",
+      customerAddress: existingOrder.customer_address || "",
+      customerNote: existingOrder.customer_note || "",
+    });
 
-  // 2. Load Shipping and Financial Data
-  const dbFee = Number(existingOrder.shipping_fee) || 0;
-  
-  setShipping({
-    // If the fee is 60, set dropdown to 'inside', otherwise 'outside'
-    shippingArea: dbFee === 60 ? "inside" : "outside", 
-    paymentMethod: existingOrder.payment_method || "COD",
-    source: existingOrder.source || "admin_panel",
-    status: existingOrder.status || "PENDING",
-    paymentStatus: existingOrder.payment_status || "UNPAID",
-    manualDiscount: Number(existingOrder.discount_amount) || 0,
-    advanceAmount: Number(existingOrder.advance_amount) || 0,
-    actualShippingFee: null, // We can set this to null now to enable dynamic math
-    courier_city_id: existingOrder.courier_city_id ?? null,
-    courier_zone_id: existingOrder.courier_zone_id ?? null,
-    courier_area_id: existingOrder.courier_area_id ?? null,
-  });
+    // 2. Load Shipping and Financial Data
+    const dbFee = Number(existingOrder.shipping_fee) || 0;
 
-  // 3. Load Items (Ensure sell_price is a number)
-  const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => {
-    const itemImage =
-      item.variant?.images?.[0] ||
-      item.product?.images?.[0] ||
-      item.external_image ||
-      (item as any).product_image ||
-      (item as any).image ||
-      "";
-    return {
-      productId: String(item.product_id),
-      name: item.product_name,
-      sell_price: Number(item.unit_price), // Force Number
-      quantity: item.quantity,
-      variantId: item.variant_id !== null ? String(item.variant_id) : null,
-      image: itemImage,
-    };
-  });
-  setItems(mappedItems);
-}
+    setShipping({
+      // If the fee is 60, set dropdown to 'inside', otherwise 'outside'
+      shippingArea: dbFee === 60 ? "inside" : "outside",
+      paymentMethod: existingOrder.payment_method || "COD",
+      source: existingOrder.source || "admin_panel",
+      status: existingOrder.status || "PENDING",
+      paymentStatus: existingOrder.payment_status || "UNPAID",
+      manualDiscount: Number(existingOrder.discount_amount) || 0,
+      advanceAmount: Number(existingOrder.advance_amount) || 0,
+      actualShippingFee: null, // We can set this to null now to enable dynamic math
+      courier_city_id: existingOrder.courier_city_id ?? null,
+      courier_zone_id: existingOrder.courier_zone_id ?? null,
+      courier_area_id: existingOrder.courier_area_id ?? null,
+    });
 
-
-
+    // 3. Load Items (Ensure sell_price is a number)
+    const mappedItems = existingOrder.order_items.map(
+      (item: OrderItemFromApi) => {
+        const itemImage =
+          item.variant?.images?.[0] ||
+          item.product?.images?.[0] ||
+          item.external_image ||
+          (item as any).product_image ||
+          (item as any).image ||
+          "";
+        return {
+          productId: String(item.product_id),
+          name: item.product_name,
+          sell_price: Number(item.unit_price), // Force Number
+          quantity: item.quantity,
+          variantId: item.variant_id !== null ? String(item.variant_id) : null,
+          image: itemImage,
+        };
+      },
+    );
+    setItems(mappedItems);
+  }
 
   // // --- Calculations ---
   // const subtotal = items.reduce(
@@ -287,15 +285,14 @@ if (isEditMode && existingOrder && loadedOrderId !== existingOrder.id) {
   // // Remaining amount after advance payment
   // const remainingDue = totalDue - shipping.advanceAmount;
 
-
   // --- Calculations ---
-const subtotal = items.reduce(
-  (acc: number, item: { sell_price: number; quantity: number }) =>
-    acc + item.sell_price * item.quantity,
-  0,
-);
+  const subtotal = items.reduce(
+    (acc: number, item: { sell_price: number; quantity: number }) =>
+      acc + item.sell_price * item.quantity,
+    0,
+  );
 
-// 🚀 FIXED: Make shipping fee dynamic based on selection, even in edit mode
+  // 🚀 FIXED: Make shipping fee dynamic based on selection, even in edit mode
   const [shippingZones, setShippingZones] = useState<any[]>([]);
 
   // 2. Add fetch effect
@@ -311,15 +308,18 @@ const subtotal = items.reduce(
 
   // 3. Update Shipping logic
   // Change state to hold the selected zone object instead of a string 'inside'/'outside'
-  const [selectedZone, setSelectedZone] = useState<string>(""); 
-  const [feeType, setFeeType] = useState<"inside" | "outside" | "subcity">("inside");
+  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string>("");
+  const [feeType, setFeeType] = useState<"inside" | "outside" | "subcity">(
+    "inside",
+  );
 
   // Calculate Fee dynamically
-  const activeZone = shippingZones.find(z => z.zone === selectedZone);
+  const activeZone = shippingZones.find((z) => z.zone === selectedZone);
   const shippingFee = activeZone ? Number(activeZone[feeType]) : 0;
 
-const totalDue = subtotal + shippingFee - shipping.manualDiscount;
-const remainingDue = totalDue - shipping.advanceAmount;
+  const totalDue = subtotal + shippingFee - shipping.manualDiscount;
+  const remainingDue = totalDue - shipping.advanceAmount;
 
   const handleSearch = async (val: string) => {
     setSearchTerm(val);
@@ -363,105 +363,129 @@ const remainingDue = totalDue - shipping.advanceAmount;
     setItems(items.filter((i) => i.productId !== id));
   };
 
-// Add this near your other state declarations
-const hydratedOrderId = React.useRef<string | null>(null);
+  // Add this near your other state declarations
+  const hydratedOrderId = React.useRef<string | null>(null);
 
 useEffect(() => {
-  if (isEditMode && existingOrder && hydratedOrderId.current !== existingOrder.id) {
-    hydratedOrderId.current = existingOrder.id; // Mark as hydrated
-    
-    setCustomer({
-      customerName: existingOrder.customer_name || "",
-      customerPhone: existingOrder.customer_phone || "",
-      customerAddress: existingOrder.customer_address || "",
-      customerNote: existingOrder.customer_note || "",
-    });
+    if (
+      isEditMode &&
+      existingOrder &&
+      shippingZones.length > 0 &&
+      hydratedOrderId.current !== existingOrder.id
+    ) {
+      hydratedOrderId.current = existingOrder.id;
 
-    const dbFee = Number(existingOrder.shipping_fee) || 0;
-    setShipping({
-      shippingArea: dbFee === 120 ? "outside" : "inside",
-      paymentMethod: existingOrder.payment_method || "COD",
-      source: existingOrder.source || "admin_panel",
-      status: existingOrder.status || "PENDING",
-      paymentStatus: existingOrder.payment_status || "UNPAID",
-      manualDiscount: Number(existingOrder.discount_amount) || 0,
-      advanceAmount: Number(existingOrder.advance_amount) || 0,
-      actualShippingFee: dbFee,
-      courier_city_id: existingOrder.courier_city_id ?? null,
-      courier_zone_id: existingOrder.courier_zone_id ?? null,
-      courier_area_id: existingOrder.courier_area_id ?? null,
-    });
+      // 1. Recover Zone and Fee Type from DB data
+      const zoneId = existingOrder.courier_zone_id ? Number(existingOrder.courier_zone_id) : null;
+      const dbFee = Number(existingOrder.shipping_fee) || 0;
+      
+      const matchedZone = shippingZones.find((z) => Number(z.id) === zoneId);
+      
+      if (matchedZone) {
+        setSelectedZoneId(matchedZone.id);
+        setSelectedZone(matchedZone.zone);
+        
+        // Match the fee type based on the stored DB fee
+        if (dbFee === Number(matchedZone.outside)) setFeeType("outside");
+        else if (dbFee === Number(matchedZone.subcity)) setFeeType("subcity");
+        else setFeeType("inside");
+      }
 
-    const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => {
-      const itemImage = item.variant?.images?.[0] || item.product?.images?.[0] || item.external_image || "";
-      return {
+      // 2. Set Customer
+      setCustomer({
+        customerName: existingOrder.customer_name || "",
+        customerPhone: existingOrder.customer_phone || "",
+        customerAddress: existingOrder.customer_address || "",
+        customerNote: existingOrder.customer_note || "",
+      });
+
+      // 3. Set Shipping State (Syncing with the selected zone)
+      setShipping({
+        shippingArea: matchedZone ? matchedZone.zone : "inside",
+        paymentMethod: existingOrder.payment_method || "COD",
+        source: existingOrder.source || "admin_panel",
+        status: existingOrder.status || "PENDING",
+        paymentStatus: existingOrder.payment_status || "UNPAID",
+        manualDiscount: Number(existingOrder.discount_amount) || 0,
+        advanceAmount: Number(existingOrder.advance_amount) || 0,
+        actualShippingFee: dbFee,
+        courier_city_id: existingOrder.courier_city_id ?? null,
+        courier_zone_id: zoneId,
+        courier_area_id: existingOrder.courier_area_id ?? null,
+      });
+
+      // 4. Set Items
+      const mappedItems = existingOrder.order_items.map((item: OrderItemFromApi) => ({
         productId: String(item.product_id),
         name: item.product_name,
         sell_price: Number(item.unit_price),
         quantity: item.quantity,
         variantId: item.variant_id !== null ? String(item.variant_id) : undefined,
-        image: itemImage,
+        image: item.variant?.images?.[0] || item.product?.images?.[0] || item.external_image || "",
+      }));
+      setItems(mappedItems);
+    }
+  }, [existingOrder, isEditMode, shippingZones]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (items.length === 0)
+      return toast.error("Please add at least one product");
+
+    setLoading(true);
+    try {
+      const payload: OrderPayload = {
+        customerName: customer.customerName,
+        customerPhone: customer.customerPhone,
+        customerAddress: customer.customerAddress,
+        customerNote: customer.customerNote,
+        shippingArea: selectedZone,
+        shipping_fee: Number(shippingFee), // Make sure this key matches the backend DTO
+        courier_zone_id: selectedZoneId ?? undefined,
+        paymentMethod: shipping.paymentMethod,
+        source: shipping.source,
+        status: shipping.status,
+        paymentStatus: shipping.paymentStatus,
+        manualDiscount: Number(shipping.manualDiscount),
+        advanceAmount: Number(shipping.advanceAmount),
+        courier_city_id: shipping.courier_city_id ?? undefined,
+        courier_area_id: shipping.courier_area_id ?? undefined,
+
+        items: items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId ?? undefined,
+          quantity: i.quantity,
+        })),
       };
-    });
-    setItems(mappedItems);
-  }
-}, [existingOrder, isEditMode]);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (items.length === 0) return toast.error("Please add at least one product");
+      if (isEditMode) {
+        await updateOrderStatusService(orderId!, payload);
 
-  setLoading(true);
-  try {
-    const payload: OrderPayload = {
-      customerName: customer.customerName,
-      customerPhone: customer.customerPhone,
-      customerAddress: customer.customerAddress,
-      customerNote: customer.customerNote,
-      shippingArea: selectedZone,
-      paymentMethod: shipping.paymentMethod,
-      source: shipping.source,
-      status: shipping.status,
-      paymentStatus: shipping.paymentStatus,
-      manualDiscount: Number(shipping.manualDiscount),
-      advanceAmount: Number(shipping.advanceAmount),
-      courier_city_id: shipping.courier_city_id ?? undefined,
-      courier_zone_id: shipping.courier_zone_id ?? undefined,
-      courier_area_id: shipping.courier_area_id ?? undefined,
+        // 🚀 THE FIX: This refreshes the query data, but because we used
+        // the hydratedOrderId ref, it won't overwrite the form while you are editing.
+        await queryClient.invalidateQueries({
+          queryKey: ["edit-order", orderId],
+        });
 
-      items: items.map((i) => ({
-        productId: i.productId,
-        variantId: i.variantId ?? undefined,
-        quantity: i.quantity,
-      })),
-    };
+        toast.success("Order Updated Successfully");
+        router.push("/admin/dashboard/order");
+      } else {
+        await createOrderService(payload);
+        toast.success("Order Created Successfully");
+        router.push("/admin/dashboard/order");
+      }
 
-    if (isEditMode) {
-      await updateOrderStatusService(orderId!, payload);
-      
-      // 🚀 THE FIX: This refreshes the query data, but because we used 
-      // the hydratedOrderId ref, it won't overwrite the form while you are editing.
-      await queryClient.invalidateQueries({ queryKey: ["edit-order", orderId] });
-      
-      toast.success("Order Updated Successfully");
-      router.push("/admin/dashboard/order");
-    } else {
-      await createOrderService(payload);
-      toast.success("Order Created Successfully");
-      router.push("/admin/dashboard/order");
+      await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || "Failed to save order");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    await queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      toast.error(error.message || "Failed to save order");
-    } else {
-      toast.error("An unexpected error occurred");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (isFetchingOrder) {
     return (
@@ -568,7 +592,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </thead>
                   <tbody className="divide-y text-sm">
                     {items.map((item) => (
-                      <tr key={item.productId} className="border-b border-gray-200">
+                      <tr
+                        key={item.productId}
+                        className="border-b border-gray-200"
+                      >
                         <td className="py-4 font-medium flex items-center gap-3">
                           {item.image ? (
                             <Image
@@ -753,34 +780,48 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </select>
                 </div>
 
-<div className="space-y-1">
-  <label className="text-sm font-semibold text-black">SHIPPING AREA</label>
-  <select
-    value={selectedZone}
-    onChange={(e) => setSelectedZone(e.target.value)}
-    className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
-  >
-    <option value="">Select a zone</option>
-    {shippingZones.map((z, idx) => (
-      <option key={idx} value={z.zone}>{z.zone}</option>
-    ))}
-  </select>
-</div>
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-black">
+                    SHIPPING ZONE
+                  </label>
+<select
+  value={selectedZoneId || ""}
+  onChange={(e) => {
+    const id = Number(e.target.value);
+    setSelectedZoneId(id);
+    const zone = shippingZones.find((z) => z.id === id);
+    if (zone) setSelectedZone(zone.zone);
+  }}
+  className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
+>
+  <option value="">Select a zone</option>
+  {shippingZones.map((z) => (
+    <option key={z.id} value={z.id}>
+      {z.zone}
+    </option>
+  ))}
+</select>
+                </div>
 
-{/* If a zone is selected, show fee type selection */}
-{activeZone && (
-  <div className="space-y-1 mt-2">
-    <select 
-      value={feeType} 
-      onChange={(e) => setFeeType(e.target.value as any)}
-      className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
-    >
-      <option value="inside">Inside ({activeZone.inside})</option>
-      <option value="outside">Outside ({activeZone.outside})</option>
-      <option value="subcity">Sub City ({activeZone.subcity})</option>
-    </select>
-  </div>
-)}
+                {activeZone && (
+                  <div className="space-y-1 mt-2">
+                    <select
+                      value={feeType}
+                      onChange={(e) => setFeeType(e.target.value as any)}
+                      className="w-full p-2.5 bg-gray-100 rounded-lg text-sm"
+                    >
+                      <option value="inside">
+                        Inside (৳{activeZone.inside})
+                      </option>
+                      <option value="outside">
+                        Outside (৳{activeZone.outside})
+                      </option>
+                      <option value="subcity">
+                        Sub City (৳{activeZone.subcity})
+                      </option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -808,7 +849,12 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type="number"
                     min={0}
                     value={shipping.manualDiscount}
-onChange={(e) => setShipping({ ...shipping, manualDiscount: Number(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setShipping({
+                        ...shipping,
+                        manualDiscount: Number(e.target.value) || 0,
+                      })
+                    }
                     className="w-20 p-1 border rounded text-right bg-red-50"
                   />
                 </div>
@@ -822,7 +868,12 @@ onChange={(e) => setShipping({ ...shipping, manualDiscount: Number(e.target.valu
                     type="number"
                     min={0}
                     value={shipping.advanceAmount}
-onChange={(e) => setShipping({ ...shipping, advanceAmount: Number(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      setShipping({
+                        ...shipping,
+                        advanceAmount: Number(e.target.value) || 0,
+                      })
+                    }
                     className="w-20 p-1 border border-green-300 rounded text-right bg-green-50"
                   />
                 </div>

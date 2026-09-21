@@ -84,6 +84,7 @@ export interface ZoneShippingOption {
   fee: number;
   shippingArea: "inside" | "outside" | "sub_city";
   zoneName: string;
+  id: number;
 }
 
 /**
@@ -97,12 +98,14 @@ export const buildZoneShippingOptions = (
 
   const options: ZoneShippingOption[] = [];
   courierConfig.zones.forEach((zone) => {
-    const id = zone.id ?? Math.random();
+    // We already normalized IDs in fetchShippingSettings, so zone.id is reliable now
+    const id = Number(zone.id) || 1; 
     const name = zone.zone || "Zone";
 
     if (Number(zone.inside) > 0) {
       options.push({
         key: `${id}_inside`,
+        id: id, // <--- ADD THIS
         label: `${name} Inside`,
         fee: Number(zone.inside),
         shippingArea: "inside",
@@ -112,6 +115,7 @@ export const buildZoneShippingOptions = (
     if (Number(zone.outside) > 0) {
       options.push({
         key: `${id}_outside`,
+        id: id, // <--- ADD THIS
         label: `${name} Outside`,
         fee: Number(zone.outside),
         shippingArea: "outside",
@@ -121,6 +125,7 @@ export const buildZoneShippingOptions = (
     if (Number(zone.subcity) > 0) {
       options.push({
         key: `${id}_subcity`,
+        id: id, // <--- ADD THIS
         label: `${name} Sub City`,
         fee: Number(zone.subcity),
         shippingArea: "sub_city",
@@ -131,19 +136,25 @@ export const buildZoneShippingOptions = (
   return options;
 };
 
-// api global settings fetch
-export const fetchShippingSettings =
-  async (): Promise<ShippingSettingsData | null> => {
-    try {
-      const res = await apiFetch("/shipping-settings", { method: "GET" });
-      if (!res.ok) return null;
-      const json = (await res.json()) as ShippingSettingsResponse;
-      return json.data || null;
-    } catch (error) {
-      console.error("Error fetching shipping settings:", error);
-      return null;
+export const fetchShippingSettings = async (): Promise<ShippingSettingsData | null> => {
+  try {
+    const res = await apiFetch("/shipping-settings", { method: "GET" });
+    if (!res.ok) return null;
+    const json = (await res.json()) as ShippingSettingsResponse;
+    
+    // NORMALIZE: Ensure every zone has a valid ID based on _rowKey or index
+    if (json.data?.courier_config?.zones) {
+      json.data.courier_config.zones = json.data.courier_config.zones.map((z, idx) => ({
+        ...z,
+        // If id is missing, create one from _rowKey or just use index+1
+        id: z.id || (idx + 1) 
+      }));
     }
-  };
+    return json.data || null;
+  } catch (error) {
+    return null;
+  }
+};
 
 export interface ShippingConfigEntry {
   zone?: string;

@@ -55,9 +55,9 @@ const FAQ = () => {
                 onClick={() => handleToggle(index)}
                 className="w-full flex justify-between items-center p-5 md:p-6 text-left cursor-pointer outline-none"
               >
-                <span className="text-black text-[16px] md:text-[18px] font-semibold">
+                <h3 className="text-black text-[16px] md:text-[18px] font-semibold">
                   {item.question}
-                </span>
+                </h3>
                 <FiChevronDown
                   className={`text-[24px] text-[#727272] transition-transform duration-300 ease-in-out ${
                     openIndex === index ? "rotate-180" : "rotate-0"
