@@ -317,14 +317,34 @@ export default function OrderTable() {
     })),
   });
 
-  // 3. THE FIX: Cast query.data as any or a specific type to access .id
+  // Inside your OrderTable component:
+  const { subtotal, totalDue } = useMemo(() => {
+    if (!detailsModal.order) return { subtotal: 0, totalDue: 0 };
+
+    const items = detailsModal.order.order_items || [];
+
+    // Calculate subtotal by summing price * quantity
+    const calculatedSubtotal = items.reduce(
+      (acc: number, item: any) => acc + Number(item.unit_price) * item.quantity,
+      0,
+    );
+
+    const shipping = Number(detailsModal.order.shipping_fee || 0);
+    const discount = Number(detailsModal.order.discount_amount || 0);
+    const advance = Number(detailsModal.order.advance_amount || 0);
+
+    // Total Due Calculation
+    const calculatedTotal = calculatedSubtotal + shipping - discount - advance;
+
+    return { subtotal: calculatedSubtotal, totalDue: calculatedTotal };
+  }, [detailsModal.order]);
+
   const productDetailsMap = useMemo(() => {
     const map: Record<string, any> = {};
     resolvedModalProducts.forEach((query) => {
-      // Use type assertion (as any) or check if it's an object with id
-      const product = query.data as Record<string, any>;
-      if (product && product.id) {
-        map[product.id] = product;
+      const product = query.data as any;
+      if (product?.id) {
+        map[String(product.id)] = product;
       }
     });
     return map;
@@ -524,42 +544,43 @@ export default function OrderTable() {
     }
   }, [selectedOrderForPrint]);
 
-const saveAndPrintMutation = useMutation({
-  mutationFn: () =>
-    updateOrderStatusService(selectedOrderForPrint.id, {
-      invoice_number: currentInvoiceNumber,
-    }as any),
-onSuccess: (updatedOrder) => {
-  const freshData = updatedOrder.data || updatedOrder;
-  
-  // 🚀 IMPORTANT: Use functional state update to ensure you have the latest state
-  setSelectedOrderForPrint((prev: any) => ({
-    ...prev,
-    ...freshData,
-    // Explicitly keep the items from the previous state if the API didn't return them
-    order_items: freshData.order_items || prev.order_items || prev.cart_items || []
-  }));
+  const saveAndPrintMutation = useMutation({
+    mutationFn: () =>
+      updateOrderStatusService(selectedOrderForPrint.id, {
+        invoice_number: currentInvoiceNumber,
+      } as any),
+    onSuccess: (updatedOrder) => {
+      const freshData = updatedOrder.data || updatedOrder;
 
-  // Trigger print after a short delay
-  setTimeout(() => {
-    if (invoiceRef.current) {
-      handlePrint();
-    }
-  }, 500);
-},
-  onError: (error: any) => {
-    toast.error(error.message || "Failed to save invoice number");
-  },
-});
+      // 🚀 IMPORTANT: Use functional state update to ensure you have the latest state
+      setSelectedOrderForPrint((prev: any) => ({
+        ...prev,
+        ...freshData,
+        // Explicitly keep the items from the previous state if the API didn't return them
+        order_items:
+          freshData.order_items || prev.order_items || prev.cart_items || [],
+      }));
+
+      // Trigger print after a short delay
+      setTimeout(() => {
+        if (invoiceRef.current) {
+          handlePrint();
+        }
+      }, 500);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to save invoice number");
+    },
+  });
 
   const [courierMethod, setCourierMethod] = useState<"AUTO" | "MANUAL">("AUTO");
 
-const handlePrint = useReactToPrint({
-  // 1. Ensure the contentRef is strictly the InvoicePrint
-  contentRef: invoiceRef,
-  documentTitle: `Invoice_${currentInvoiceNumber}`,
-  // 2. Add this property to ensure styles are included
-  pageStyle: `
+  const handlePrint = useReactToPrint({
+    // 1. Ensure the contentRef is strictly the InvoicePrint
+    contentRef: invoiceRef,
+    documentTitle: `Invoice_${currentInvoiceNumber}`,
+    // 2. Add this property to ensure styles are included
+    pageStyle: `
     @page { size: auto; margin: 10mm; }
     @media print {
       body * { visibility: hidden; }
@@ -567,7 +588,7 @@ const handlePrint = useReactToPrint({
       #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
     }
   `,
-});
+  });
 
   // useEffect(() => {
   //   // Only trigger if we have an order AND the ref is actually attached to a DOM element
@@ -597,8 +618,8 @@ const handlePrint = useReactToPrint({
     return null;
   };
 
-useEffect(() => {
-    const style = document.createElement('style');
+  useEffect(() => {
+    const style = document.createElement("style");
     style.innerHTML = `
       @media print {
         @page { margin: 10mm; size: auto; }
@@ -613,7 +634,9 @@ useEffect(() => {
       }
     `;
     document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   const isLead = (item: any) => !!item.cart_items && !item.order_items;
@@ -1214,24 +1237,27 @@ useEffect(() => {
               </button>
             )} */}
 
-{!isIncompleteTab && (
-  <button
-    onClick={() => {
-      // 🚀 Explicitly find the item from the orderList
-      const o = orderList.find((x: any) => x.id === activeMenuId);
-      if (o) {
-        // console.log("Selected Order:", o); // CHECK YOUR CONSOLE: Do you see order_items/cart_items here?
-        setSelectedOrderForPrint(o);
-        setIsPrintModalOpen(true);
-      }
-      setActiveMenuId(null);
-    }}
-    className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
-  >
-    <Printer size={16} className="text-gray-400 group-hover:text-[#1DA1F2]" />
-    <span className="font-medium">Print Invoice</span>
-  </button>
-)}
+            {!isIncompleteTab && (
+              <button
+                onClick={() => {
+                  // 🚀 Explicitly find the item from the orderList
+                  const o = orderList.find((x: any) => x.id === activeMenuId);
+                  if (o) {
+                    // console.log("Selected Order:", o); // CHECK YOUR CONSOLE: Do you see order_items/cart_items here?
+                    setSelectedOrderForPrint(o);
+                    setIsPrintModalOpen(true);
+                  }
+                  setActiveMenuId(null);
+                }}
+                className="w-full text-left px-3 py-2 text-[14px] text-gray-600 hover:bg-gray-50 hover:text-[#1DA1F2] rounded-lg flex items-center gap-3 transition-colors group cursor-pointer"
+              >
+                <Printer
+                  size={16}
+                  className="text-gray-400 group-hover:text-[#1DA1F2]"
+                />
+                <span className="font-medium">Print Invoice</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -1435,23 +1461,23 @@ useEffect(() => {
         </div>
       )}
 
-{/* Invoice Workspace */}
-<div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
-  <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
-    {/* 
+      {/* Invoice Workspace */}
+      <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex justify-center">
+        <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
+          {/* 
       1. Removed the spinner/loading check
       2. Added 'key' - this forces InvoicePrint to re-mount fresh when selectedOrderForPrint changes
     */}
-    <InvoicePrint
-      key={selectedOrderForPrint?.id} 
-      ref={invoiceRef}
-      order={selectedOrderForPrint}
-      baseStorageUrl={baseStorageUrl}
-      editableInvoice={currentInvoiceNumber}
-      setEditableInvoice={setCurrentInvoiceNumber}
-    />
-  </div>
-</div>
+          <InvoicePrint
+            key={selectedOrderForPrint?.id}
+            ref={invoiceRef}
+            order={selectedOrderForPrint}
+            baseStorageUrl={baseStorageUrl}
+            editableInvoice={currentInvoiceNumber}
+            setEditableInvoice={setCurrentInvoiceNumber}
+          />
+        </div>
+      </div>
 
       {/* --- DETAILS MODAL --- */}
       {detailsModal.open && detailsModal.order && (
@@ -1676,24 +1702,33 @@ useEffect(() => {
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>Subtotal</span>
                     <span className="font-bold text-black">
-                      ৳
-                      {detailsModal.order.total_amount ||
-                        detailsModal.order.total_bill ||
-                        0}
+                      ৳{subtotal.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between text-lg font-bold text-[#023337] border-t border-dashed pt-2 mt-2">
-                    <span>
-                      {detailsModal.order.order_number
-                        ? "Total Due"
-                        : "Estimated Total"}
-                    </span>
-                    <span>
+
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Shipping</span>
+                    <span className="font-bold text-black">
                       ৳
-                      {detailsModal.order.total_amount ||
-                        detailsModal.order.total_amount_due ||
-                        0}
+                      {Number(
+                        detailsModal.order.shipping_fee || 0,
+                      ).toLocaleString()}
                     </span>
+                  </div>
+
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>Advance Payment</span>
+                    <span className="font-bold text-green-600">
+                      - ৳
+                      {Number(
+                        detailsModal.order.advance_amount || 0,
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-lg font-bold text-[#023337] border-t border-dashed pt-2 mt-2">
+                    <span>Total Due</span>
+                    <span>৳{totalDue.toLocaleString()}</span>
                   </div>
                 </div>
               </div>

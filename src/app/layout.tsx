@@ -61,8 +61,11 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {}
 
   return {
-    title: "Creass Mart",
-    description: "Premium E-Commerce Platform",
+    title: {
+      default: "Creass Mart",
+      template: "%s | Creass Mart", // Allows page-specific titles
+    },
+    description: info?.home_meta_description || "Creass Mart - Buy With Confidence",
     verification: {
       google: googleVerification,
       other: fbVerification

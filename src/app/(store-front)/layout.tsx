@@ -21,7 +21,6 @@
 //   );
 // }
 
-
 import { Suspense } from "react";
 import Navbar from "@/components/store-front/home/Navbar";
 import TopHeader from "@/components/store-front/home/TopHeader";
@@ -30,6 +29,15 @@ import Footer from "@/components/store-front/home/Footer";
 import ChatWidget from "@/components/store-front/chat/ChatWidget";
 import { LanguageProvider } from "@/providers/LanguageProvider";
 import SourceTracker from "@/components/store-front/SourceTracker";
+import { Metadata } from "next";
+import { SITE_URL } from "@/utils/metadata";
+
+// export const metadata: Metadata = {
+//   metadataBase: new URL(SITE_URL),
+//   alternates: {
+//     canonical: "./",
+//   },
+// };
 
 export default function StoreFrontLayout({
   children,
@@ -47,9 +55,7 @@ export default function StoreFrontLayout({
         <TopHeader />
         <Navbar />
 
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
 
         <FAQ />
         <Footer />
