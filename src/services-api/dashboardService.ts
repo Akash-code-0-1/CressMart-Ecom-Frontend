@@ -18,7 +18,7 @@ export const dashboardApi = {
     // ⚡ Map UI Labels to Backend expected strings
     let mappedFilter = "month";
     const raw = filter.toLowerCase().replace(" ", "");
-    
+
     if (raw === "day") mappedFilter = "day";
     if (raw === "year") mappedFilter = "year";
     if (raw === "alltime") mappedFilter = "all"; // Backend logic uses 'all' for All Time
@@ -26,10 +26,13 @@ export const dashboardApi = {
     params.append("filter", mappedFilter);
     if (customDate) params.append("customDate", customDate);
 
-    const res = await apiFetch(`/admin/dashboard/statistics?${params.toString()}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token || ""}` },
-    });
+    const res = await apiFetch(
+      `/admin/dashboard/statistics?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token || ""}` },
+      },
+    );
 
     if (!res.ok) throw new Error("Failed to fetch dashboard statistics");
     return res.json();
@@ -38,13 +41,9 @@ export const dashboardApi = {
   /**
    * Detailed Paginated Product Sell Report for the Modal
    */
-  async getSellReport(query: SellReportQuery) {
+  async getSellReport(query: any) {
     const token = await getAdminTokenAction();
-    const params = new URLSearchParams();
-    
-    if (query.page) params.append("page", String(query.page));
-    if (query.limit) params.append("limit", String(query.limit));
-    if (query.customDate) params.append("customDate", query.customDate);
+    const params = new URLSearchParams(query);
 
     const res = await apiFetch(`/admin/dashboard/sell-report?${params.toString()}`, {
       method: "GET",
@@ -52,9 +51,6 @@ export const dashboardApi = {
     });
 
     if (!res.ok) throw new Error("Failed to fetch sell report");
-    
-    const json = await res.json();
-    // Return the nested data object to match your ProductAnalytics component expectations
-    return json?.data || json; 
-  }
+    return res.json(); // This will return the object you built in the Controller
+  },
 };

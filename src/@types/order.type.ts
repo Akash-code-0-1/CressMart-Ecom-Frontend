@@ -8,6 +8,7 @@ export interface Order {
   product: string;
   customerName: string;
   customerPhone: string;
+  
   date: string;
   time: string;
   price: string;

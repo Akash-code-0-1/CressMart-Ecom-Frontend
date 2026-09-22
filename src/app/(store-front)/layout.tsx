@@ -32,12 +32,12 @@ import SourceTracker from "@/components/store-front/SourceTracker";
 import { Metadata } from "next";
 import { SITE_URL } from "@/utils/metadata";
 
-// export const metadata: Metadata = {
-//   metadataBase: new URL(SITE_URL),
-//   alternates: {
-//     canonical: "./",
-//   },
-// };
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: "./",
+  },
+};
 
 export default function StoreFrontLayout({
   children,

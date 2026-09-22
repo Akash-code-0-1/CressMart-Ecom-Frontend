@@ -828,6 +828,7 @@ import {
 } from "@/services-api/paymentSettingsService";
 import { setSessionToken } from "@/app/actions/auth";
 import { setCookie } from "cookies-next";
+import { useProfileData } from "@/hooks/useProfile";
 
 const MainCheckoutSection: React.FC = () => {
   const queryClient = useQueryClient();
@@ -855,14 +856,32 @@ const MainCheckoutSection: React.FC = () => {
     return id;
   });
 
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    note: "",
-    shippingArea: "outside" as string,
-    paymentMethod: "COD",
-  });
+// Initialize form with default empty values
+const [formData, setFormData] = useState({
+  name: "",
+  phone: "",
+  address: "",
+  note: "",
+  shippingArea: "outside" as string,
+  paymentMethod: "COD",
+});
+
+
+
+const { data: profile } = useProfileData();
+
+useEffect(() => {
+  if (user) {
+    setFormData(prev => ({ ...prev, name: user.name, phone: user.phone }));
+  }
+  if (profile) {
+    const addressList = profile.addresses || profile.user?.addresses || [];
+    const primary = addressList.find((addr: any) => addr.label === "PRIMARY");
+    if (primary) {
+      setFormData(prev => ({ ...prev, address: primary.address }));
+    }
+  }
+}, [user, profile]);
 
   // Helper to ensure shipping key is valid or fallback to outside
   const normalizeShippingKey = (key: string): string => {

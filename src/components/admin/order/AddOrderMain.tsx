@@ -66,6 +66,8 @@ type ExistingOrder = {
   customer_address?: string;
   customer_note?: string;
   shipping_fee?: number | string;
+  coupon_discount_amount?: number | string; // ADD THIS
+  manual_discount_amount?: number | string;
   payment_method?: string;
   source?: string;
   status?: string;
@@ -237,7 +239,7 @@ export default function AddOrderMain() {
       source: existingOrder.source || "admin_panel",
       status: existingOrder.status || "PENDING",
       paymentStatus: existingOrder.payment_status || "UNPAID",
-      manualDiscount: Number(existingOrder.discount_amount) || 0,
+      manualDiscount: Number(existingOrder.manual_discount_amount) || 0,
       advanceAmount: Number(existingOrder.advance_amount) || 0,
       actualShippingFee: null, // We can set this to null now to enable dynamic math
       courier_city_id: existingOrder.courier_city_id ?? null,
@@ -285,12 +287,7 @@ export default function AddOrderMain() {
   // // Remaining amount after advance payment
   // const remainingDue = totalDue - shipping.advanceAmount;
 
-  // --- Calculations ---
-  const subtotal = items.reduce(
-    (acc: number, item: { sell_price: number; quantity: number }) =>
-      acc + item.sell_price * item.quantity,
-    0,
-  );
+
 
   // 🚀 FIXED: Make shipping fee dynamic based on selection, even in edit mode
   const [shippingZones, setShippingZones] = useState<any[]>([]);
@@ -318,8 +315,26 @@ export default function AddOrderMain() {
   const activeZone = shippingZones.find((z) => z.zone === selectedZone);
   const shippingFee = activeZone ? Number(activeZone[feeType]) : 0;
 
-  const totalDue = subtotal + shippingFee - shipping.manualDiscount;
-  const remainingDue = totalDue - shipping.advanceAmount;
+// --- Calculations ---
+const subtotal = items.reduce(
+  (acc: number, item: { sell_price: number; quantity: number }) =>
+    acc + item.sell_price * item.quantity,
+  0,
+);
+
+// 1. Coupon part (from DB)
+const couponPart = Number(existingOrder?.coupon_discount_amount || 0);
+
+// 2. Manual part (from Input state)
+const manualPart = Number(shipping.manualDiscount || 0);
+
+// 3. Total Discount (Sum of both)
+const totalDiscount = couponPart + manualPart;
+
+// 4. Final Math
+const totalDue = subtotal + shippingFee - totalDiscount - shipping.advanceAmount;
+const remainingDue = totalDue; // Or whatever your business logic requires
+
 
   const handleSearch = async (val: string) => {
     setSearchTerm(val);
@@ -406,7 +421,7 @@ useEffect(() => {
         source: existingOrder.source || "admin_panel",
         status: existingOrder.status || "PENDING",
         paymentStatus: existingOrder.payment_status || "UNPAID",
-        manualDiscount: Number(existingOrder.discount_amount) || 0,
+        manualDiscount: Number(existingOrder.manual_discount_amount) || 0,
         advanceAmount: Number(existingOrder.advance_amount) || 0,
         actualShippingFee: dbFee,
         courier_city_id: existingOrder.courier_city_id ?? null,
@@ -843,21 +858,32 @@ useEffect(() => {
                   <span>Shipping</span>
                   <span>৳{shippingFee}</span>
                 </div>
-                <div className="flex justify-between items-center gap-4 text-red-500">
-                  <span>Manual Discount</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={shipping.manualDiscount}
-                    onChange={(e) =>
-                      setShipping({
-                        ...shipping,
-                        manualDiscount: Number(e.target.value) || 0,
-                      })
-                    }
-                    className="w-20 p-1 border rounded text-right bg-red-50"
-                  />
-                </div>
+
+
+                  {(Number(existingOrder?.coupon_discount_amount) > 0) && (
+    <div className="flex justify-between text-blue-600">
+      <span>Coupon Discount</span>
+      <span>- ৳{Number(existingOrder?.coupon_discount_amount)}</span>
+    </div>
+  )}
+
+
+
+  <div className="flex justify-between items-center gap-4 text-red-500">
+    <span>Special Discount (Manual)</span>
+    <input
+      type="number"
+      min={0}
+      value={shipping.manualDiscount}
+      onChange={(e) =>
+        setShipping({
+          ...shipping,
+          manualDiscount: Number(e.target.value) || 0,
+        })
+      }
+      className="w-20 p-1 border rounded text-right bg-red-50"
+    />
+  </div>
                 <div className="pt-2 border-t flex justify-between items-center text-base font-semibold text-gray-700 border-gray-200">
                   <span>Total Due</span>
                   <span>৳{totalDue}</span>
@@ -902,6 +928,9 @@ useEffect(() => {
                 </div>
               </div>
             </div>
+
+
+
           </div>
         </div>
       </div>

@@ -255,6 +255,10 @@ const Navbar = () => {
       behavior: "smooth",
     });
   };
+  const isHomePage = pathname === "/";
+
+  // Define the wrapper tag based on the path
+  const Tag = isHomePage ? "h1" : "div";
 
   return (
     <>
@@ -271,7 +275,7 @@ const Navbar = () => {
 
           <Link href="/" className="shrink-0 flex items-center">
             <div className="relative w-[120px] h-[35px] sm:w-[150px] sm:h-[45px] md:w-[180px] md:h-[50px] lg:w-[200px] lg:h-[55px] xl:w-[230px] xl:h-[64px]">
-              <h1>
+              <Tag>
                 <Image
                   src={usableImageUrl}
                   alt="Creass Mart - Buy With Confidence"
@@ -280,7 +284,7 @@ const Navbar = () => {
                   unoptimized
                   className="object-contain"
                 />
-              </h1>
+              </Tag>
             </div>
           </Link>
 

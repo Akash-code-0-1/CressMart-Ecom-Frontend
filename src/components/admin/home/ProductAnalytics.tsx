@@ -54,6 +54,10 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
     enabled: isModalOpen,
   });
 
+  const tableData = sellReport?.data?.data || [];
+
+  console.log("DEBUG: sellReport value:", sellReport);
+
   const reportColumns = [
     {
       header: "Product Detail",
@@ -344,7 +348,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
               ) : (
                 <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden bg-white">
                   <DataTable
-                    data={sellReport?.data || []}
+                    data={tableData}
                     columns={reportColumns}
                     rowKey={"id" as never}
                     gradiant={true}
@@ -357,13 +361,13 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-sm text-gray-500 font-medium">
-                  Inventory Count: {sellReport?.meta?.total || 0} Products
+                  Inventory Count: {sellReport?.data?.meta?.total || 0} Products
                 </span>
               </div>
               <div className="scale-90 origin-right">
                 <Pagination
-                  currentPage={modalPage}
-                  totalPages={sellReport?.meta?.lastPage || 1}
+                  currentPage={sellReport?.data?.meta?.currentPage || 1}
+                  totalPages={sellReport?.data?.meta?.lastPage || 1}
                   onPageChange={setModalPage}
                 />
               </div>

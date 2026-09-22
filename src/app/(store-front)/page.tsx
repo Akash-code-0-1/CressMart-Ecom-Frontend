@@ -117,40 +117,43 @@ import Testimonials from "@/components/store-front/home/Testimonials";
 import { getHomeTags, HomeTagSection } from "@/services-api/tagService";
 import CampaignSection from "@/components/store-front/home/CampaignSection";
 import { Metadata } from "next";
-import { getSettings } from "@/services-api/globalSettingsService";
-import { SITE_URL } from "@/utils/metadata";
+import { getSettingsPublic } from "@/services-api/globalSettingsService";
+import { fetchSettings } from "@/services-api/settingsService";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSettings();
-  // Ensure we access the data property based on your controller return
-  const data = settings?.data || settings;
+  try {
+    const settings = await fetchSettings();
 
-  const title = data?.home_meta_title || "Creass Mart";
-  const description = data?.home_meta_description || "Creass Mart - Buy With Confidence";
-  
-  // Convert comma-separated string to array if necessary
-  const keywords = typeof data?.home_meta_tags === 'string' 
-    ? data.home_meta_tags.split(',').map((t: string) => t.trim()) 
-    : [];
+    const data = settings?.data || settings;
 
-  return {
-    title: title,
-    description: description,
-    keywords: keywords,
-    alternates: {
-      canonical: `${SITE_URL}/`, 
-    },
-    openGraph: {
-      title: title,
-      description: description,
-      url: `${SITE_URL}/`,
-      type: 'website',
-    }
-  };
+    console.log("home metadata", data);
+
+    return {
+      title: data?.home_meta_title || "Creass Mart",
+      description:
+        data?.home_meta_description ||
+        "Premium E-Commerce Platform",
+      keywords: data?.home_meta_tags || "",
+
+      alternates: {
+        canonical: "/",
+      },
+    };
+  } catch (error) {
+    console.error("SEO Fetch Error:", error);
+
+    return {
+      title: "Creass Mart",
+      description: "Premium E-Commerce Platform",
+      keywords: "",
+      alternates: {
+        canonical: "/",
+      },
+    };
+  }
 }
-
 export default async function Page() {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 

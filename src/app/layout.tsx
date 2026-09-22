@@ -41,49 +41,62 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSettings();
   const info = settings?.data || settings;
 
+  console.log(info);
+
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "");
 
   const faviconUrl = info?.favicon
-    ? `${baseUrl}/uploads/settings/${info.favicon.replace("/uploads/settings/", "")}`
+    ? `${baseUrl}/uploads/settings/${info.favicon.replace(
+        "/uploads/settings/",
+        ""
+      )}`
     : "/favicon.ico";
 
   // Fetch marketing verification codes
-  let googleVerification = undefined;
-  let fbVerification = undefined;
+  let googleVerification: string | undefined;
+  let fbVerification: string | undefined;
+
   try {
-    const mRes = await fetch(`${baseUrl}/marketing-settings/public`, { cache: "no-store" });
+    const mRes = await fetch(`${baseUrl}/marketing-settings/public`, {
+      cache: "no-store",
+    });
+
     if (mRes.ok) {
       const mJson = await mRes.json();
       const mData = mJson?.data || mJson;
-      googleVerification = mData?.googleVerificationCode || undefined;
-      fbVerification = mData?.fbDomainVerificationCode || undefined;
+
+      googleVerification =
+        mData?.googleVerificationCode || undefined;
+
+      fbVerification =
+        mData?.fbDomainVerificationCode || undefined;
     }
   } catch {}
 
-  return {
-    title: {
-      default: "Creass Mart",
-      template: "%s | Creass Mart", // Allows page-specific titles
-    },
-    description: info?.home_meta_description || "Creass Mart - Buy With Confidence",
-    verification: {
-      google: googleVerification,
-      other: fbVerification
-        ? {
-            "facebook-domain-verification": [fbVerification],
-          }
-        : undefined,
-    },
-    icons: {
-      icon: [
-        {
-          url: faviconUrl,
-          type: "image/webp",
-        },
-      ],
-      shortcut: faviconUrl,
-    },
-  };
+return {
+  title: info?.home_meta_title || "",
+  description: info?.home_meta_description || "",
+  keywords: info?.home_meta_tags || "",
+
+  verification: {
+    google: googleVerification,
+    other: fbVerification
+      ? {
+          "facebook-domain-verification": [fbVerification],
+        }
+      : undefined,
+  },
+
+  icons: {
+    icon: [
+      {
+        url: faviconUrl,
+        type: "image/webp",
+      },
+    ],
+    shortcut: faviconUrl,
+  },
+};
 }
 
 export default async function RootLayout({

@@ -41,3 +41,25 @@ export const updateSettings = async (payload: Record<string, unknown>) => {
 
   return res.json();
 };
+
+export const getSettingsPublic = async () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  try {
+    const res = await fetch(`${baseUrl}/settings`, {
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Settings API failed: ${res.status}`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error("Public settings fetch failed:", error);
+    return null;
+  }
+};

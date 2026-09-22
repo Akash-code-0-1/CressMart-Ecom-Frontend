@@ -614,46 +614,70 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
               </tbody>
             </table>
 
-<div className="flex justify-end pt-2">
-  <div className="w-64 space-y-2 text-[12px]">
-    <div className="flex justify-between text-gray-600">
-      <p>Sub Total</p>
-      <p className="font-medium text-gray-900">৳{subTotal.toLocaleString()}</p>
-    </div>
+            <div className="flex justify-end pt-2">
+              <div className="w-64 space-y-2 text-[12px]">
+                <div className="flex justify-between text-gray-600">
+                  <p>Sub Total</p>
+                  <p className="font-medium text-gray-900">
+                    ৳{subTotal.toLocaleString()}
+                  </p>
+                </div>
 
-    <div className="flex justify-between text-gray-600">
-      <p>Delivery Charge</p>
-      <p className="font-medium text-gray-900">৳{deliveryCharge.toLocaleString()}</p>
-    </div>
+                <div className="flex justify-between text-gray-600">
+                  <p>Delivery Charge</p>
+                  <p className="font-medium text-gray-900">
+                    ৳{deliveryCharge.toLocaleString()}
+                  </p>
+                </div>
 
-    {discount > 0 && (
-      <div className="flex justify-between text-red-500">
-        <p>Discount</p>
-        <p className="font-medium">- ৳{discount.toLocaleString()}</p>
-      </div>
-    )}
+                {(Number((order as any).coupon_discount_amount) ?? 0) > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <p>Coupon Discount</p>
+                    <p className="font-medium">
+                      - ৳{Number((order as any).coupon_discount_amount).toLocaleString()}
+                    </p>
+                  </div>
+                )}
 
-    {/* Grand Total */}
-    <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
-      <p>Total Due</p>
-      <p>৳{grandTotal.toLocaleString()}</p>
-    </div>
+                {(Number((order as any).manual_discount_amount) ?? 0) > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <p>Special Discount</p>
+                    <p className="font-medium">
+                      - ৳{Number((order as any).manual_discount_amount).toLocaleString()}
+                    </p>
+                  </div>
+                )}
 
-    {/* Advance Payment */}
-    <div className="flex justify-between text-gray-600">
-      <p>Advance Pay</p>
-      <p className="font-medium text-gray-900">৳{advancePay.toLocaleString()}</p>
-    </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-red-500">
+                    <p>Discount</p>
+                    <p className="font-medium">
+                      - ৳{discount.toLocaleString()}
+                    </p>
+                  </div>
+                )}
 
-    {/* Remaining Due */}
-    <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
-      <p>Remaining Due</p>
-      <p>৳{duePay.toLocaleString()}</p>
-    </div>
-  </div>
-</div>
+                {/* Grand Total */}
+                <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
+                  <p>Total Due</p>
+                  <p>৳{grandTotal.toLocaleString()}</p>
+                </div>
 
+                {/* Advance Payment */}
+                <div className="flex justify-between text-gray-600">
+                  <p>Advance Pay</p>
+                  <p className="font-medium text-gray-900">
+                    ৳{advancePay.toLocaleString()}
+                  </p>
+                </div>
 
+                {/* Remaining Due */}
+                <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
+                  <p>Remaining Due</p>
+                  <p>৳{duePay.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="mt-16 text-center border-t border-gray-100">

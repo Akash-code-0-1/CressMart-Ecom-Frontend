@@ -261,6 +261,25 @@ export default function ThankYouContent({
                   ৳{shippingFee.toLocaleString()}
                 </p>
               </div>
+
+
+    {/* Using apiResponse instead of order */}
+    {Number(apiResponse.coupon_discount_amount || 0) > 0 && (
+      <div className="flex justify-between text-gray-600">
+        <p>Coupon Discount</p>
+        <p className="font-medium">- ৳{Number(apiResponse.coupon_discount_amount).toLocaleString()}</p>
+      </div>
+    )}
+
+    {Number(apiResponse.manual_discount_amount || 0) > 0 && (
+      <div className="flex justify-between text-gray-600">
+        <p>Special Discount</p>
+        <p className="font-medium">- ৳{Number(apiResponse.manual_discount_amount).toLocaleString()}</p>
+      </div>
+    )}
+
+
+
               {discountAmount > 0 && (
                 <div className="flex justify-between text-red-500">
                   <p>Discount</p>
@@ -269,6 +288,8 @@ export default function ThankYouContent({
                   </p>
                 </div>
               )}
+
+
               {/* Grand Total - USE MANUAL CALCULATION */}
               <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
                 <p>Grand Total</p>

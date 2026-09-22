@@ -130,7 +130,7 @@ const ReviewSection = ({ productId }: { productId: string }) => {
         comment,
         name,
         phoneNumber: sanitizedPhone,
-        email,
+        email: email.trim() !== "" ? email.trim() : undefined, 
         images: imageUrls,
       });
     } catch (error: unknown) {
