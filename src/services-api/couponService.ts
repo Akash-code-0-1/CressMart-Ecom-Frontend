@@ -52,8 +52,13 @@ export interface CouponResponse {
   };
 }
 export const applyCouponService = async (
+  
   payload: ApplyCouponPayload,
+  
 ): Promise<CouponResponse> => {
+
+  console.log("Payload being sent to API:", JSON.stringify(payload));
+
   const response = await apiFetch("/coupons/apply", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
