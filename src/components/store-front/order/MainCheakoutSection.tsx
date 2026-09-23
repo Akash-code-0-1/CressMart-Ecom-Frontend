@@ -1177,13 +1177,17 @@ useEffect(() => {
 
   
 
-  const applyCouponMutation = useMutation({
-mutationFn: (code: string) => {
-  const activeGuestId = guestId || localStorage.getItem("guestId");
-  return applyCouponService({ code, guestId: activeGuestId });
-},
-    onSuccess: (data: CouponResponse) => {
-      const discount = data?.discountAmount ?? data?.data?.discountAmount ?? 0;
+const applyCouponMutation = useMutation({
+    mutationFn: (code: string) => {
+      const activeGuestId = guestId || localStorage.getItem("guestId");
+      return applyCouponService({ 
+        code, 
+        guestId: activeGuestId,
+        cartItems: cartItems // Pass the cart state here!
+      });
+    },
+    onSuccess: (data: any) => {
+      const discount = data?.discountAmount ?? 0;
       setCouponDiscount(Number(discount));
       setAppliedCoupon(couponInput.trim());
       toast.success("Coupon applied successfully!");
@@ -1193,28 +1197,77 @@ mutationFn: (code: string) => {
     },
   });
 
+  // const placeOrderMutation = useMutation({
+  //   mutationFn: (payload: OrderPayload) => createOrderService(payload),
+  //   onSuccess: async (response) => {
+  //     // Extract auth from the structure you built: { ...order, auth: { user, accessToken } }
+  //     const auth = response?.auth || response?.data?.auth;
+
+  //     if (auth && auth.accessToken) {
+  //       // 1. Set cookies on CLIENT immediately so they are available for the next page load
+  //       setCookie("auth_token", auth.accessToken, {
+  //         maxAge: 60 * 60 * 24 * 7,
+  //         path: "/",
+  //       });
+  //       setCookie("token", auth.accessToken, {
+  //         maxAge: 60 * 60 * 24 * 7,
+  //         path: "/",
+  //       });
+
+  //       // 2. Backup to localStorage (apiFetch checks this as a last resort)
+  //       localStorage.setItem("auth_token", auth.accessToken);
+  //       localStorage.setItem("token", auth.accessToken);
+
+  //       // 3. Update Zustand Store
+  //       useAuthStore.getState().setAuthUser({
+  //         id: auth.user.id,
+  //         name: auth.user.name,
+  //         email: auth.user.email || "",
+  //         phone: auth.user.phone,
+  //         role: auth.user.role,
+  //         avatar: auth.user.avatar || null,
+  //         permissions: auth.user.permissions || [],
+  //       });
+
+  //       // 4. Important: Trigger server-side session sync
+  //       await setSessionToken(auth.accessToken);
+
+  //       // 5. Artificial delay (200ms) to ensure cookies are written to the disk
+  //       await new Promise((resolve) => setTimeout(resolve, 200));
+  //     }
+
+  //     const orderUUID =
+  //       response?.id || response?.data?.id || response?.order?.id;
+  //     router.push(`/thank_you?orderId=${orderUUID}`);
+  //   },
+  // });
+
   const placeOrderMutation = useMutation({
     mutationFn: (payload: OrderPayload) => createOrderService(payload),
     onSuccess: async (response) => {
-      // Extract auth from the structure you built: { ...order, auth: { user, accessToken } }
+      // --- START OF CART CLEARING LOGIC ---
+      try {
+        // Clear server-side cart and localStorage Mohasagor items
+        const guestId = localStorage.getItem("guestId");
+        await clearCart(user ? null : guestId);
+        
+        // Invalidate the cart query so that if the user hits "back", the cart is empty
+        queryClient.invalidateQueries({ queryKey: ["cart"] });
+      } catch (err) {
+        console.error("Failed to clear cart:", err);
+      }
+      // --- END OF CART CLEARING LOGIC ---
+
+      // Extract auth from the structure
       const auth = response?.auth || response?.data?.auth;
 
       if (auth && auth.accessToken) {
-        // 1. Set cookies on CLIENT immediately so they are available for the next page load
-        setCookie("auth_token", auth.accessToken, {
-          maxAge: 60 * 60 * 24 * 7,
-          path: "/",
-        });
-        setCookie("token", auth.accessToken, {
-          maxAge: 60 * 60 * 24 * 7,
-          path: "/",
-        });
+        setCookie("auth_token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
+        setCookie("token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
 
-        // 2. Backup to localStorage (apiFetch checks this as a last resort)
         localStorage.setItem("auth_token", auth.accessToken);
         localStorage.setItem("token", auth.accessToken);
 
-        // 3. Update Zustand Store
         useAuthStore.getState().setAuthUser({
           id: auth.user.id,
           name: auth.user.name,
@@ -1225,19 +1278,16 @@ mutationFn: (code: string) => {
           permissions: auth.user.permissions || [],
         });
 
-        // 4. Important: Trigger server-side session sync
         await setSessionToken(auth.accessToken);
-
-        // 5. Artificial delay (200ms) to ensure cookies are written to the disk
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      const orderUUID =
-        response?.id || response?.data?.id || response?.order?.id;
+      const orderUUID = response?.id || response?.data?.id || response?.order?.id;
       router.push(`/thank_you?orderId=${orderUUID}`);
     },
   });
 
+  
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement

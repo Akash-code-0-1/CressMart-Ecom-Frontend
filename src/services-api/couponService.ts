@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 export interface ApplyCouponPayload {
   code: string;
   guestId?: string | null; 
+  cartItems?: any[]; 
   directOrderData?: {
     productId?: string;
     variantId?: string;
