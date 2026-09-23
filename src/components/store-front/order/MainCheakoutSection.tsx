@@ -1176,7 +1176,7 @@ useEffect(() => {
   });
 
   const applyCouponMutation = useMutation({
-    mutationFn: (code: string) => applyCouponService({ code }),
+    mutationFn: (code: string) => applyCouponService({ code, guestId: user ? undefined : guestId  }),
     onSuccess: (data: CouponResponse) => {
       const discount = data?.discountAmount ?? data?.data?.discountAmount ?? 0;
       setCouponDiscount(Number(discount));

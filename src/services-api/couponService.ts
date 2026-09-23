@@ -2,6 +2,7 @@ import { apiFetch } from "@/utils/api";
 import Cookies from "js-cookie";
 export interface ApplyCouponPayload {
   code: string;
+  guestId?: string | null; 
   directOrderData?: {
     productId?: string;
     variantId?: string;
