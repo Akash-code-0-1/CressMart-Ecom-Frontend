@@ -1186,8 +1186,14 @@ const applyCouponMutation = useMutation({
         cartItems: cartItems // Pass the cart state here!
       });
     },
-    onSuccess: (data: any) => {
-      const discount = data?.discountAmount ?? 0;
+onSuccess: (response: any) => {
+      // console.log("DEBUG: Coupon API Response:", response); 
+      
+      // Look at your log: discountAmount is inside the 'data' property
+      const discount = response?.data?.discountAmount ?? response?.discountAmount ?? 0;
+      
+      // console.log("DEBUG: Extracted discount:", discount); // This should now show 50
+      
       setCouponDiscount(Number(discount));
       setAppliedCoupon(couponInput.trim());
       toast.success("Coupon applied successfully!");
@@ -1287,7 +1293,7 @@ const applyCouponMutation = useMutation({
     },
   });
 
-  
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -1580,6 +1586,8 @@ const applyCouponMutation = useMutation({
         Loading Checkout...
       </div>
     );
+
+    // console.log("MainCheckoutSection: Passing couponDiscount to PricingList:", couponDiscount);
 
   return (
     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">

@@ -1,7 +1,7 @@
 import { CartItem } from "@/@types/order.type";
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
-import React from "react";
+import React, { useEffect } from "react";
 
 interface PricingListProps {
   items: CartItem[];
@@ -26,6 +26,10 @@ const PricingList: React.FC<PricingListProps> = ({
 
   const subtotal = totalProductCost - couponDiscount;
   const payableAmount = subtotal + shippingFee;
+
+  useEffect(() => {
+  console.log("PricingList received couponDiscount:", couponDiscount);
+}, [couponDiscount]);
 
   return (
     <div className="mt-20 font-poppins">
