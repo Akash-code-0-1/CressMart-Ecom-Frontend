@@ -18,7 +18,7 @@ const SUMMARY_CONFIG = [
   { name: "Incomplete", color: "#6A717F" },
   { name: "Delivered", color: "#1884FF" },
   { name: "Canceled", color: "#FAB300" },
-  { name: "Paid Returned", color: "#C71CB6" },
+  { name: "Refunded", color: "#C71CB6" },
   { name: "Returned", color: "#DA0000" },
 ];
 
@@ -39,7 +39,7 @@ export default function OrderSummerySection() {
   const stats = statsData?.data || statsData || {};
   const overview = stats?.overview || {};
 
-  // 2. Process Chart Data
+// 2. Process Chart Data
   const { orderSummaryData, totalOrders } = useMemo(() => {
     if (!tabCounts) return { orderSummaryData: [], totalOrders: 0 };
 
@@ -52,10 +52,17 @@ export default function OrderSummerySection() {
 
     const mapped = SUMMARY_CONFIG.map((tab) => {
       const count = countMap[tab.name] || 0;
+      
+      // FIX: Use 1 decimal place instead of rounding to nearest whole number.
+      // This prevents 0.4% from becoming 0%.
+      const percentage = total > 0 
+        ? parseFloat(((count / total) * 100).toFixed(1)) 
+        : 0;
+
       return {
         name: tab.name,
         value: count,
-        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+        percentage: percentage,
         color: tab.color,
       };
     });

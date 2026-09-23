@@ -50,9 +50,9 @@ const Faqssection = ({ faqs }: FAQProps) => {
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 className="w-full flex justify-between items-center p-5 md:p-6 text-left cursor-pointer"
               >
-                <span className="text-black text-[16px] md:text-[18px] font-semibold">
+                <h3 className="text-black text-[16px] md:text-[18px] font-semibold">
                   {item.q}
-                </span>
+                </h3>
                 <FiChevronDown
                   className={`text-[24px] text-[#727272] transition-transform duration-300 ${
                     openIndex === index ? "rotate-180" : ""

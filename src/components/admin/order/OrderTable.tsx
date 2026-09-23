@@ -253,6 +253,7 @@ export default function OrderTable() {
     "Delivered",
     "Canceled",
     "Returned",
+    "Refunded",
   ];
 
   // Helper logic to prevent routing errors
@@ -893,7 +894,7 @@ export default function OrderTable() {
       ),
     },
     {
-      header: "Price",
+      header: "COD",
       key: "amount",
       render: (item: any) => {
         // 1. Check total_amount_due (Standard for regular orders)

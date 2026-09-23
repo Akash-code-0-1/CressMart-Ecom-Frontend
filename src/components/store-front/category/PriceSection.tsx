@@ -22,7 +22,7 @@ export default function PriceSection({
   return (
     <div className="py-4 border-b border-[#D9D9D9]">
       <div className="flex justify-between items-center mb-1">
-        <h4 className="text-black md:text-[24px] text-xl font-medium">{t.price.title}</h4>
+        <span className="text-black md:text-[24px] text-xl font-medium">{t.price.title}</span>
         <HiMiniMinusSmall className="md:text-2xl text-xl text-gray-400" />
       </div>
       <p className="text-[#828282] text-[16px] mb-3">0 {t.product.bdt} – {value} {t.product.bdt}</p>
@@ -51,9 +51,9 @@ export default function PriceSection({
       </div>
 
       <div className="flex flex-col gap-4 mb-4">
-        <h5 className="text-[#727272] md:text-[22px] text-lg font-normal">
+        <span className="text-[#727272] md:text-[22px] text-lg font-normal">
           {t.price.popularRange}:
-        </h5>
+        </span>
         <div className="flex flex-wrap gap-2">
           {popularPrices.map((price) => (
             <button

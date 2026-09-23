@@ -48,9 +48,9 @@ export default function ReviewItem({
           />
         </div>
         <div>
-          <h4 className="font-semibold text-base md:text-[18px] leading-tight text-black">
+          <p className="font-semibold text-base md:text-[18px] leading-tight text-black">
             {name || "Anonymous"}
-          </h4>
+          </p>
           {is_verified && (
             <div className="flex items-center gap-1 text-[#8C8C8C] text-xs font-semibold mt-1">
               <HiBadgeCheck className="text-[#FF7050]" size={16} />
