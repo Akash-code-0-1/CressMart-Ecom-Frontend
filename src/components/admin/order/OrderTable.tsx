@@ -318,24 +318,28 @@ export default function OrderTable() {
     })),
   });
 
-  // Inside your OrderTable component:
   const { subtotal, totalDue } = useMemo(() => {
     if (!detailsModal.order) return { subtotal: 0, totalDue: 0 };
 
     const items = detailsModal.order.order_items || [];
 
-    // Calculate subtotal by summing price * quantity
     const calculatedSubtotal = items.reduce(
       (acc: number, item: any) => acc + Number(item.unit_price) * item.quantity,
       0,
     );
 
     const shipping = Number(detailsModal.order.shipping_fee || 0);
-    const discount = Number(detailsModal.order.discount_amount || 0);
+    const couponDiscount = Number(
+      detailsModal.order.coupon_discount_amount || 0,
+    );
+    const manualDiscount = Number(
+      detailsModal.order.manual_discount_amount || 0,
+    );
     const advance = Number(detailsModal.order.advance_amount || 0);
 
-    // Total Due Calculation
-    const calculatedTotal = calculatedSubtotal + shipping - discount - advance;
+    // Math: Subtotal + Shipping - Coupon - Manual - Advance
+    const calculatedTotal =
+      calculatedSubtotal + shipping - couponDiscount - manualDiscount - advance;
 
     return { subtotal: calculatedSubtotal, totalDue: calculatedTotal };
   }, [detailsModal.order]);
@@ -706,6 +710,36 @@ export default function OrderTable() {
       setActiveMenuId(null);
     },
   });
+
+
+  const canChangeStatus = (currentStatus: string, nextStatus: string): { allowed: boolean, message?: string } => {
+  const current = currentStatus.toUpperCase();
+  const next = nextStatus.toUpperCase();
+
+  // If status is same, just allow (or block)
+  if (current === next) return { allowed: true };
+
+  // Rule: Refunded is final (cannot go anywhere)
+  if (current === 'REFUNDED') {
+    return { allowed: false, message: "Refunded is a final state; cannot change status." };
+  }
+
+  // Rule: Delivered can only go to Returned or Refunded
+  if (current === 'DELIVERED') {
+    if (next !== 'RETURNED' && next !== 'REFUNDED') {
+      return { allowed: false, message: "Delivered orders can only be changed to Returned or Refunded." };
+    }
+  }
+
+  // Rule: Returned can only go to Refunded
+  if (current === 'RETURNED') {
+    if (next !== 'REFUNDED') {
+      return { allowed: false, message: "Returned orders can only be changed to Refunded." };
+    }
+  }
+
+  return { allowed: true };
+};
 
   const columns: any[] = [
     {
@@ -1344,48 +1378,59 @@ export default function OrderTable() {
                   </div>
                 )} */}
 
-                {showStatusMenu && (
-                  <div
-                    className={`absolute right-full mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200 ${
-                      menuPos.opensUpward ? "bottom-[-8px]" : "top-[-8px]"
-                    }`}
-                  >
-                    {[
-                      "PENDING",
-                      "CONFIRMED",
-                      "ON_HOLD",
-                      "SHIPPED",
-                      "DELIVERED",
-                      "CANCELED",
-                      "RETURNED",
-                      "REFUNDED",
-                    ].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          if (s === "SHIPPED") {
-                            setShippedModal({
-                              open: true,
-                              id: activeMenuId,
-                              targetStatus: s,
-                            });
-                            setActiveMenuId(null);
-                          } else {
-                            statusMutation.mutate({
-                              id: activeMenuId!,
-                              payload: { status: s },
-                            });
-                            setActiveMenuId(null);
-                          }
-                          setShowStatusMenu(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
-                      >
-                        {s.replace(/_/g, " ")}
-                      </button>
-                    ))}
-                  </div>
-                )}
+{showStatusMenu && (
+  <div
+    className={`absolute right-full mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200 ${
+      menuPos.opensUpward ? "bottom-[-8px]" : "top-[-8px]"
+    }`}
+  >
+    {[
+      "PENDING",
+      "CONFIRMED",
+      "ON_HOLD",
+      "SHIPPED",
+      "DELIVERED",
+      "CANCELED",
+      "RETURNED",
+      "REFUNDED",
+    ].map((s) => (
+      <button
+        key={s}
+        onClick={() => {
+          // --- FRONTEND GUARD LOGIC ---
+          const currentOrder = orderList.find((o: any) => o.id === activeMenuId);
+          const validation = canChangeStatus(currentOrder?.status || "", s);
+
+          if (!validation.allowed) {
+            toast.error(validation.message || "Invalid status transition");
+            return; // Stops request from being sent
+          }
+          // ----------------------------
+
+          if (s === "SHIPPED") {
+            setShippedModal({
+              open: true,
+              id: activeMenuId,
+              targetStatus: s,
+            });
+            setActiveMenuId(null);
+          } else {
+            statusMutation.mutate({
+              id: activeMenuId!,
+              payload: { status: s },
+            });
+            setActiveMenuId(null);
+          }
+          setShowStatusMenu(false);
+        }}
+        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
+      >
+        {s.replace(/_/g, " ")}
+      </button>
+    ))}
+  </div>
+)}
+
               </div>
             </div>
           )}
@@ -1716,6 +1761,34 @@ export default function OrderTable() {
                       ).toLocaleString()}
                     </span>
                   </div>
+
+                  {/* Coupon Discount */}
+                  {Number(detailsModal.order.coupon_discount_amount || 0) >
+                    0 && (
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Coupon Discount</span>
+                      <span className="font-bold text-red-500">
+                        - ৳
+                        {Number(
+                          detailsModal.order.coupon_discount_amount,
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Manual Discount */}
+                  {Number(detailsModal.order.manual_discount_amount || 0) >
+                    0 && (
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Manual Discount</span>
+                      <span className="font-bold text-red-500">
+                        - ৳
+                        {Number(
+                          detailsModal.order.manual_discount_amount,
+                        ).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>Advance Payment</span>

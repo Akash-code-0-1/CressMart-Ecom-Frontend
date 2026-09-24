@@ -160,7 +160,7 @@ const ProductAnalytics: React.FC<ProductAnalyticsProps> = ({
                 <th className="py-3 px-4 rounded-l-[8px]">Product</th>
                 <th className="py-3 px-4 text-center">Ordered</th>
                 <th className="py-3 px-4 text-center">Status</th>
-                <th className="py-3 px-4 rounded-r-[8px] text-right">COD</th>
+                <th className="py-3 px-4 rounded-r-[8px] text-right">Price</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
