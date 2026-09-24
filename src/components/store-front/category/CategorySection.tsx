@@ -25,9 +25,9 @@ export default function CategorySection({
   return (
     <div className="py-4 border-b border-[#D9D9D9]">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-black md:text-[24px] text-xl font-medium">
+        <span className="text-black md:text-[24px] text-xl font-medium">
           {t.categories}
-        </h2>
+        </span>
         <HiMiniMinusSmall className="md:text-2xl text-xl text-gray-400" />
       </div>
       <ul className="flex flex-col gap-4">
@@ -118,7 +118,7 @@ interface CategoryItemProps {
 //               }
 //             />
 //           )}
-//           <h3
+//           <span
 //             className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${
 //               isRoot
 //                 ? isActive
@@ -130,7 +130,7 @@ interface CategoryItemProps {
 //             }`}
 //           >
 //             {node.name}
-//           </h3>
+//           </span>
 //         </div>
 //         <span
 //           className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"} md:text-[20px] text-base font-normal`}
@@ -200,7 +200,7 @@ function CategoryItem({
           
           {/* Tag changed based on isRoot, styling remains exactly as you had it */}
           {isRoot ? (
-            <h3
+            <span
               className={`transition-colors md:text-[20px] text-base group-hover:text-black ${
                 isRoot
                   ? isActive
@@ -212,7 +212,7 @@ function CategoryItem({
               }`}
             >
               {node.name}
-            </h3>
+            </span>
           ) : (
             <span
               className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${

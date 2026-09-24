@@ -248,24 +248,19 @@ export default function FilterSidebar({
     const list = categoryResponse?.data || [];
 
     // Helper function to recursively build nodes and compute total product count
-    const buildNodes = (parentId: string | null): CategoryTreeNode[] => {
-      const items = list.filter((item) => item.parent_id === parentId);
-      return items.map((item) => {
-        const children = buildNodes(item.id);
-        const directCount = item.product_count ?? item._count?.products ?? 0;
-        const childrenCount = children.reduce(
-          (sum, child) => sum + (child.product_count ?? 0),
-          0,
-        );
-        const totalCount = directCount + childrenCount;
+const buildNodes = (parentId: string | null): CategoryTreeNode[] => {
+  // Fix: Handle both null, undefined, and empty string as "Root"
+  const items = list.filter((item) => {
+    const itemParent = item.parent_id || null;
+    return itemParent === parentId;
+  });
 
-        return {
-          ...item,
-          product_count: totalCount,
-          children,
-        };
-      });
-    };
+  return items.map((item) => ({
+    ...item,
+    product_count: item.product_count ?? item._count?.products ?? 0,
+    children: buildNodes(item.id),
+  }));
+};
 
     return buildNodes(null);
   }, [categoryResponse]);
@@ -313,36 +308,57 @@ export default function FilterSidebar({
     });
   };
 
-  const updateFilter = (key: string, val: string) => {
-    if (key === "brand_id" || key === "brand_slug" || key === "brand") {
-      // When switching to a brand, clear category path — navigate to /category base
-      // Brand and category slug path are mutually exclusive
-      const params = new URLSearchParams();
-      if (val) {
-        params.set(key, val);
-      }
-      params.set("page", "1");
-      startTransition(() => {
-        const queryString = params.toString() ? `?${params.toString()}` : "";
-        router.push(`/category${queryString}`, { scroll: false });
-      });
-      return;
-    }
+  // const updateFilter = (key: string, val: string) => {
+  //   if (key === "brand_id" || key === "brand_slug" || key === "brand") {
+  //     // When switching to a brand, clear category path — navigate to /category base
+  //     // Brand and category slug path are mutually exclusive
+  //     const params = new URLSearchParams();
+  //     if (val) {
+  //       params.set(key, val);
+  //     }
+  //     params.set("page", "1");
+  //     startTransition(() => {
+  //       const queryString = params.toString() ? `?${params.toString()}` : "";
+  //       router.push(`/category${queryString}`, { scroll: false });
+  //     });
+  //     return;
+  //   }
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("category_id");
+  //   const params = new URLSearchParams(searchParams.toString());
+  //   params.delete("category_id");
 
-    if (params.get(key) === val) {
-      params.delete(key);
-    } else {
-      params.set(key, val);
-    }
-    params.set("page", "1");
-    startTransition(() => {
-      const queryString = params.toString() ? `?${params.toString()}` : "";
-      router.push(`${pathname}${queryString}`, { scroll: false });
-    });
-  };
+  //   if (params.get(key) === val) {
+  //     params.delete(key);
+  //   } else {
+  //     params.set(key, val);
+  //   }
+  //   params.set("page", "1");
+  //   startTransition(() => {
+  //     const queryString = params.toString() ? `?${params.toString()}` : "";
+  //     router.push(`${pathname}${queryString}`, { scroll: false });
+  //   });
+  // };
+
+const updateFilter = (key: string, val: string) => {
+  const params = new URLSearchParams(searchParams.toString());
+
+  // 1. Update the parameter (Add or Remove)
+  if (!val) {
+    params.delete(key);
+  } else {
+    params.set(key, val);
+  }
+
+  // 2. Always reset page
+  params.set("page", "1");
+
+  // 3. Navigate to current pathname (the category path) with new params
+  startTransition(() => {
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+    router.push(`${pathname}${queryString}`, { scroll: false });
+  });
+};
+
 
   const handleReset = () => {
     startTransition(() => {
