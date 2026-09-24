@@ -51,9 +51,9 @@ const RelatedProducts = ({ productId }: { productId: string }) => {
 
   return (
     <div className="w-full">
-      <h3 className="text-xl font-semibold font-poppins text-black mb-4 px-1">
+      <h2 className="text-xl font-semibold font-poppins text-black mb-4 px-1">
         {t.relatedProducts.title}
-      </h3>
+      </h2>
       <div className="bg-white rounded-2xl flex flex-col gap-y-3">
         {data.map((product: ProductData) => (
           <RelatedProductCard key={product.id} product={product} />

@@ -80,6 +80,85 @@ interface CategoryItemProps {
   onSelectCategory?: (slug: string, id: string) => void;
 }
 
+// function CategoryItem({
+//   node,
+//   level,
+//   activeCategoryId,
+//   activePath,
+//   onUpdate,
+//   onSelectCategory,
+// }: CategoryItemProps) {
+//   const isActive = activeCategoryId === node.id;
+//   const isBranchOpen = activePath.has(node.id);
+//   const isRoot = level === 0;
+
+//   return (
+//     <li className="flex flex-col gap-3">
+//       <div
+//         onClick={() => {
+//           if (onSelectCategory && node.slug) {
+//             onSelectCategory(node.slug, node.id);
+//           } else {
+//             onUpdate("category_id", node.id);
+//           }
+//         }}
+//         className="flex justify-between items-center group cursor-pointer"
+//       >
+//         <div className="flex items-center gap-2">
+//           {isRoot ? (
+//             <IoCheckmarkCircleSharp
+//               size={24}
+//               className={isActive ? "text-[#FF7050]" : "text-[#D9D9D9]"}
+//             />
+//           ) : (
+//             <MdChevronRight
+//               size={24}
+//               className={
+//                 isActive || isBranchOpen ? "text-[#FF7050]" : "text-gray-400"
+//               }
+//             />
+//           )}
+//           <h3
+//             className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${
+//               isRoot
+//                 ? isActive
+//                   ? "text-[#FF7050] font-medium"
+//                   : "text-black font-medium"
+//                 : isActive
+//                   ? "text-[#FF7050]"
+//                   : "text-[#727272]"
+//             }`}
+//           >
+//             {node.name}
+//           </h3>
+//         </div>
+//         <span
+//           className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"} md:text-[20px] text-base font-normal`}
+//         >
+//           {node.product_count ?? node._count?.products ?? 0}
+//         </span>
+//       </div>
+
+// {isBranchOpen && node.children.length > 0 && (
+//       <ul className="flex flex-col gap-3 ml-6 border-l border-gray-100 pl-2">
+//         {node.children.map((child: CategoryTreeNode) => (
+//           <CategoryItem
+//             key={child.id}
+//             node={child}
+//             level={level + 1}
+//             activeCategoryId={activeCategoryId}
+//             activePath={activePath}
+//             onUpdate={onUpdate}
+//             onSelectCategory={onSelectCategory}
+//           />
+//         ))}
+//           </ul>
+//         )}
+//     </li>
+//   );
+// }
+
+
 function CategoryItem({
   node,
   level,
@@ -118,19 +197,37 @@ function CategoryItem({
               }
             />
           )}
-          <h3
-            className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${
-              isRoot
-                ? isActive
-                  ? "text-[#FF7050] font-medium"
-                  : "text-black font-medium"
-                : isActive
-                  ? "text-[#FF7050]"
-                  : "text-[#727272]"
-            }`}
-          >
-            {node.name}
-          </h3>
+          
+          {/* Tag changed based on isRoot, styling remains exactly as you had it */}
+          {isRoot ? (
+            <h3
+              className={`transition-colors md:text-[20px] text-base group-hover:text-black ${
+                isRoot
+                  ? isActive
+                    ? "text-[#FF7050] font-medium"
+                    : "text-black font-medium"
+                  : isActive
+                    ? "text-[#FF7050]"
+                    : "text-[#727272]"
+              }`}
+            >
+              {node.name}
+            </h3>
+          ) : (
+            <span
+              className={`transition-colors md:text-[20px] text-base font-normal group-hover:text-black ${
+                isRoot
+                  ? isActive
+                    ? "text-[#FF7050] font-medium"
+                    : "text-black font-medium"
+                  : isActive
+                    ? "text-[#FF7050]"
+                    : "text-[#727272]"
+              }`}
+            >
+              {node.name}
+            </span>
+          )}
         </div>
         <span
           className={`${isActive ? "text-[#FF7050]" : "text-[#727272]"} md:text-[20px] text-base font-normal`}
@@ -139,21 +236,21 @@ function CategoryItem({
         </span>
       </div>
 
-{isBranchOpen && node.children.length > 0 && (
-      <ul className="flex flex-col gap-3 ml-6 border-l border-gray-100 pl-2">
-        {node.children.map((child: CategoryTreeNode) => (
-          <CategoryItem
-            key={child.id}
-            node={child}
-            level={level + 1}
-            activeCategoryId={activeCategoryId}
-            activePath={activePath}
-            onUpdate={onUpdate}
-            onSelectCategory={onSelectCategory}
-          />
-        ))}
-          </ul>
-        )}
+      {isBranchOpen && node.children && node.children.length > 0 && (
+        <ul className="flex flex-col gap-3 ml-6 border-l border-gray-100 pl-2">
+          {node.children.map((child: CategoryTreeNode) => (
+            <CategoryItem
+              key={child.id}
+              node={child}
+              level={level + 1}
+              activeCategoryId={activeCategoryId}
+              activePath={activePath}
+              onUpdate={onUpdate}
+              onSelectCategory={onSelectCategory}
+            />
+          ))}
+        </ul>
+      )}
     </li>
   );
 }

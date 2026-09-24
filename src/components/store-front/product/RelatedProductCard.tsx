@@ -48,9 +48,9 @@ const RelatedProductCard = ({ product }: { product: ProductData }) => {
 
         {/* Product Info */}
         <div className="flex-1 min-w-0">
-          <h4 className="text-base font-semibold text-black leading-snug line-clamp-2 mb-1 max-w-[155px]">
+          <h3 className="text-base font-semibold text-black leading-snug line-clamp-2 mb-1 max-w-[155px]">
             {product.name}
-          </h4>
+          </h3>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-bold text-[#FF7050]">
               {t.product.bdt} {product.sell_price}
