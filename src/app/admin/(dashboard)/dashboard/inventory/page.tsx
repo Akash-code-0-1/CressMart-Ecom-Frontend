@@ -6,7 +6,7 @@ import InventoryMainSection from "@/components/admin/inventory/InventoryMainSect
 export default function Page() {
   return (
     <PermissionGuard permission="Inventory">
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex overflow-hidden">
         <main className="flex-1">
           <div className="p-2 md:p-0">
             <div className="">

@@ -6,27 +6,55 @@ import { apiFetch } from "@/utils/api";
 //   online_payment_enabled: boolean;
 //   updated_at?: string;
 // }
+// export interface PaymentSettingsData {
+//   success: boolean;
+//   statusCode: number;
+//   message: string;
+//   data: {
+//     id: number;
+//     cod_enabled: boolean;
+//     online_payment_enabled: boolean;
+//     updated_at: string;
+//   };
+// }
+// export interface PaymentSettingsResponse {
+//   success?: boolean;
+//   statusCode?: number;
+//   message?: string;
+//   data: PaymentSettingsData;
+// }
+
+// export interface UpdatePaymentSettingsPayload {
+//   cod_enabled?: boolean;
+//   online_payment_enabled?: boolean;
+// }
+
+
 export interface PaymentSettingsData {
+  id: number;
+  cod_enabled: boolean;
+  online_payment_enabled: boolean;
+  advance_payment_active: boolean;
+  advance_payment_type: string | null;
+  payment_process_note: string | null;
+  advance_payment_config: any; // <--- MUST ADD THIS
+  updated_at: string;
+}
+
+export interface PaymentSettingsResponse {
   success: boolean;
   statusCode: number;
   message: string;
-  data: {
-    id: number;
-    cod_enabled: boolean;
-    online_payment_enabled: boolean;
-    updated_at: string;
-  };
-}
-export interface PaymentSettingsResponse {
-  success?: boolean;
-  statusCode?: number;
-  message?: string;
   data: PaymentSettingsData;
 }
 
 export interface UpdatePaymentSettingsPayload {
   cod_enabled?: boolean;
   online_payment_enabled?: boolean;
+  advance_payment_active?: boolean;
+  advance_payment_type?: string;
+  payment_process_note?: string;
+  advance_payment_config?: any; // <--- MUST ADD THIS
 }
 
 // react-query key used everywhere payment settings are read/written,
@@ -43,7 +71,9 @@ export const fetchPaymentSettings = async (): Promise<PaymentSettingsData> => {
     throw new Error("Failed to load payment settings");
   }
   const json = (await res.json()) as PaymentSettingsResponse;
-  return json.data;
+  
+  // Return ONLY the inner data object
+  return json.data; 
 };
 
 /**
