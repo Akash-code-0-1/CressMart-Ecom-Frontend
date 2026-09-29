@@ -775,6 +775,979 @@
 
 // export default MainCheckoutSection;
 
+// "use client";
+// import React, {
+//   useState,
+//   useMemo,
+//   useEffect,
+//   useCallback,
+//   useRef,
+// } from "react";
+// import {
+//   useQuery,
+//   useQueries,
+//   useMutation,
+//   useQueryClient,
+// } from "@tanstack/react-query";
+// import toast from "react-hot-toast";
+// import InputField from "./InputField";
+// import OrderItemComponent from "./OrderItem";
+// import PricingList from "./PricingList";
+// import { FaCaretDown } from "react-icons/fa";
+// import { useRouter } from "next/navigation";
+// import {
+//   fetchCart,
+//   updateCartItem,
+//   deleteCartItem,
+//   clearCart,
+// } from "@/services-api/cartService";
+// import { createOrderService } from "@/services-api/orderService";
+// import {
+//   applyCouponService,
+//   CouponResponse,
+// } from "@/services-api/couponService";
+// import {
+//   fetchShippingSettings,
+//   calculateCartShippingDetails,
+//   buildZoneShippingOptions,
+//   ZoneShippingOption,
+// } from "@/services-api/shippingService";
+// import { fetchSingleProduct } from "@/services-api/productService";
+// import { CartItem, OrderPayload } from "@/@types/order.type";
+// import { useAuthStore } from "@/store/useAuthStore";
+// import { Product, ShippingConfig } from "@/@types/product.type";
+// import { useLanguage } from "@/providers/LanguageProvider";
+// import { translations } from "@/locales";
+// import { MOHASAGOR_PREFIX } from "@/constants/checkout";
+// import debounce from "lodash/debounce";
+// import { trackIncompleteOrder } from "@/services-api/incompleteOrderService";
+// import { v4 as uuidv4 } from "uuid";
+// import {
+//   fetchPaymentSettings,
+//   PAYMENT_SETTINGS_QUERY_KEY,
+// } from "@/services-api/paymentSettingsService";
+// import { setSessionToken } from "@/app/actions/auth";
+// import { setCookie } from "cookies-next";
+// import { useProfileData } from "@/hooks/useProfile";
+
+// const MainCheckoutSection: React.FC = () => {
+//   const queryClient = useQueryClient();
+//   const router = useRouter();
+//   const { language } = useLanguage();
+//   const t = translations[language];
+
+//   const user = useAuthStore((state) => state.user);
+//   const isStoreReady = useAuthStore((state) => state._hasHydrated);
+
+//   const [orderSource, setOrderSource] = useState<string>("direct");
+//   useEffect(() => {
+//     const stored = sessionStorage.getItem("order_source");
+//     if (stored) setOrderSource(stored);
+//   }, []);
+
+//   const [guestId] = useState<string | null>(() => {
+//     if (typeof window === "undefined") return null;
+//     let id = localStorage.getItem("guestId");
+//     if (!id) {
+//       // id = crypto.randomUUID();
+//       id = uuidv4();
+//       localStorage.setItem("guestId", id);
+//     }
+//     return id;
+//   });
+
+// // Initialize form with default empty values
+// const [formData, setFormData] = useState({
+//   name: "",
+//   phone: "",
+//   address: "",
+//   note: "",
+//   shippingArea: "outside" as string,
+//   paymentMethod: "COD",
+// });
+
+// const { data: profile } = useProfileData();
+
+// useEffect(() => {
+//   if (user) {
+//     setFormData(prev => ({ ...prev, name: user.name, phone: user.phone }));
+//   }
+//   if (profile) {
+//     const addressList = profile.addresses || profile.user?.addresses || [];
+//     const primary = addressList.find((addr: any) => addr.label === "PRIMARY");
+//     if (primary) {
+//       setFormData(prev => ({ ...prev, address: primary.address }));
+//     }
+//   }
+// }, [user, profile]);
+
+//   // Helper to ensure shipping key is valid or fallback to outside
+//   const normalizeShippingKey = (key: string): string => {
+//     return key || "outside";
+//   };
+
+//   const [couponInput, setCouponInput] = useState("");
+//   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+//   const [couponDiscount, setCouponDiscount] = useState<number>(0);
+
+//   const { data: cartData, isLoading } = useQuery({
+//     queryKey: ["cart", user?.id, guestId],
+//     queryFn: () => fetchCart(user ? null : guestId),
+//     enabled: isStoreReady && (!!user || !!guestId),
+//   });
+
+//   const { data: shippingSettings } = useQuery({
+//     queryKey: ["shipping-settings"],
+//     queryFn: fetchShippingSettings,
+//   });
+
+//   const rawCartItems: CartItem[] = cartData?.items || [];
+
+//   const productQueries = useQueries({
+//     queries: rawCartItems.map((item) => ({
+//       queryKey: ["product-detail-shipping", item.productId],
+//       queryFn: () => {
+//         if (item.productId?.startsWith(MOHASAGOR_PREFIX))
+//           return Promise.resolve(null);
+//         return fetchSingleProduct(item.productId);
+//       },
+//       enabled:
+//         !!item.productId && !item.productId?.startsWith(MOHASAGOR_PREFIX),
+//     })),
+//   });
+
+//   const cartItems: CartItem[] = useMemo(() => {
+//     return rawCartItems.map((item, index) => {
+//       // 1. Get fresh data from the background query
+//       const pData = productQueries[index]?.data;
+//       const existingProduct = (item.product || {}) as Product;
+
+//       // 2. Resolve Stock Quantity
+//       // Priority: fresh DB data > data stored in cart item
+//       const dbQty = pData
+//         ? Number(pData.quantity)
+//         : Number(existingProduct.quantity ?? 0);
+
+//       // 3. Resolve Stock Status String
+//       const stockStatus = (
+//         pData?.stock_status ||
+//         (existingProduct as any)?.stock_status ||
+//         ""
+//       ).toLowerCase();
+
+//       // 4. Resolve Image URL
+//       // Product type typically has an 'images' array. We take the first one's URL.
+//       const productImage =
+//         pData?.images?.[0]?.url ||
+//         existingProduct.images?.[0]?.url ||
+//         item.image ||
+//         "";
+
+//       // 5. Clean UI Logic for Label
+//       let stockDisplay = "Stock Out";
+
+//       if (dbQty === 999 || stockStatus === "available") {
+//         stockDisplay = "Available";
+//       } else if (dbQty > 0) {
+//         stockDisplay = `Stock: ${dbQty}`;
+//       }
+
+//       return {
+//         ...item,
+//         product: {
+//           ...existingProduct,
+//           id: item.productId,
+//           name: pData?.name || item.name || existingProduct.name || "Product",
+//           price: Number(pData?.sell_price || item.price || 0),
+
+//           // This is the label the UI will show
+//           stockLabel: stockDisplay,
+
+//           // Internal quantity for calculations
+//           quantity: dbQty,
+//           featuredImage: productImage, // We assign the URL string here for the UI
+//         },
+//       } as any;
+//     });
+//   }, [rawCartItems, productQueries]);
+
+//   const courierConfig = shippingSettings?.courier_config;
+
+//   // Check sub_city availability from new zones-array format OR old flat format
+//   const isSubCityAvailable = useMemo(() => {
+//     const hasSubCity =
+//       // new format: zones[0].subcity
+//       (courierConfig?.zones &&
+//         courierConfig.zones.length > 0 &&
+//         Number(courierConfig.zones[0].subcity) > 0) ||
+//       // old flat format fallback
+//       (courierConfig?.sub_city && Number(courierConfig.sub_city) > 0);
+
+//     if (!hasSubCity) return false;
+//     return cartItems.every((item) => {
+//       const prod = (item.product || {}) as unknown as Product;
+//       if (String(prod.shipping_type).toUpperCase() === "CUSTOM") {
+//         const raw = prod.shipping_config;
+//         let config = [];
+//         try {
+//           config = typeof raw === "string" ? JSON.parse(raw) : raw || [];
+//         } catch {
+//           config = [];
+//         }
+//         return (
+//           Array.isArray(config) &&
+//           config.some((c) => String(c.zone).toLowerCase().includes("sub"))
+//         );
+//       }
+//       return true;
+//     });
+//   }, [cartItems, courierConfig]);
+
+//   useEffect(() => {
+//     if (!isSubCityAvailable && formData.shippingArea === "sub_city") {
+//       setFormData((prev) => ({ ...prev, shippingArea: "outside" }));
+//     }
+//   }, [isSubCityAvailable, formData.shippingArea]);
+
+//   const dynamicShippingOptions = useMemo<
+//     Array<
+//       ZoneShippingOption & {
+//         key: string;
+//         label: string;
+//         fee: number;
+//         shippingArea: "inside" | "outside" | "sub_city";
+//         id?: number | string;
+//       }
+//     >
+//   >(() => {
+//     // ── Priority 1: CUSTOM shipping products override everything ──
+//     const customOptions: ZoneShippingOption[] = [];
+//     cartItems.forEach((item) => {
+//       const prod = (item.product || {}) as Product;
+//       const sType = String(prod.shipping_type || "DEFAULT").toUpperCase();
+//       const rawConfig = prod.shipping_config || item.shipping_config;
+//       if (sType === "CUSTOM" && rawConfig) {
+//         let config: ShippingConfig[] = [];
+//         try {
+//           config =
+//             typeof rawConfig === "string" ? JSON.parse(rawConfig) : rawConfig;
+//         } catch {
+//           config = [];
+//         }
+//         if (Array.isArray(config)) {
+//           config.forEach((c) => {
+//             if (c.zone && c.charge !== undefined && c.charge !== null) {
+//               const zoneName = String(c.zone).trim();
+//               const chargeNum = Number(c.charge);
+//               const exists = customOptions.find(
+//                 (opt) => opt.label.toLowerCase() === zoneName.toLowerCase(),
+//               );
+//               // Derive shippingArea from zone name heuristic
+//               const area: "inside" | "outside" | "sub_city" = zoneName
+//                 .toLowerCase()
+//                 .includes("sub")
+//                 ? "sub_city"
+//                 : zoneName.toLowerCase().includes("outside")
+//                   ? "outside"
+//                   : "inside";
+//               if (!exists) {
+//                 customOptions.push({
+//                   key: zoneName.toLowerCase().replace(/\s+/g, "_"),
+//                   id: 1,
+//                   label: zoneName,
+//                   fee: chargeNum,
+//                   shippingArea: area,
+//                   zoneName,
+//                 });
+//               } else {
+//                 exists.fee = Math.max(exists.fee, chargeNum);
+//               }
+//             }
+//           });
+//         }
+//       }
+//     });
+//     if (customOptions.length > 0) return customOptions;
+
+//     // ── Priority 2: Dynamic zones from API (unlimited) ──
+//     // Run each zone option through calculateCartShippingDetails so that:
+//     //   • FREE products → contribute ৳0 (their shipping_type is FREE)
+//     //   • CUSTOM products → use their own config fee
+//     //   • DEFAULT products → use this zone's specific fee as the baseline
+//     const rawZoneOpts = buildZoneShippingOptions(
+//       shippingSettings?.courier_config,
+//     );
+//     if (rawZoneOpts.length > 0) {
+//       return rawZoneOpts.map((opt) => ({
+//         ...opt,
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           opt.shippingArea,
+//           shippingSettings,
+//           opt.fee, // pass zone-specific fee as the default (e.g. Chittagong Inside = 80)
+//         ).totalShippingFee,
+//       }));
+//     }
+
+//     // ── Priority 3: Fallback to legacy flat config or defaults ──
+//     const fallback: ZoneShippingOption[] = [
+//       {
+//         key: "inside",
+//         id: 1,
+//         label: t.checkout.insideDhakaLabel || "Inside Dhaka",
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           "inside",
+//           shippingSettings,
+//         ).totalShippingFee,
+//         shippingArea: "inside",
+//         zoneName: "Dhaka",
+//       },
+//       {
+//         key: "outside",
+//         id: 1,
+//         label: t.checkout.outsideDhakaLabel || "Outside Dhaka",
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           "outside",
+//           shippingSettings,
+//         ).totalShippingFee,
+//         shippingArea: "outside",
+//         zoneName: "Dhaka",
+//       },
+//     ];
+//     if (isSubCityAvailable) {
+//       fallback.push({
+//         key: "sub_city",
+//         id: 1,
+//         label: t.checkout.subCityLabel || "Sub City",
+//         fee: calculateCartShippingDetails(
+//           cartItems as any,
+//           "sub_city",
+//           shippingSettings,
+//         ).totalShippingFee,
+//         shippingArea: "sub_city",
+//         zoneName: "Dhaka",
+//       });
+//     }
+//     return fallback;
+//   }, [cartItems, shippingSettings, isSubCityAvailable, t]);
+
+//   useEffect(() => {
+//     if (dynamicShippingOptions.length > 0) {
+//       const exists = dynamicShippingOptions.some(
+//         (opt) => opt.key === formData.shippingArea,
+//       );
+//       if (!exists) {
+//         setFormData((prev) => ({
+//           ...prev,
+//           shippingArea: dynamicShippingOptions[0].key,
+//         }));
+//       }
+//     }
+//   }, [dynamicShippingOptions, formData.shippingArea]);
+
+//   const calculatedShippingFee = useMemo(() => {
+//     const selectedOpt = dynamicShippingOptions.find(
+//       (opt) => opt.key === formData.shippingArea,
+//     );
+//     if (selectedOpt) return selectedOpt.fee;
+//     return dynamicShippingOptions[0]?.fee || 0;
+//   }, [formData.shippingArea, dynamicShippingOptions]);
+
+//   const formatShippingOptionLabel = (label: string, fee: number) =>
+//     `${label} - BDT ${fee}`;
+
+//   const updateQtyMutation = useMutation({
+//     mutationFn: ({ id, qty }: { id: string; qty: number }) =>
+//       updateCartItem(id, qty),
+//     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
+//     onError: () => toast.error("Failed to update quantity"),
+//   });
+
+//   const removeItemMutation = useMutation({
+//     mutationFn: (id: string) => deleteCartItem(id),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({ queryKey: ["cart"] });
+//       toast.success("Item removed from cart");
+//     },
+//   });
+
+// const applyCouponMutation = useMutation({
+//     mutationFn: (code: string) => {
+//       const activeGuestId = guestId || localStorage.getItem("guestId");
+//       return applyCouponService({
+//         code,
+//         guestId: activeGuestId,
+//         cartItems: cartItems // Pass the cart state here!
+//       });
+//     },
+// onSuccess: (response: any) => {
+//       // console.log("DEBUG: Coupon API Response:", response);
+
+//       // Look at your log: discountAmount is inside the 'data' property
+//       const discount = response?.data?.discountAmount ?? response?.discountAmount ?? 0;
+
+//       // console.log("DEBUG: Extracted discount:", discount); // This should now show 50
+
+//       setCouponDiscount(Number(discount));
+//       setAppliedCoupon(couponInput.trim());
+//       toast.success("Coupon applied successfully!");
+//     },
+//     onError: (error: Error) => {
+//       toast.error(error.message || "Something went wrong.");
+//     },
+//   });
+
+//   // const placeOrderMutation = useMutation({
+//   //   mutationFn: (payload: OrderPayload) => createOrderService(payload),
+//   //   onSuccess: async (response) => {
+//   //     // Extract auth from the structure you built: { ...order, auth: { user, accessToken } }
+//   //     const auth = response?.auth || response?.data?.auth;
+
+//   //     if (auth && auth.accessToken) {
+//   //       // 1. Set cookies on CLIENT immediately so they are available for the next page load
+//   //       setCookie("auth_token", auth.accessToken, {
+//   //         maxAge: 60 * 60 * 24 * 7,
+//   //         path: "/",
+//   //       });
+//   //       setCookie("token", auth.accessToken, {
+//   //         maxAge: 60 * 60 * 24 * 7,
+//   //         path: "/",
+//   //       });
+
+//   //       // 2. Backup to localStorage (apiFetch checks this as a last resort)
+//   //       localStorage.setItem("auth_token", auth.accessToken);
+//   //       localStorage.setItem("token", auth.accessToken);
+
+//   //       // 3. Update Zustand Store
+//   //       useAuthStore.getState().setAuthUser({
+//   //         id: auth.user.id,
+//   //         name: auth.user.name,
+//   //         email: auth.user.email || "",
+//   //         phone: auth.user.phone,
+//   //         role: auth.user.role,
+//   //         avatar: auth.user.avatar || null,
+//   //         permissions: auth.user.permissions || [],
+//   //       });
+
+//   //       // 4. Important: Trigger server-side session sync
+//   //       await setSessionToken(auth.accessToken);
+
+//   //       // 5. Artificial delay (200ms) to ensure cookies are written to the disk
+//   //       await new Promise((resolve) => setTimeout(resolve, 200));
+//   //     }
+
+//   //     const orderUUID =
+//   //       response?.id || response?.data?.id || response?.order?.id;
+//   //     router.push(`/thank_you?orderId=${orderUUID}`);
+//   //   },
+//   // });
+
+//   const placeOrderMutation = useMutation({
+//     mutationFn: (payload: OrderPayload) => createOrderService(payload),
+//     onSuccess: async (response) => {
+//       // --- START OF CART CLEARING LOGIC ---
+//       try {
+//         // Clear server-side cart and localStorage Mohasagor items
+//         const guestId = localStorage.getItem("guestId");
+//         await clearCart(user ? null : guestId);
+
+//         // Invalidate the cart query so that if the user hits "back", the cart is empty
+//         queryClient.invalidateQueries({ queryKey: ["cart"] });
+//       } catch (err) {
+//         console.error("Failed to clear cart:", err);
+//       }
+//       // --- END OF CART CLEARING LOGIC ---
+
+//       // Extract auth from the structure
+//       const auth = response?.auth || response?.data?.auth;
+
+//       if (auth && auth.accessToken) {
+//         setCookie("auth_token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
+//         setCookie("token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
+
+//         localStorage.setItem("auth_token", auth.accessToken);
+//         localStorage.setItem("token", auth.accessToken);
+
+//         useAuthStore.getState().setAuthUser({
+//           id: auth.user.id,
+//           name: auth.user.name,
+//           email: auth.user.email || "",
+//           phone: auth.user.phone,
+//           role: auth.user.role,
+//           avatar: auth.user.avatar || null,
+//           permissions: auth.user.permissions || [],
+//         });
+
+//         await setSessionToken(auth.accessToken);
+//         await new Promise((resolve) => setTimeout(resolve, 200));
+//       }
+
+//       const orderUUID = response?.id || response?.data?.id || response?.order?.id;
+//       router.push(`/thank_you?orderId=${orderUUID}`);
+//     },
+//   });
+
+//   const handleInputChange = (
+//     e: React.ChangeEvent<
+//       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+//     >,
+//   ) => {
+//     const { name, value } = e.target;
+//     if (name === "shippingArea") {
+//       setFormData((prev) => ({
+//         ...prev,
+//         shippingArea: normalizeShippingKey(value),
+//       }));
+//       return;
+//     }
+
+//     setFormData((prev) => ({ ...prev, [name]: value }));
+//   };
+
+//   const handlePlaceOrder = () => {
+//     // if (!user) {
+//     //   toast.error("Please login/signup to place an order");
+//     //   router.push("/signin?redirect=/order");
+//     //   return;
+//     // }
+//     if (!formData.name || !formData.phone || !formData.address) {
+//       toast.error("Please fill in all required fields");
+//       return;
+//     }
+//     if (cartItems.length === 0) {
+//       toast.error("Your cart is empty");
+//       return;
+//     }
+
+//     const allItemsForBackend = cartItems.map((item) => {
+//       const isMohasagor = item.productId?.startsWith(MOHASAGOR_PREFIX);
+//       const fee = calculatedShippingFee;
+
+//       if (isMohasagor) {
+//         const formattedAttributes = Array.isArray(item.variantInfo)
+//           ? item.variantInfo.map((v) => ({
+//               type: "text",
+//               label: v.label || "Variant",
+//               value: v.value || "",
+//             }))
+//           : [
+//               {
+//                 type: "text",
+//                 label: "Variant",
+//                 value: String(item.variantInfo || ""),
+//               },
+//             ];
+
+//         return {
+//           isExternal: true as const,
+//           externalProductId: item.productId,
+//           externalVariantId: item.variantId || null,
+//           externalName: item.name || item.product?.name || "Mohasagor Product",
+//           externalPrice: Number(item.price || 0),
+//           externalImage: item.image || item.product?.featuredImage || "",
+//           externalAttributes: formattedAttributes,
+//           item_shipping_fee: fee,
+//           quantity: item.quantity,
+//         };
+//       }
+
+//       return {
+//         productId: item.productId,
+//         quantity: item.quantity,
+//         variantId:
+//           item.variantId && item.variantId !== "null"
+//             ? item.variantId
+//             : undefined,
+//         item_shipping_fee: fee,
+//       };
+//     });
+
+//     const selectedOpt = dynamicShippingOptions.find(
+//       (opt) => opt.key === formData.shippingArea,
+//     );
+
+//     // `shippingArea` on each option is the exact enum the backend expects
+//     const resolvedShippingArea: "inside" | "outside" | "sub_city" =
+//       (selectedOpt as ZoneShippingOption)?.shippingArea ??
+//       (formData.shippingArea === "inside" ||
+//       formData.shippingArea === "outside" ||
+//       formData.shippingArea === "sub_city"
+//         ? (formData.shippingArea as "inside" | "outside" | "sub_city")
+//         : "outside");
+
+//     const payload: any = {
+//       customerName: formData.name,
+//       customerPhone: formData.phone,
+//       customerAddress: formData.address,
+//       customerNote: [
+//         formData.note,
+//         cartItems.some((i) => i.productId?.startsWith(MOHASAGOR_PREFIX))
+//           ? `[Mohasagor External Products: ${cartItems
+//               .filter((i) => i.productId?.startsWith(MOHASAGOR_PREFIX))
+//               .map((i) => `${i.name}`)
+//               .join(", ")}]`
+//           : "",
+//       ]
+//         .filter(Boolean)
+//         .join(" | "),
+//       paymentMethod: formData.paymentMethod,
+//       shippingArea: resolvedShippingArea,
+//       shippingFee: calculatedShippingFee,
+//       shipping_fee: Number(calculatedShippingFee),
+
+//       // 🚀 Now selectedOpt.id will exist!
+//       courier_zone_id: selectedOpt ? Number(selectedOpt.id) : undefined,
+//       shipping_type: resolvedShippingArea,
+
+//       delivery_charge: calculatedShippingFee,
+//       source: orderSource,
+//       items: allItemsForBackend,
+//       couponCode: appliedCoupon || undefined,
+//     };
+
+//     placeOrderMutation.mutate(payload);
+//   };
+
+//   // const debouncedTrack = useCallback(
+//   //   debounce(async (data, items, source, gid) => {
+//   //     if (!items || items.length === 0) return;
+
+//   //     const payload = {
+//   //       guestId: gid,
+//   //       customerName: data.name || "",
+//   //       customerPhone: data.phone || "",
+//   //       customerAddress: data.address || "",
+//   //       source: source || "direct",
+//   //       items: items.map((item: any) => ({
+//   //         productId: item.productId,
+//   //         variantId: item.variantId !== "null" ? item.variantId : undefined,
+//   //         qty: Number(item.quantity || 1),
+//   //       })),
+//   //     };
+
+//   //     await trackIncompleteOrder(payload);
+//   //   }, 1500),
+//   //   [],
+//   // );
+
+//   // const debouncedTrack = useCallback(
+//   //   debounce(async (data, items, source, gid) => {
+//   //     // Only track if there is at least a name or phone number
+//   //     if (!data.phone && !data.name) return;
+//   //     if (!items || items.length === 0) return;
+
+//   //     // Check if we already have an active lead ID in this session to avoid duplicating rows
+//   //     const existingLeadId = sessionStorage.getItem("active_lead_id");
+
+//   //     const payload = {
+//   //       id: existingLeadId || undefined, // If ID exists, backend should update; otherwise create
+//   //       customerName: data.name || "Guest",
+//   //       customerPhone: data.phone || "",
+//   //       customerAddress: data.address || "",
+//   //       source: source || "direct",
+//   //       shippingArea: data.shippingArea || "outside",
+//   //       paymentMethod: data.paymentMethod || "COD",
+//   //       status: "INCOMPLETE", // 🔥 This is the critical addition
+//   //       items: items.map((item: any) => ({
+//   //         productId: item.productId,
+//   //         variantId:
+//   //           item.variantId && item.variantId !== "null"
+//   //             ? item.variantId
+//   //             : undefined,
+//   //         quantity: Number(item.quantity || 1),
+//   //       })),
+//   //     };
+
+//   //     const res = await trackIncompleteOrder(payload);
+
+//   //     // Store the ID returned by the backend so the next debounce updates the SAME row
+//   //     if (res?.id || res?.data?.id) {
+//   //       sessionStorage.setItem("active_lead_id", res?.id || res?.data?.id);
+//   //     }
+//   //   }, 2000), // Increased to 2s to reduce server load
+//   //   [],
+//   // );
+
+//   // useEffect(() => {
+//   //   if (isStoreReady && cartItems.length > 0) {
+//   //     debouncedTrack(formData, cartItems, orderSource, guestId);
+//   //   }
+//   // }, [isStoreReady, cartItems, formData, orderSource, guestId, debouncedTrack]);
+
+//   // 1. Keep a ref for the saved ID
+//   const isBangladeshiPhone = (value?: string): boolean => {
+//     if (!value) return false;
+
+//     const normalized = value.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+//     return /^(?:\+?88)?01[3-9]\d{8}$/.test(normalized);
+//   };
+
+//   const leadIdRef = useRef<string | null>(null);
+
+//   const saveLead = useCallback(
+//     async (force = false) => {
+//       // Only proceed if valid phone exists
+//       if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
+
+//       const payload = {
+//         id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
+//         customerName: formData.name || "Guest",
+//         customerPhone: formData.phone,
+//         customerAddress: formData.address || "N/A",
+//         source: orderSource,
+//         shippingArea: formData.shippingArea,
+//         paymentMethod: formData.paymentMethod,
+//         status: "INCOMPLETE",
+//         items: cartItems.map((item) => ({
+//           productId: item.productId,
+//           variantId:
+//             item.variantId && item.variantId !== "null"
+//               ? item.variantId
+//               : undefined,
+//           quantity: Number(item.quantity || 1),
+//         })),
+//       };
+
+//       try {
+//         const res = await trackIncompleteOrder(payload);
+//         const newId = res?.id || res?.data?.id;
+//         if (newId) leadIdRef.current = newId;
+//       } catch (e) {
+//         console.error("Failed to track:", e);
+//       }
+//     },
+//     [formData, cartItems, orderSource],
+//   );
+
+//   // 2. ONLY save on blur (when user finishes typing in an input)
+//   const handleBlur = () => {
+//     saveLead();
+//   };
+
+//   // 3. Trigger ONLY on window unload (leaving the page)
+//   useEffect(() => {
+//     const handleUnload = () => {
+//       saveLead();
+//     };
+//     window.addEventListener("beforeunload", handleUnload);
+//     return () => {
+//       window.removeEventListener("beforeunload", handleUnload);
+//       saveLead(); // Save on component unmount
+//     };
+//   }, [saveLead]);
+
+//   const { data: paymentSettings } = useQuery({
+//     queryKey: PAYMENT_SETTINGS_QUERY_KEY,
+//     queryFn: fetchPaymentSettings,
+//   });
+
+//   const availablePaymentMethods = useMemo(() => {
+//     const methods: { key: string; label: string }[] = [];
+//     const settingsObj =
+//       paymentSettings?.data ||
+//       (paymentSettings as unknown as {
+//         cod_enabled?: boolean;
+//         online_payment_enabled?: boolean;
+//       });
+//     if (settingsObj?.cod_enabled !== false) {
+//       methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
+//     }
+//     if (settingsObj?.online_payment_enabled) {
+//       methods.push({ key: "Online", label: t.checkout.onlinePayment });
+//     }
+//     return methods;
+//   }, [paymentSettings, t]);
+
+//   // Keep formData.paymentMethod synced with available payment options
+//   useEffect(() => {
+//     if (availablePaymentMethods.length > 0) {
+//       const exists = availablePaymentMethods.some(
+//         (m) => m.key === formData.paymentMethod,
+//       );
+//       if (!exists) {
+//         setFormData((prev) => ({
+//           ...prev,
+//           paymentMethod: availablePaymentMethods[0].key,
+//         }));
+//       }
+//     }
+//   }, [availablePaymentMethods, formData.paymentMethod]);
+
+//   if (isLoading)
+//     return (
+//       <div className="p-20 text-center font-poppins text-lg font-medium">
+//         Loading Checkout...
+//       </div>
+//     );
+
+//     // console.log("MainCheckoutSection: Passing couponDiscount to PricingList:", couponDiscount);
+
+//   return (
+//     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
+//       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+//         <div className="lg:col-span-7 flex flex-col gap-5 md:gap-6">
+//           <h1 className="text-lg md:text-xl font-semibold mb-2 md:mb-4">
+//             {t.checkout.shoppingDetails}
+//           </h1>
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <InputField
+//               label={t.checkout.name}
+//               name="name"
+//               value={formData.name}
+//               onChange={handleInputChange}
+//               placeholder={t.checkout.namePlaceholder}
+//               required
+//             />
+//             <InputField
+//               label={t.checkout.number}
+//               name="phone"
+//               value={formData.phone}
+//               onChange={handleInputChange}
+//               placeholder={t.checkout.phonePlaceholder}
+//               required
+//             />
+//           </div>
+
+//           <InputField
+//             label={t.checkout.address}
+//             name="address"
+//             value={formData.address}
+//             onChange={handleInputChange}
+//             placeholder={t.checkout.addressPlaceholder}
+//             required
+//           />
+//           <InputField
+//             label={t.checkout.note}
+//             name="note"
+//             value={formData.note}
+//             onChange={handleInputChange}
+//             placeholder={t.checkout.notePlaceholder}
+//             isTextArea
+//           />
+
+//           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//             <div className="flex flex-col gap-2 w-full relative">
+//               <label className="text-[#727272] font-semibold text-base md:text-lg">
+//                 {t.checkout.deliveryCharge}{" "}
+//                 <span className="text-[#FF7050]">*</span>
+//               </label>
+//               <div className="relative w-full">
+//                 <select
+//                   name="shippingArea"
+//                   value={formData.shippingArea}
+//                   onChange={handleInputChange}
+//                   className="w-full bg-[#F9F9F9] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
+//                 >
+//                   {dynamicShippingOptions.map((opt) => (
+//                     <option key={opt.key} value={opt.key}>
+//                       {formatShippingOptionLabel(opt.label, opt.fee)}
+//                     </option>
+//                   ))}
+//                 </select>
+//                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+//                   <FaCaretDown />
+//                 </div>
+//               </div>
+//             </div>
+
+//             <div className="flex flex-col gap-2 w-full relative">
+//               <label className="text-[#727272] font-semibold text-base md:text-lg">
+//                 {t.checkout.paymentMethod}{" "}
+//                 <span className="text-[#FF7050]">*</span>
+//               </label>
+//               <div className="relative w-full">
+//                 <select
+//                   name="paymentMethod"
+//                   value={formData.paymentMethod}
+//                   onChange={handleInputChange}
+//                   className="w-full bg-[#F7F7F7] pl-4 md:pl-6 pr-12 py-3.5 md:py-4 rounded-xl outline-none text-base appearance-none cursor-pointer"
+//                 >
+//                   {availablePaymentMethods.map((m) => (
+//                     <option key={m.key} value={m.key}>
+//                       {m.label}
+//                     </option>
+//                   ))}
+//                 </select>
+//                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+//                   <FaCaretDown />
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+
+//           <div className="flex flex-col gap-2">
+//             <label className="text-[#727272] font-semibold text-base md:text-lg">
+//               {t.checkout.coupon}
+//             </label>
+//             <div className="flex gap-2">
+//               <input
+//                 placeholder={t.checkout.couponPlaceholder}
+//                 value={couponInput}
+//                 onChange={(e) => setCouponInput(e.target.value)}
+//                 className="bg-[#F7F7F7] py-4 px-4 rounded-xl outline-none text-base w-full font-poppins"
+//               />
+//               <button
+//                 onClick={() => applyCouponMutation.mutate(couponInput.trim())}
+//                 disabled={applyCouponMutation.isPending || !couponInput.trim()}
+//                 className="bg-[#9E9E9E] text-white px-8 py-3.5 rounded-xl hover:bg-gray-500 transition-colors"
+//               >
+//                 {applyCouponMutation.isPending
+//                   ? "..."
+//                   : appliedCoupon
+//                     ? "Applied"
+//                     : t.checkout.apply}
+//               </button>
+//             </div>
+//           </div>
+
+//           <div className="bg-[#FFFF00] p-4 rounded-[12px] flex items-center gap-2 text-sm md:text-base font-normal justify-center">
+//             <span>⚠️</span>
+//             <span>{t.checkout.deliveryWarning}</span>
+//           </div>
+
+//           <button
+//             onClick={handlePlaceOrder}
+//             disabled={placeOrderMutation.isPending}
+//             className="bg-[#FF7050] text-white py-4 rounded-[12px] text-lg md:text-xl font-bold hover:bg-[#ff6b48] transition-all cursor-pointer"
+//           >
+//             {placeOrderMutation.isPending
+//               ? "Placing Order..."
+//               : t.checkout.placeOrder}
+//           </button>
+//         </div>
+
+//         <div className="lg:col-span-5">
+//           <h2 className="text-lg md:text-xl font-semibold mb-6 md:mb-10">
+//             {t.checkout.myOrders}
+//           </h2>
+//           <div className="flex flex-col max-h-[400px] overflow-y-auto no-scrollbar mb-4">
+//             {cartItems.map((item) => (
+//               <OrderItemComponent
+//                 key={item.id}
+//                 item={item}
+//                 onUpdateQuantity={(id, qty) =>
+//                   updateQtyMutation.mutate({ id, qty })
+//                 }
+//                 onRemove={(id) => removeItemMutation.mutate(id)}
+//               />
+//             ))}
+//           </div>
+//           <PricingList
+//             items={cartItems}
+//             shippingFee={calculatedShippingFee}
+//             couponDiscount={couponDiscount}
+//           />
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default MainCheckoutSection;
+
 "use client";
 import React, {
   useState,
@@ -856,32 +1829,30 @@ const MainCheckoutSection: React.FC = () => {
     return id;
   });
 
-// Initialize form with default empty values
-const [formData, setFormData] = useState({
-  name: "",
-  phone: "",
-  address: "",
-  note: "",
-  shippingArea: "outside" as string,
-  paymentMethod: "COD",
-});
+  // Initialize form with default empty values
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    address: "",
+    note: "",
+    shippingArea: "outside",
+    paymentMethod: "COD",
+  });
 
+  const { data: profile } = useProfileData();
 
-
-const { data: profile } = useProfileData();
-
-useEffect(() => {
-  if (user) {
-    setFormData(prev => ({ ...prev, name: user.name, phone: user.phone }));
-  }
-  if (profile) {
-    const addressList = profile.addresses || profile.user?.addresses || [];
-    const primary = addressList.find((addr: any) => addr.label === "PRIMARY");
-    if (primary) {
-      setFormData(prev => ({ ...prev, address: primary.address }));
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({ ...prev, name: user.name, phone: user.phone }));
     }
-  }
-}, [user, profile]);
+    if (profile) {
+      const addressList = profile.addresses || profile.user?.addresses || [];
+      const primary = addressList.find((addr: any) => addr.label === "PRIMARY");
+      if (primary) {
+        setFormData((prev) => ({ ...prev, address: primary.address }));
+      }
+    }
+  }, [user, profile]);
 
   // Helper to ensure shipping key is valid or fallback to outside
   const normalizeShippingKey = (key: string): string => {
@@ -1055,7 +2026,7 @@ useEffect(() => {
               if (!exists) {
                 customOptions.push({
                   key: zoneName.toLowerCase().replace(/\s+/g, "_"),
-                  id: 1, 
+                  id: 1,
                   label: zoneName,
                   fee: chargeNum,
                   shippingArea: area,
@@ -1095,7 +2066,7 @@ useEffect(() => {
     const fallback: ZoneShippingOption[] = [
       {
         key: "inside",
-        id: 1, 
+        id: 1,
         label: t.checkout.insideDhakaLabel || "Inside Dhaka",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1107,7 +2078,7 @@ useEffect(() => {
       },
       {
         key: "outside",
-        id: 1, 
+        id: 1,
         label: t.checkout.outsideDhakaLabel || "Outside Dhaka",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1121,7 +2092,7 @@ useEffect(() => {
     if (isSubCityAvailable) {
       fallback.push({
         key: "sub_city",
-        id: 1, 
+        id: 1,
         label: t.checkout.subCityLabel || "Sub City",
         fee: calculateCartShippingDetails(
           cartItems as any,
@@ -1135,19 +2106,41 @@ useEffect(() => {
     return fallback;
   }, [cartItems, shippingSettings, isSubCityAvailable, t]);
 
+  // useEffect(() => {
+  //   if (dynamicShippingOptions.length > 0) {
+  //     const exists = dynamicShippingOptions.some(
+  //       (opt) => opt.key === formData.shippingArea,
+  //     );
+  //     if (!exists) {
+  //       setFormData((prev) => ({
+  //         ...prev,
+  //         shippingArea: dynamicShippingOptions[0].key,
+  //       }));
+  //     }
+  //   }
+  // }, [dynamicShippingOptions, formData.shippingArea]);
+
+
+// Track whether the user has manually changed the shipping area
+  const [hasUserSelectedShipping, setHasUserSelectedShipping] = useState(false);
+
   useEffect(() => {
-    if (dynamicShippingOptions.length > 0) {
-      const exists = dynamicShippingOptions.some(
-        (opt) => opt.key === formData.shippingArea,
+    if (dynamicShippingOptions.length > 0 && !hasUserSelectedShipping) {
+      const outsideOpt = dynamicShippingOptions.find(
+        (opt) => opt.key.toLowerCase().includes("outside") || opt.label.toLowerCase().includes("outside")
       );
-      if (!exists) {
+
+      const targetKey = outsideOpt ? outsideOpt.key : dynamicShippingOptions[0].key;
+
+      // 🛑 FIX: Only update state if the value is actually different to prevent infinite loops
+      if (formData.shippingArea !== targetKey) {
         setFormData((prev) => ({
           ...prev,
-          shippingArea: dynamicShippingOptions[0].key,
+          shippingArea: targetKey,
         }));
       }
     }
-  }, [dynamicShippingOptions, formData.shippingArea]);
+  }, [dynamicShippingOptions, hasUserSelectedShipping, formData.shippingArea]);
 
   const calculatedShippingFee = useMemo(() => {
     const selectedOpt = dynamicShippingOptions.find(
@@ -1175,25 +2168,24 @@ useEffect(() => {
     },
   });
 
-  
-
-const applyCouponMutation = useMutation({
+  const applyCouponMutation = useMutation({
     mutationFn: (code: string) => {
       const activeGuestId = guestId || localStorage.getItem("guestId");
-      return applyCouponService({ 
-        code, 
+      return applyCouponService({
+        code,
         guestId: activeGuestId,
-        cartItems: cartItems // Pass the cart state here!
+        cartItems: cartItems, // Pass the cart state here!
       });
     },
-onSuccess: (response: any) => {
-      // console.log("DEBUG: Coupon API Response:", response); 
-      
+    onSuccess: (response: any) => {
+      // console.log("DEBUG: Coupon API Response:", response);
+
       // Look at your log: discountAmount is inside the 'data' property
-      const discount = response?.data?.discountAmount ?? response?.discountAmount ?? 0;
-      
+      const discount =
+        response?.data?.discountAmount ?? response?.discountAmount ?? 0;
+
       // console.log("DEBUG: Extracted discount:", discount); // This should now show 50
-      
+
       setCouponDiscount(Number(discount));
       setAppliedCoupon(couponInput.trim());
       toast.success("Coupon applied successfully!");
@@ -1256,7 +2248,7 @@ onSuccess: (response: any) => {
         // Clear server-side cart and localStorage Mohasagor items
         const guestId = localStorage.getItem("guestId");
         await clearCart(user ? null : guestId);
-        
+
         // Invalidate the cart query so that if the user hits "back", the cart is empty
         queryClient.invalidateQueries({ queryKey: ["cart"] });
       } catch (err) {
@@ -1268,8 +2260,14 @@ onSuccess: (response: any) => {
       const auth = response?.auth || response?.data?.auth;
 
       if (auth && auth.accessToken) {
-        setCookie("auth_token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
-        setCookie("token", auth.accessToken, { maxAge: 60 * 60 * 24 * 7, path: "/" });
+        setCookie("auth_token", auth.accessToken, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+        setCookie("token", auth.accessToken, {
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
 
         localStorage.setItem("auth_token", auth.accessToken);
         localStorage.setItem("token", auth.accessToken);
@@ -1288,19 +2286,20 @@ onSuccess: (response: any) => {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
-      const orderUUID = response?.id || response?.data?.id || response?.order?.id;
+      const orderUUID =
+        response?.id || response?.data?.id || response?.order?.id;
       router.push(`/thank_you?orderId=${orderUUID}`);
     },
   });
 
-
-  const handleInputChange = (
+const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
     const { name, value } = e.target;
     if (name === "shippingArea") {
+      setHasUserSelectedShipping(true); // User manually changed it! Stop overriding.
       setFormData((prev) => ({
         ...prev,
         shippingArea: normalizeShippingKey(value),
@@ -1310,6 +2309,7 @@ onSuccess: (response: any) => {
 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
 
   const handlePlaceOrder = () => {
     // if (!user) {
@@ -1382,6 +2382,17 @@ onSuccess: (response: any) => {
         ? (formData.shippingArea as "inside" | "outside" | "sub_city")
         : "outside");
 
+    const paymentTypes = [
+      { label: "Full Payment", key: "full_payment" },
+      { label: "Delivery Charge Only", key: "delivery_charge_only" },
+      { label: "Percentage", key: "percentage" },
+      { label: "Fixed Amount", key: "fixed_amount" },
+    ];
+
+    const isAdvancePlan = paymentTypes.some(
+      (p) => p.key === formData.paymentMethod,
+    );
+
     const payload: any = {
       customerName: formData.name,
       customerPhone: formData.phone,
@@ -1394,18 +2405,22 @@ onSuccess: (response: any) => {
               .map((i) => `${i.name}`)
               .join(", ")}]`
           : "",
+        currentNote,
       ]
         .filter(Boolean)
         .join(" | "),
       paymentMethod: formData.paymentMethod,
+
+      // Send the computed discount amount as advanceAmount & discount_amount
+      advanceAmount: advanceDiscount,
+      couponDiscountAmount: couponDiscount,
+      discount_amount: couponDiscount + advanceDiscount,
+
       shippingArea: resolvedShippingArea,
       shippingFee: calculatedShippingFee,
       shipping_fee: Number(calculatedShippingFee),
-
-      // 🚀 Now selectedOpt.id will exist!
       courier_zone_id: selectedOpt ? Number(selectedOpt.id) : undefined,
       shipping_type: resolvedShippingArea,
-
       delivery_charge: calculatedShippingFee,
       source: orderSource,
       items: allItemsForBackend,
@@ -1491,13 +2506,51 @@ onSuccess: (response: any) => {
 
   const leadIdRef = useRef<string | null>(null);
 
+  // const saveLead = useCallback(
+  //   async (force = false) => {
+  //     // Only proceed if valid phone exists
+  //     if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
+
+  //     const payload = {
+  //       id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
+  //       customerName: formData.name || "Guest",
+  //       customerPhone: formData.phone,
+  //       customerAddress: formData.address || "N/A",
+  //       source: orderSource,
+  //       shippingArea: formData.shippingArea,
+  //       paymentMethod: formData.paymentMethod,
+  //       status: "INCOMPLETE",
+  //       items: cartItems.map((item) => ({
+  //         productId: item.productId,
+  //         variantId:
+  //           item.variantId && item.variantId !== "null"
+  //             ? item.variantId
+  //             : undefined,
+  //         quantity: Number(item.quantity || 1),
+  //       })),
+  //     };
+
+  //     try {
+  //       const res = await trackIncompleteOrder(payload);
+  //       const newId = res?.id || res?.data?.id;
+  //       if (newId) leadIdRef.current = newId;
+  //     } catch (e) {
+  //       console.error("Failed to track:", e);
+  //     }
+  //   },
+  //   [formData, cartItems, orderSource],
+  // );
+
+  // 2. ONLY save on blur (when user finishes typing in an input)
+  
+
   const saveLead = useCallback(
     async (force = false) => {
       // Only proceed if valid phone exists
       if (!isBangladeshiPhone(formData.phone) || cartItems.length === 0) return;
 
       const payload = {
-        id: leadIdRef.current || undefined, // Use ref instead of sessionStorage
+        id: leadIdRef.current || undefined,
         customerName: formData.name || "Guest",
         customerPhone: formData.phone,
         customerAddress: formData.address || "N/A",
@@ -1520,13 +2573,14 @@ onSuccess: (response: any) => {
         const newId = res?.id || res?.data?.id;
         if (newId) leadIdRef.current = newId;
       } catch (e) {
-        console.error("Failed to track:", e);
+        // 🛑 Safe catch: Ignore background tracking fetch failures/drops so they don't crash the console
+        console.warn("Background incomplete order tracking skipped:", e);
       }
     },
     [formData, cartItems, orderSource],
   );
-
-  // 2. ONLY save on blur (when user finishes typing in an input)
+  
+  
   const handleBlur = () => {
     saveLead();
   };
@@ -1543,27 +2597,36 @@ onSuccess: (response: any) => {
     };
   }, [saveLead]);
 
-  const { data: paymentSettings } = useQuery({
+// 1. Fetch settings using the correct response structure
+  const { data: paymentSettingsResponse } = useQuery({
     queryKey: PAYMENT_SETTINGS_QUERY_KEY,
     queryFn: fetchPaymentSettings,
   });
 
+  // 2. Extract settings safely (Handle both cases: direct object or wrapped in .data)
+  const settings: any = paymentSettingsResponse;
+  const actualSettings = settings?.data || settings;
+
+  // 3. Update availablePaymentMethods
   const availablePaymentMethods = useMemo(() => {
-    const methods: { key: string; label: string }[] = [];
-    const settingsObj =
-      paymentSettings?.data ||
-      (paymentSettings as unknown as {
-        cod_enabled?: boolean;
-        online_payment_enabled?: boolean;
-      });
-    if (settingsObj?.cod_enabled !== false) {
+    if (!actualSettings) return [];
+    const methods = [];
+    if (actualSettings.cod_enabled !== false) {
       methods.push({ key: "COD", label: t.checkout.cashOnDelivery });
     }
-    if (settingsObj?.online_payment_enabled) {
-      methods.push({ key: "Online", label: t.checkout.onlinePayment });
+    // Instead of "Online", show the Advance Payment Plans if active
+    if (actualSettings.advance_payment_active) {
+      const config =
+        (typeof actualSettings.advance_payment_config === "string"
+          ? JSON.parse(actualSettings.advance_payment_config)
+          : actualSettings.advance_payment_config) || {};
+
+      Object.keys(config).forEach((key) => {
+        methods.push({ key: key, label: key.replace("_", " ").toUpperCase() });
+      });
     }
     return methods;
-  }, [paymentSettings, t]);
+  }, [actualSettings, t]);
 
   // Keep formData.paymentMethod synced with available payment options
   useEffect(() => {
@@ -1580,6 +2643,72 @@ onSuccess: (response: any) => {
     }
   }, [availablePaymentMethods, formData.paymentMethod]);
 
+  // 1. Calculate Total Product Cost (needed for Percentage logic)
+  const totalProductCost = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      const rawPrice = item.price ?? item.product?.price ?? 0;
+      const priceNum =
+        typeof rawPrice === "number" ? rawPrice : parseFloat(rawPrice) || 0;
+      return acc + priceNum * (item.quantity || 1);
+    }, 0);
+  }, [cartItems]);
+
+  const advanceDiscount = useMemo(() => {
+    const rawSettings: any = paymentSettingsResponse;
+    const currentSettings = rawSettings?.data || rawSettings;
+
+    if (!currentSettings?.advance_payment_active || !currentSettings.advance_payment_config)
+      return 0;
+
+    const config =
+      typeof currentSettings.advance_payment_config === "string"
+        ? JSON.parse(currentSettings.advance_payment_config)
+        : currentSettings.advance_payment_config;
+
+    const selectedConfig = config[formData.paymentMethod];
+
+    // RULE 1: Full Payment = 100tk discount (or adjust as needed)
+    if (formData.paymentMethod === "full_payment") return 100;
+
+    // RULE 2: Delivery Charge Only -> Treat the delivery fee as the discount value
+    if (formData.paymentMethod === "delivery_charge_only")
+      return calculatedShippingFee;
+
+    if (!selectedConfig || !selectedConfig.value) return 0;
+
+    // RULE 3: Percentage
+    if (formData.paymentMethod === "percentage") {
+      return (totalProductCost * Number(selectedConfig.value)) / 100;
+    }
+
+    // RULE 4: Fixed Amount
+    if (formData.paymentMethod === "fixed_amount") {
+      return Number(selectedConfig.value) || 0;
+    }
+
+    return 0;
+  }, [
+    formData.paymentMethod,
+    paymentSettingsResponse,
+    totalProductCost,
+    calculatedShippingFee,
+  ]);
+
+// 3. Get Note
+  const currentNote = useMemo(() => {
+    const rawSettings: any = paymentSettingsResponse;
+    const settings = rawSettings?.data || rawSettings;
+    
+    if (!settings?.advance_payment_config) return "";
+
+    const config =
+      typeof settings.advance_payment_config === "string"
+        ? JSON.parse(settings.advance_payment_config)
+        : settings.advance_payment_config;
+        
+    return config?.[formData.paymentMethod]?.note || "";
+  }, [formData.paymentMethod, paymentSettingsResponse]);
+
   if (isLoading)
     return (
       <div className="p-20 text-center font-poppins text-lg font-medium">
@@ -1587,7 +2716,7 @@ onSuccess: (response: any) => {
       </div>
     );
 
-    // console.log("MainCheckoutSection: Passing couponDiscount to PricingList:", couponDiscount);
+  // console.log("MainCheckoutSection: Passing couponDiscount to PricingList:", couponDiscount);
 
   return (
     <div className="max-w-[1720px] mx-auto p-4 md:p-10 font-poppins bg-white">
@@ -1681,6 +2810,12 @@ onSuccess: (response: any) => {
                 </div>
               </div>
             </div>
+
+            {currentNote && (
+              <div className="p-3 bg-blue-50 text-blue-700 text-sm rounded-lg my-2">
+                {currentNote}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -1742,8 +2877,13 @@ onSuccess: (response: any) => {
           </div>
           <PricingList
             items={cartItems}
-            shippingFee={calculatedShippingFee}
+            shippingFee={
+              formData.paymentMethod === "delivery_charge_only"
+                ? 0
+                : calculatedShippingFee
+            }
             couponDiscount={couponDiscount}
+            advanceDiscount={advanceDiscount} // Pass it here
           />
         </div>
       </div>

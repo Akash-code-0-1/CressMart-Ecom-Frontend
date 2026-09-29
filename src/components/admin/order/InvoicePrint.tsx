@@ -405,7 +405,7 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
     if (!order) return null;
 
-    // 1. Calculate values based purely on the items and order fields
+// 1. Calculate values based purely on the items and order fields
     const subTotal =
       order.order_items?.reduce(
         (acc, item) => acc + Number(item.unit_price) * item.quantity,
@@ -416,9 +416,13 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
     const discount = Number(order.discount_amount) || 0;
     const advancePay = Number(order.advance_amount) || 0;
 
-    // 2. Define the exact order as per your Bill Summary
+    // 2. Grand Total is the final net bill after all discounts and shipping
     const grandTotal = subTotal + deliveryCharge - discount;
-    const duePay = grandTotal - advancePay; // This is the Remaining Due
+
+    // 3. If the advance payment is already bundled/handled in the discount or grand total, 
+    // Remaining Due should equal Grand Total (or subtract advancePay only if it wasn't part of the discount).
+    // Based on your requirement that advance pay shouldn't be double deducted:
+    const duePay = grandTotal;
 
     const settingsdata = settingResponse?.data;
     const logoUrl =
