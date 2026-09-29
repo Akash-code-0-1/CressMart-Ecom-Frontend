@@ -44,11 +44,17 @@ const DeliveryChargeContent = () => {
   const [syncedSettings, setSyncedSettings] =
     useState<ShippingSettingsData | null>(null);
 
+    
+
   // settings service
   const { data: paymentSettings, isLoading: isLoadingPayment } = useQuery({
     queryKey: PAYMENT_SETTINGS_QUERY_KEY,
     queryFn: fetchPaymentSettings,
   });
+
+
+  const settingsObj: any = paymentSettings;
+  const currentSettings = settingsObj?.data || settingsObj || {};
 
   // Payment Settings Mutation
   const { mutate: togglePayment, isPending: isUpdatingPayment } = useMutation({
@@ -409,7 +415,7 @@ const DeliveryChargeContent = () => {
 
         {/* 4. Courier Services — no backend endpoint yet, left static */}
       </div>
-      <section className="bg-white p-6 rounded-lg mt-4">
+<section className="bg-white p-6 rounded-lg mt-4">
         <h3 className="text-[16px] font-normal text-black mb-6">
           Payment Configuration
         </h3>
@@ -428,19 +434,19 @@ const DeliveryChargeContent = () => {
             <button
               onClick={() =>
                 togglePayment({
-                  cod_enabled: !paymentSettings?.data?.cod_enabled,
+                  cod_enabled: !currentSettings?.cod_enabled,
                 })
               }
               disabled={isUpdatingPayment}
               className={`w-11 h-6 rounded-full transition-colors relative ${
-                paymentSettings?.data?.cod_enabled
+                currentSettings?.cod_enabled
                   ? "bg-blue-500"
                   : "bg-gray-200"
               } ${isUpdatingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div
                 className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                  paymentSettings?.data?.cod_enabled ? "right-1" : "left-1"
+                  currentSettings?.cod_enabled ? "right-1" : "left-1"
                 }`}
               />
             </button>
@@ -462,19 +468,19 @@ const DeliveryChargeContent = () => {
               onClick={() =>
                 togglePayment({
                   online_payment_enabled:
-                    !paymentSettings?.data?.online_payment_enabled,
+                    !currentSettings?.online_payment_enabled,
                 })
               }
               disabled={isUpdatingPayment}
               className={`w-11 h-6 rounded-full transition-colors relative ${
-                paymentSettings?.data?.online_payment_enabled
+                currentSettings?.online_payment_enabled
                   ? "bg-blue-500"
                   : "bg-gray-200"
               } ${isUpdatingPayment ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <div
                 className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform ${
-                  paymentSettings?.data?.online_payment_enabled
+                  currentSettings?.online_payment_enabled
                     ? "right-1"
                     : "left-1"
                 }`}
