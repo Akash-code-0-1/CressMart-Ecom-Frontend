@@ -318,30 +318,53 @@ export default function OrderTable() {
     })),
   });
 
-  const { subtotal, totalDue } = useMemo(() => {
-    if (!detailsModal.order) return { subtotal: 0, totalDue: 0 };
+  // 🚀 FIXED: Reliable calculations directly reading from the order object fields
+  const {
+    subtotal,
+    deliveryFee,
+    couponDiscount,
+    advanceAmount,
+    manualDiscount,
+    totalDue,
+  } = useMemo(() => {
+    if (!detailsModal.order)
+      return {
+        subtotal: 0,
+        deliveryFee: 0,
+        couponDiscount: 0,
+        advanceAmount: 0,
+        manualDiscount: 0,
+        totalDue: 0,
+      };
 
-    const items = detailsModal.order.order_items || [];
+    const order = detailsModal.order;
+    const items = order.order_items || order.cart_items || [];
 
-    const calculatedSubtotal = items.reduce(
-      (acc: number, item: any) => acc + Number(item.unit_price) * item.quantity,
-      0,
+    const calculatedSubtotal = items.reduce((acc: number, item: any) => {
+      const price = Number(item.unit_price || item.price || 0);
+      const qty = Number(item.quantity || item.qty || 1);
+      return acc + price * qty;
+    }, 0);
+
+    const shipping = Number(order.shipping_fee || order.delivery_charge || 0);
+    const coupon = Number(order.coupon_discount_amount || 0);
+    const manual = Number(order.manual_discount_amount || 0);
+    const advance = Number(order.advance_amount || 0);
+
+    // Fallback calculation or direct reading of total_amount_due
+    const due = Number(
+      order.total_amount_due ??
+        calculatedSubtotal + shipping - coupon - advance - manual,
     );
 
-    const shipping = Number(detailsModal.order.shipping_fee || 0);
-    const couponDiscount = Number(
-      detailsModal.order.coupon_discount_amount || 0,
-    );
-    const manualDiscount = Number(
-      detailsModal.order.manual_discount_amount || 0,
-    );
-    const advance = Number(detailsModal.order.advance_amount || 0);
-
-    // Math: Subtotal + Shipping - Coupon - Manual - Advance
-    const calculatedTotal =
-      calculatedSubtotal + shipping - couponDiscount - manualDiscount - advance;
-
-    return { subtotal: calculatedSubtotal, totalDue: calculatedTotal };
+    return {
+      subtotal: calculatedSubtotal,
+      deliveryFee: shipping,
+      couponDiscount: coupon,
+      manualDiscount: manual,
+      advanceAmount: advance,
+      totalDue: due,
+    };
   }, [detailsModal.order]);
 
   const productDetailsMap = useMemo(() => {
@@ -549,29 +572,28 @@ export default function OrderTable() {
     }
   }, [selectedOrderForPrint]);
 
-  const saveAndPrintMutation = useMutation({
+const saveAndPrintMutation = useMutation({
     mutationFn: () =>
       updateOrderStatusService(selectedOrderForPrint.id, {
         invoice_number: currentInvoiceNumber,
       } as any),
-    onSuccess: (updatedOrder) => {
-      const freshData = updatedOrder.data || updatedOrder;
-
-      // 🚀 IMPORTANT: Use functional state update to ensure you have the latest state
+    onSuccess: () => {
+      // 🚀 Only update the invoice number locally and retain all original financial properties intact!
       setSelectedOrderForPrint((prev: any) => ({
         ...prev,
-        ...freshData,
-        // Explicitly keep the items from the previous state if the API didn't return them
-        order_items:
-          freshData.order_items || prev.order_items || prev.cart_items || [],
+        invoice_number: currentInvoiceNumber,
       }));
 
-      // Trigger print after a short delay
-      setTimeout(() => {
-        if (invoiceRef.current) {
-          handlePrint();
-        }
-      }, 500);
+      // Allow React one tick to commit the props to DOM, then trigger print safely
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (invoiceRef.current) {
+            handlePrint();
+          } else {
+            toast.error("Print template reference not found.");
+          }
+        }, 150);
+      });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to save invoice number");
@@ -711,35 +733,47 @@ export default function OrderTable() {
     },
   });
 
+  const canChangeStatus = (
+    currentStatus: string,
+    nextStatus: string,
+  ): { allowed: boolean; message?: string } => {
+    const current = currentStatus.toUpperCase();
+    const next = nextStatus.toUpperCase();
 
-  const canChangeStatus = (currentStatus: string, nextStatus: string): { allowed: boolean, message?: string } => {
-  const current = currentStatus.toUpperCase();
-  const next = nextStatus.toUpperCase();
+    // If status is same, just allow (or block)
+    if (current === next) return { allowed: true };
 
-  // If status is same, just allow (or block)
-  if (current === next) return { allowed: true };
-
-  // Rule: Refunded is final (cannot go anywhere)
-  if (current === 'REFUNDED') {
-    return { allowed: false, message: "Refunded is a final state; cannot change status." };
-  }
-
-  // Rule: Delivered can only go to Returned or Refunded
-  if (current === 'DELIVERED') {
-    if (next !== 'RETURNED' && next !== 'REFUNDED') {
-      return { allowed: false, message: "Delivered orders can only be changed to Returned or Refunded." };
+    // Rule: Refunded is final (cannot go anywhere)
+    if (current === "REFUNDED") {
+      return {
+        allowed: false,
+        message: "Refunded is a final state; cannot change status.",
+      };
     }
-  }
 
-  // Rule: Returned can only go to Refunded
-  if (current === 'RETURNED') {
-    if (next !== 'REFUNDED') {
-      return { allowed: false, message: "Returned orders can only be changed to Refunded." };
+    // Rule: Delivered can only go to Returned or Refunded
+    if (current === "DELIVERED") {
+      if (next !== "RETURNED" && next !== "REFUNDED") {
+        return {
+          allowed: false,
+          message:
+            "Delivered orders can only be changed to Returned or Refunded.",
+        };
+      }
     }
-  }
 
-  return { allowed: true };
-};
+    // Rule: Returned can only go to Refunded
+    if (current === "RETURNED") {
+      if (next !== "REFUNDED") {
+        return {
+          allowed: false,
+          message: "Returned orders can only be changed to Refunded.",
+        };
+      }
+    }
+
+    return { allowed: true };
+  };
 
   const columns: any[] = [
     {
@@ -1378,59 +1412,65 @@ export default function OrderTable() {
                   </div>
                 )} */}
 
-{showStatusMenu && (
-  <div
-    className={`absolute right-full mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200 ${
-      menuPos.opensUpward ? "bottom-[-8px]" : "top-[-8px]"
-    }`}
-  >
-    {[
-      "PENDING",
-      "CONFIRMED",
-      "ON_HOLD",
-      "SHIPPED",
-      "DELIVERED",
-      "CANCELED",
-      "RETURNED",
-      "REFUNDED",
-    ].map((s) => (
-      <button
-        key={s}
-        onClick={() => {
-          // --- FRONTEND GUARD LOGIC ---
-          const currentOrder = orderList.find((o: any) => o.id === activeMenuId);
-          const validation = canChangeStatus(currentOrder?.status || "", s);
+                {showStatusMenu && (
+                  <div
+                    className={`absolute right-full mr-1 w-[180px] bg-white border border-gray-200 rounded-xl shadow-2xl py-2 z-[10000] animate-in fade-in slide-in-from-right-2 duration-200 ${
+                      menuPos.opensUpward ? "bottom-[-8px]" : "top-[-8px]"
+                    }`}
+                  >
+                    {[
+                      "PENDING",
+                      "CONFIRMED",
+                      "ON_HOLD",
+                      "SHIPPED",
+                      "DELIVERED",
+                      "CANCELED",
+                      "RETURNED",
+                      "REFUNDED",
+                    ].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          // --- FRONTEND GUARD LOGIC ---
+                          const currentOrder = orderList.find(
+                            (o: any) => o.id === activeMenuId,
+                          );
+                          const validation = canChangeStatus(
+                            currentOrder?.status || "",
+                            s,
+                          );
 
-          if (!validation.allowed) {
-            toast.error(validation.message || "Invalid status transition");
-            return; // Stops request from being sent
-          }
-          // ----------------------------
+                          if (!validation.allowed) {
+                            toast.error(
+                              validation.message || "Invalid status transition",
+                            );
+                            return; // Stops request from being sent
+                          }
+                          // ----------------------------
 
-          if (s === "SHIPPED") {
-            setShippedModal({
-              open: true,
-              id: activeMenuId,
-              targetStatus: s,
-            });
-            setActiveMenuId(null);
-          } else {
-            statusMutation.mutate({
-              id: activeMenuId!,
-              payload: { status: s },
-            });
-            setActiveMenuId(null);
-          }
-          setShowStatusMenu(false);
-        }}
-        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
-      >
-        {s.replace(/_/g, " ")}
-      </button>
-    ))}
-  </div>
-)}
-
+                          if (s === "SHIPPED") {
+                            setShippedModal({
+                              open: true,
+                              id: activeMenuId,
+                              targetStatus: s,
+                            });
+                            setActiveMenuId(null);
+                          } else {
+                            statusMutation.mutate({
+                              id: activeMenuId!,
+                              payload: { status: s },
+                            });
+                            setActiveMenuId(null);
+                          }
+                          setShowStatusMenu(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-blue-50 hover:text-[#1DA1F2] cursor-pointer transition-colors font-medium"
+                      >
+                        {s.replace(/_/g, " ")}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1755,50 +1795,39 @@ export default function OrderTable() {
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>Shipping</span>
                     <span className="font-bold text-black">
-                      ৳
-                      {Number(
-                        detailsModal.order.shipping_fee || 0,
-                      ).toLocaleString()}
+                      ৳{deliveryFee.toLocaleString()}
                     </span>
                   </div>
 
                   {/* Coupon Discount */}
-                  {Number(detailsModal.order.coupon_discount_amount || 0) >
-                    0 && (
+                  {couponDiscount > 0 && (
                     <div className="flex justify-between text-sm text-gray-500">
                       <span>Coupon Discount</span>
                       <span className="font-bold text-red-500">
-                        - ৳
-                        {Number(
-                          detailsModal.order.coupon_discount_amount,
-                        ).toLocaleString()}
+                        - ৳{couponDiscount.toLocaleString()}
                       </span>
                     </div>
                   )}
 
                   {/* Manual Discount */}
-                  {Number(detailsModal.order.manual_discount_amount || 0) >
-                    0 && (
+                  {manualDiscount > 0 && (
                     <div className="flex justify-between text-sm text-gray-500">
                       <span>Manual Discount</span>
                       <span className="font-bold text-red-500">
-                        - ৳
-                        {Number(
-                          detailsModal.order.manual_discount_amount,
-                        ).toLocaleString()}
+                        - ৳{manualDiscount.toLocaleString()}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>Advance Payment</span>
-                    <span className="font-bold text-green-600">
-                      - ৳
-                      {Number(
-                        detailsModal.order.advance_amount || 0,
-                      ).toLocaleString()}
-                    </span>
-                  </div>
+                  {/* Advance Payment / Incentive */}
+                  {advanceAmount > 0 && (
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Advance Payment / Discount</span>
+                      <span className="font-bold text-green-600">
+                        - ৳{advanceAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex justify-between text-lg font-bold text-[#023337] border-t border-dashed pt-2 mt-2">
                     <span>Total Due</span>
@@ -2030,9 +2059,16 @@ export default function OrderTable() {
               <div className="bg-white shadow-sm ring-1 ring-black/5 transform origin-top">
                 <InvoicePrint
                   ref={invoiceRef}
-                  order={selectedOrderForPrint}
+                  order={{
+                    ...selectedOrderForPrint,
+                    invoice_number: currentInvoiceNumber,
+                    // Guarantees items are never lost during print preview
+                    order_items:
+                      selectedOrderForPrint?.order_items ||
+                      selectedOrderForPrint?.cart_items ||
+                      [],
+                  }}
                   baseStorageUrl={baseStorageUrl}
-                  // 🚀 PASS STATE PROPS (Ensure InvoicePrint receives these)
                   editableInvoice={currentInvoiceNumber}
                   setEditableInvoice={setCurrentInvoiceNumber}
                 />

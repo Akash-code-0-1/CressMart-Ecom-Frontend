@@ -340,11 +340,13 @@
 
 // InvoicePrint.displayName = "InvoicePrint";
 
+
+
 "use client";
 import { getSettings } from "@/services-api/globalSettingsService";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import React from "react";
+import React, { useMemo } from "react";
 import { extractImageUrl } from "@/utils/image";
 import { fetchChatSettings } from "@/services-api/chatSettingsService";
 
@@ -377,10 +379,13 @@ interface Order {
   customer_address: string;
   created_at: string;
   discount_amount: number | string;
+  coupon_discount_amount?: number | string;
+  manual_discount_amount?: number | string | null;
   shipping_fee: number | string;
   total_amount_due: number | string;
   total_bill?: number | string;
   advance_amount?: number | string;
+  payment_method?: string;
   order_items?: OrderItem[];
 }
 
@@ -405,24 +410,29 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
 
     if (!order) return null;
 
-// 1. Calculate values based purely on the items and order fields
-    const subTotal =
+    // 1. Calculate Subtotal from order items
+    const subtotal =
       order.order_items?.reduce(
         (acc, item) => acc + Number(item.unit_price) * item.quantity,
         0,
       ) || 0;
 
-    const deliveryCharge = Number(order.shipping_fee) || 0;
-    const discount = Number(order.discount_amount) || 0;
-    const advancePay = Number(order.advance_amount) || 0;
+const shippingFee = Number(order.shipping_fee) || 0;
+    const couponDiscount = Number(order.coupon_discount_amount) || 0;
+    
+    // 💡 Read Advance Plan Discount directly from manual_discount_amount!
+    const advancePlanDiscount = Number(order.manual_discount_amount) || 0;
+    
+    // 💡 Read Advance Paid directly from advance_amount!
+    const advancePaid = Number(order.advance_amount) || 0;
+    
+    const totalDiscountAmount = Number(order.discount_amount) || (couponDiscount + advancePlanDiscount);
+    const grandTotal = Math.max(0, subtotal + shippingFee - totalDiscountAmount);
+    
+    // Due Pay = Grand Total minus Advance Paid (cash already paid via gateway)
+    const duePay = Math.max(0, grandTotal - advancePaid);
 
-    // 2. Grand Total is the final net bill after all discounts and shipping
-    const grandTotal = subTotal + deliveryCharge - discount;
 
-    // 3. If the advance payment is already bundled/handled in the discount or grand total, 
-    // Remaining Due should equal Grand Total (or subtract advancePay only if it wasn't part of the discount).
-    // Based on your requirement that advance pay shouldn't be double deducted:
-    const duePay = grandTotal;
 
     const settingsdata = settingResponse?.data;
     const logoUrl =
@@ -623,62 +633,53 @@ export const InvoicePrint = React.forwardRef<HTMLDivElement, InvoiceProps>(
                 <div className="flex justify-between text-gray-600">
                   <p>Sub Total</p>
                   <p className="font-medium text-gray-900">
-                    ৳{subTotal.toLocaleString()}
+                    ৳{subtotal.toLocaleString()}
                   </p>
                 </div>
 
                 <div className="flex justify-between text-gray-600">
                   <p>Delivery Charge</p>
                   <p className="font-medium text-gray-900">
-                    ৳{deliveryCharge.toLocaleString()}
+                    ৳{shippingFee.toLocaleString()}
                   </p>
                 </div>
 
-                {(Number((order as any).coupon_discount_amount) ?? 0) > 0 && (
-                  <div className="flex justify-between text-gray-600">
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-red-500">
                     <p>Coupon Discount</p>
                     <p className="font-medium">
-                      - ৳{Number((order as any).coupon_discount_amount).toLocaleString()}
+                      - ৳{couponDiscount.toLocaleString()}
                     </p>
                   </div>
                 )}
 
-                {(Number((order as any).manual_discount_amount) ?? 0) > 0 && (
-                  <div className="flex justify-between text-gray-600">
-                    <p>Special Discount</p>
-                    <p className="font-medium">
-                      - ৳{Number((order as any).manual_discount_amount).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-
-                {discount > 0 && (
+{advancePlanDiscount > 0 && (
                   <div className="flex justify-between text-red-500">
-                    <p>Discount</p>
+                    <p>Advance Plan Discount</p>
                     <p className="font-medium">
-                      - ৳{discount.toLocaleString()}
+                      - ৳{advancePlanDiscount.toLocaleString()}
                     </p>
                   </div>
                 )}
 
                 {/* Grand Total */}
                 <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
-                  <p>Total Due</p>
+                  <p>Grand Total</p>
                   <p>৳{grandTotal.toLocaleString()}</p>
                 </div>
 
-                {/* Advance Payment */}
+                {/* Advance Paid */}
                 <div className="flex justify-between text-gray-600">
-                  <p>Advance Pay</p>
+                  <p>Advance Paid</p>
                   <p className="font-medium text-gray-900">
-                    ৳{advancePay.toLocaleString()}
+                    ৳{advancePaid.toLocaleString()}
                   </p>
                 </div>
 
-                {/* Remaining Due */}
+                {/* Due Pay */}
                 <div className="flex justify-between font-bold text-[14px] text-gray-900 pt-1 border-t border-gray-200">
-                  <p>Remaining Due</p>
-                  <p>৳{duePay.toLocaleString()}</p>
+                  <p>Due Pay</p>
+                  <p>৳{Math.max(0, duePay).toLocaleString()}</p>
                 </div>
               </div>
             </div>

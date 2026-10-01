@@ -749,21 +749,20 @@ export default function ThankYouContent({
 
   // 2. Extract RAW values safely from API response
   const shippingFee = Number(apiResponse?.shipping_fee || 0);
-  
   const couponDiscount = Number(apiResponse?.coupon_discount_amount || 0);
   const totalDiscountAmount = Number(apiResponse?.discount_amount || 0);
   
-  // Advance plan discount is the portion of the total discount not caused by the coupon
-  const advancePlanDiscount = Math.max(0, totalDiscountAmount - couponDiscount);
+  // The system/advance price discount incentive (e.g. 50tk or 100tk)
+  const priceDiscountIncentive = Math.max(0, totalDiscountAmount - couponDiscount);
   
-  // This is the informational advance amount paid via website facility
+  // Grand Total = Subtotal + Shipping - Total Price Discounts
+  const grandTotal = Math.max(0, subtotal + shippingFee - totalDiscountAmount);
+
+  // 🔥 Advance Paid is the actual cash the customer paid through EPS gateway
   const advancePaid = Number(apiResponse?.advance_amount || 0);
 
-  // 3. MATH: Grand Total = (Subtotal + Shipping) - Total Discounts (Coupons + Plans)
-  const grandTotal = subtotal + shippingFee - totalDiscountAmount;
-
-  // 4. Due Pay is simply the Grand Total (since advance_amount is already handled/deducted inside totalDiscountAmount or treated as informational text)
-  const duePay = grandTotal;
+  // Remaining Due Pay to collect on delivery via COD
+  const duePay = Math.max(0, grandTotal - advancePaid);
 
   if (isLoading)
     return <div className="p-20 text-center">Fetching Invoice...</div>;
@@ -947,12 +946,12 @@ export default function ThankYouContent({
                 </div>
               )}
 
-              {/* Separate Line: Advance Plan / Payment Method Discount */}
-              {advancePlanDiscount > 0 && (
+{/* Separate Line: Advance Plan Discount / Incentive */}
+              {priceDiscountIncentive > 0 && (
                 <div className="flex justify-between text-red-500">
                   <p>Advance Plan Discount</p>
                   <p className="font-medium">
-                    - ৳{advancePlanDiscount.toLocaleString()}
+                    - ৳{priceDiscountIncentive.toLocaleString()}
                   </p>
                 </div>
               )}

@@ -191,13 +191,15 @@
 import { CartItem } from "@/@types/order.type";
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
-import React, { useEffect } from "react";
+import React from "react";
 
 interface PricingListProps {
   items: CartItem[];
   shippingFee: number;
   couponDiscount?: number;
-  advanceDiscount?: number;
+  advanceDiscount?: number; // The discount saved by paying advance
+  paymentMethod?: string;
+  advancePaymentRequired?: number; // The actual cash amount to pay via EPS right now
 }
 
 const PricingList: React.FC<PricingListProps> = ({
@@ -205,6 +207,8 @@ const PricingList: React.FC<PricingListProps> = ({
   shippingFee,
   couponDiscount = 0,
   advanceDiscount = 0,
+  paymentMethod = "COD",
+  advancePaymentRequired = 0,
 }) => {
   const { language } = useLanguage();
   const t = translations[language];
@@ -217,20 +221,33 @@ const PricingList: React.FC<PricingListProps> = ({
     return acc + priceNum * (item.quantity || 1);
   }, 0);
 
+  // 2. Total Discounts (Coupon + Advance Plan Discount/Incentive)
   const totalDiscount = couponDiscount + advanceDiscount;
   
-  // 2. Grand Total = Sub Total + Shipping - Total Discounts
+  // 3. Grand Total = Sub Total + Shipping - Total Discounts
+  // (Note: If delivery_charge_only is selected, shippingFee is part of the calculation, 
+  // but advanceDiscount includes the shipping fee waiver, so they cancel out on the product price!)
   const grandTotal = Math.max(0, totalProductCost + shippingFee - totalDiscount);
 
-  // 3. Informational display value only (do NOT subtract this again from Grand Total)
-  const advancePaid = advanceDiscount; 
+  // 4. Calculate Payable Now vs Due on Delivery (COD)
+  let payableNow = grandTotal;
+  let dueOnDelivery = 0;
 
-  // 4. Payable on Delivery (Due Pay) = Grand Total (No double deduction)
-  const duePay = grandTotal;
-
-  useEffect(() => {
-    console.log("PricingList received couponDiscount:", couponDiscount);
-  }, [couponDiscount]);
+  if (paymentMethod === "COD") {
+    payableNow = grandTotal;
+    dueOnDelivery = 0;
+  } else if (paymentMethod === "full_payment") {
+    payableNow = grandTotal;
+    dueOnDelivery = 0;
+  } else if (paymentMethod === "delivery_charge_only") {
+    // For Delivery Charge Only: Payable now is the shipping fee, due on delivery is the product cost minus coupon/incentive
+    payableNow = shippingFee;
+    dueOnDelivery = Math.max(0, totalProductCost - couponDiscount - (advanceDiscount - shippingFee));
+  } else {
+    // For percentage or fixed amount:
+    payableNow = advancePaymentRequired > 0 ? advancePaymentRequired : advanceDiscount;
+    dueOnDelivery = Math.max(0, grandTotal - payableNow);
+  }
 
   return (
     <div className="mt-20 font-poppins">
@@ -263,9 +280,9 @@ const PricingList: React.FC<PricingListProps> = ({
 
         {advanceDiscount > 0 && (
           <div className="flex justify-between text-red-500">
-            <span>Advance Plan Discount</span>
+            <span>Advance Plan Discount / Incentive</span>
             <span className="font-medium">
-              -{advanceDiscount} {t.pricing.currency}
+              -{advanceDiscount.toFixed(2)} {t.pricing.currency}
             </span>
           </div>
         )}
@@ -275,15 +292,15 @@ const PricingList: React.FC<PricingListProps> = ({
         <div className="flex justify-between font-semibold text-black">
           <span>Grand Total</span>
           <span>
-            {grandTotal} {t.pricing.currency}
+            {grandTotal.toFixed(2)} {t.pricing.currency}
           </span>
         </div>
 
-        {advancePaid > 0 && (
+        {dueOnDelivery > 0 && (
           <div className="flex justify-between text-gray-600">
-            <span>Advance Paid</span>
+            <span>Due on Delivery (COD)</span>
             <span className="font-medium">
-              -{advancePaid} {t.pricing.currency}
+              {dueOnDelivery.toFixed(2)} {t.pricing.currency}
             </span>
           </div>
         )}
@@ -292,10 +309,10 @@ const PricingList: React.FC<PricingListProps> = ({
 
         <div className="flex justify-between items-center mt-2">
           <span className="text-xl font-semibold text-[#FF7050]">
-            Due Pay (Payable)
+            {paymentMethod === "COD" ? "Total Payable (COD)" : "Payable (Advance Now)"}
           </span>
           <span className="text-xl font-semibold text-[#FF7050]">
-            {duePay} {t.pricing.currency}
+            {payableNow.toFixed(2)} {t.pricing.currency}
           </span>
         </div>
       </div>
