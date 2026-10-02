@@ -85,9 +85,6 @@
 
 // export default PricingList;
 
-
-
-
 // import { CartItem } from "@/@types/order.type";
 // import { translations } from "@/locales";
 // import { useLanguage } from "@/providers/LanguageProvider";
@@ -186,8 +183,6 @@
 
 // export default PricingList;
 
-
-
 import { CartItem } from "@/@types/order.type";
 import { translations } from "@/locales";
 import { useLanguage } from "@/providers/LanguageProvider";
@@ -212,7 +207,7 @@ const PricingList: React.FC<PricingListProps> = ({
 }) => {
   const { language } = useLanguage();
   const t = translations[language];
-  
+
   // 1. Total Product Cost (Sub Total)
   const totalProductCost = items.reduce((acc, item) => {
     const rawPrice = item.price ?? item.product?.price ?? 0;
@@ -223,11 +218,14 @@ const PricingList: React.FC<PricingListProps> = ({
 
   // 2. Total Discounts (Coupon + Advance Plan Discount/Incentive)
   const totalDiscount = couponDiscount + advanceDiscount;
-  
+
   // 3. Grand Total = Sub Total + Shipping - Total Discounts
-  // (Note: If delivery_charge_only is selected, shippingFee is part of the calculation, 
+  // (Note: If delivery_charge_only is selected, shippingFee is part of the calculation,
   // but advanceDiscount includes the shipping fee waiver, so they cancel out on the product price!)
-  const grandTotal = Math.max(0, totalProductCost + shippingFee - totalDiscount);
+  const grandTotal = Math.max(
+    0,
+    totalProductCost + shippingFee - totalDiscount,
+  );
 
   // 4. Calculate Payable Now vs Due on Delivery (COD)
   let payableNow = grandTotal;
@@ -242,10 +240,14 @@ const PricingList: React.FC<PricingListProps> = ({
   } else if (paymentMethod === "delivery_charge_only") {
     // For Delivery Charge Only: Payable now is the shipping fee, due on delivery is the product cost minus coupon/incentive
     payableNow = shippingFee;
-    dueOnDelivery = Math.max(0, totalProductCost - couponDiscount - (advanceDiscount - shippingFee));
+    dueOnDelivery = Math.max(
+      0,
+      totalProductCost - couponDiscount - (advanceDiscount - shippingFee),
+    );
   } else {
     // For percentage or fixed amount:
-    payableNow = advancePaymentRequired > 0 ? advancePaymentRequired : advanceDiscount;
+    payableNow =
+      advancePaymentRequired > 0 ? advancePaymentRequired : advanceDiscount;
     dueOnDelivery = Math.max(0, grandTotal - payableNow);
   }
 
@@ -309,13 +311,23 @@ const PricingList: React.FC<PricingListProps> = ({
 
         <div className="flex justify-between items-center mt-2">
           <span className="text-xl font-semibold text-[#FF7050]">
-            {paymentMethod === "COD" ? "Total Payable (COD)" : "Payable (Advance Now)"}
+            {paymentMethod === "COD"
+              ? "Total Payable (COD)"
+              : "Payable (Advance Now)"}
           </span>
           <span className="text-xl font-semibold text-[#FF7050]">
             {payableNow.toFixed(2)} {t.pricing.currency}
           </span>
         </div>
       </div>
+
+      <img
+        src="/images/Checkout-Page-Pay_with_EPS.png"
+        alt="Payments"
+        width={1709}
+        height={40}
+        className="object-contain mt-4 pl-6"
+      />
     </div>
   );
 };

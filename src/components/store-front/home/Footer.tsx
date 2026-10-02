@@ -301,7 +301,7 @@ const footerLinks = {
         <div className="w-full border-b border-[#D9DBE9] py-6">
           <div className="flex flex-wrap justify-center gap-2">
             <Image
-              src="/images/paymentIcons.png"
+              src="/images/Footer-Desktop-Light-Version.png.png"
               alt="Payments"
               width={1709}
               height={40}
