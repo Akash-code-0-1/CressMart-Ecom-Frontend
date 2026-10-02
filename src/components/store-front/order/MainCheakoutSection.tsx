@@ -3139,6 +3139,20 @@ const MainCheckoutSection: React.FC = () => {
     }
   }, [user, profile]);
 
+  // 1. Add state to store the client's actual IP address
+  const [clientIp, setClientIp] = useState("127.0.0.1");
+
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ip) setClientIp(data.ip);
+      })
+      .catch(() => {
+        // Fallback silently if it fails or blocks
+      });
+  }, []);
+
   const normalizeShippingKey = (key: string): string => {
     return key || "outside";
   };
@@ -3574,6 +3588,7 @@ const MainCheckoutSection: React.FC = () => {
           const requestBody = {
             customerOrderId: String(orderNumber),
             totalAmount: Number(payableNow.toFixed(2)), 
+            ipAddress: clientIp,
             successUrl: `${window.location.origin}/thank_you?orderId=${orderUUID}`,
             failUrl: `${window.location.origin}/checkout`,
             cancelUrl: `${window.location.origin}/checkout`,
